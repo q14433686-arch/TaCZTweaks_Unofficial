@@ -19,6 +19,6 @@ val BlockInputCodec: Codec<BlockInput> = Codec.STRING.comapFlatMap({
     DataResult.success(BlockInput(result.blockState, result.properties.keys, result.nbt))
 }, {
     val tag = (it as BlockInputAccessor).tag?.takeIf { tag -> !tag.isEmpty }
-    if (tag != null) return@comapFlatMap "${BlockStateParser.serialize(it.state)}${/*? if >=1.21.11 {*/ /*tag.toString()*/ /*?} else {*/ tag.asString /*?}*/}"
+    if (tag != null) return@comapFlatMap "${BlockStateParser.serialize(it.state)}$tag"
     BlockStateParser.serialize(it.state)
 })
