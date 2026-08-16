@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = AttachmentDataUtils.class, remap = false)
 public abstract class AttachmentDataUtilsMixin {
-    @ModifyReturnValue(method = "getAmmoCountWithAttachment(Lnet/minecraft/world/item/ItemStack;Lcom/tacz/guns/resource/pojo/data/gun/GunData;)I", at = @At("RETURN"))
+    @ModifyReturnValue(method = "getAmmoCountWithAttachment", at = @At("RETURN"))
     private static int tacztweaks$getAmmoCountWithAttachmentWithAttachment$capacityModifier(int original) {
         return (int) Config.Balancing.Capacity.eval(original);
     }

@@ -1,5 +1,9 @@
-## 3.0.0-alpha.10.unofficial.2 — Minecraft 1.21.11 Fabric
+## 3.0.0-alpha.10.unofficial.3 — Minecraft 1.21.11 Fabric
 
+- Replaced all five `EntityKineticBullet` full-descriptor constructor injections with descriptor-free, owner-gated, once-only constructor-return hooks; this avoids the R2 runtime target mismatch while preserving exactly one transform per projectile.
+- Carries projectile gun-stack and burst/pellet metadata through the scoped spawn transaction rather than constructor arguments.
+- Corrected the `AM_FACTORY` shadow declaration so it matches TaCZ's static final field without a Mixin warning.
+- Removed the remaining active mixed TaCZ/Minecraft full descriptors from `GunSoundInstance`, capacity, and bullet-culling selectors where the target method name is unique.
 - Audited all 163 configured Mixins and replaced remaining 1.21.11 lambda, internal-call, shared-local, and arbitrary-local dependencies with stable method boundaries where possible.
 - Fixed per-line Stonecutter conversion for `Identifier` parameters in newly multiline Java declarations and audited all 178 immediate-line replacement directives.
 - Added a committed port audit at `docs/PORT_1_21_11_AUDIT.md` with evidence and release gates.

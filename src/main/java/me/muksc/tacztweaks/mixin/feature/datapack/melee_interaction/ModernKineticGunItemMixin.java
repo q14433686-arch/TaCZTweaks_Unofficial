@@ -20,7 +20,7 @@ import java.util.function.DoubleFunction;
 @Mixin(value = ModernKineticGunItem.class, remap = false)
 public abstract class ModernKineticGunItemMixin {
     @Shadow @Final
-    private static DoubleFunction<AttributeModifier> AM_FACTORY = null;
+    private static final DoubleFunction<AttributeModifier> AM_FACTORY = null;
 
     /**
      * Work at the stable doMelee boundary. Re-evaluating the same cone predicate avoids

@@ -19,15 +19,20 @@ Evidence used:
 - Fabric API 0.141.6 Javadocs for the Resource Loader v1 transition;
 - a real Windows `:1.21.11-fabric:build` result for the pre-audit `.unofficial.1` candidate:
   **BUILD SUCCESSFUL**;
-- a post-audit `.unofficial.2` build attempt that reached Java compilation and exposed four
-  unconverted `ResourceLocation` parameter lines in two newly multiline method declarations;
+- an initial post-audit `.unofficial.2` build attempt that exposed four unconverted
+  `ResourceLocation` parameter lines in two newly multiline method declarations;
+- a subsequently packaged/remapped `.unofficial.2` artifact that was loaded by Fabric and reached
+  TaCZ entity initialization;
 - real client startup traces through Fabric Mixin preparation, TaCZ packet registration,
   LRTactical interface transformation, and synced-data initialization.
 
-The four post-audit Java errors are source-fixed by putting a Stonecutter replacement directive on
-each affected physical parameter line. All 178 immediate-line replacement directives were then
-checked for an ineffective/misplaced directive, with zero remaining. A fresh `.unofficial.2` build
-is still required before the current tree can be called build-verified.
+The four post-audit Java errors were fixed by putting a Stonecutter replacement directive on each
+affected physical parameter line. All 178 immediate-line replacement directives were then checked
+for an ineffective/misplaced directive, with zero remaining. The resulting `.unofficial.2` client
+run exposed a runtime mismatch on the first of five newly added full-descriptor
+`EntityKineticBullet` constructor injections. All five now use descriptor-free constructor-return
+hooks with owner/once guards. A fresh `.unofficial.3` build is required before the current tree can
+be called build-verified.
 
 Compilation alone is not treated as runtime proof. Every result below says whether it is source-
 verified, build-verified, startup-verified, gated, or still requires a gameplay smoke test.
@@ -44,7 +49,7 @@ verified, build-verified, startup-verified, gated, or still requires a gameplay 
 | Cloth Config | 21.11.153 supplied explicitly because artifact-only TaCZ metadata is non-transitive | Resolution/build-verified |
 | YACL / Mod Menu | 3.8.2 / 17.x API line | Build-verified |
 | Legacy Fabric nodes | Missing LGPL SimpleBedrockModel jars restored; optional VS graph made non-transitive | Configuration-verified |
-| Artifact identity | `3.0.0-alpha.10.unofficial.2+1.21.11-fabric` | Audit-candidate version; `.1` was client-log verified |
+| Artifact identity | `3.0.0-alpha.10.unofficial.3+1.21.11-fabric` | Current source candidate; `.2` build/load verified but failed during Mixin application |
 
 The Gradle deprecation messages and `Cannot remap modifiers` message are warnings. They are not
 used to dismiss any Mixin warning or startup failure.
@@ -53,7 +58,7 @@ used to dismiss any Mixin warning or startup failure.
 
 | Change | Implementation | Status |
 |---|---|---|
-| `ResourceLocation` -> `Identifier` | Stonecutter replacements plus an explicit Identifier helper branch | Pre-audit build-verified; post-audit multiline fix source-verified, rebuild pending |
+| `ResourceLocation` -> `Identifier` | Stonecutter replacements plus an explicit Identifier helper branch | Post-audit build/load verified |
 | `critereon` -> `criterion` | Package replacements for predicate codecs | Build-verified |
 | Tool tiers | `Tier/Tiers` -> `ToolMaterial` codec for modern versions | Build-verified |
 | Resource reload API | Local listener interface + Fabric Resource Loader v1 registration by explicit id | Build-verified; runtime reload pending |
@@ -139,9 +144,10 @@ The following fragile paths were removed or rewritten during this audit:
 | RefitKey internal attachment-lock call + local player | `onRefitPress` HEAD guard |
 | reload lambdas and field/invoke interception | `reloadWithDisplay/reloadWithIndex` method wrappers |
 | auto-bolt internal `bolt()` interception | complete `tickAutoBolt` transaction guard |
-| projectile `addFreshEntity` and cross-method shared locals | thread-scoped `spawnProjectiles` indices + constructor consumption |
+| projectile `addFreshEntity` and cross-method shared locals | thread-scoped `spawnProjectiles` gun stack/indices + constructor consumption |
 | bullet sound hook inside `doBulletSpread` | `EntityKineticBullet#shootFromRotation` TAIL |
-| bullet constructor property expressions | constructor TAIL field transforms |
+| bullet constructor property expressions and named full descriptor | descriptor-free constructor RETURN hooks, owner-gated and once-only |
+| mixed TaCZ/Minecraft full selectors in sound, capacity and bullet culling | descriptor-free unique method names; constructor boolean captured as an argument local |
 | SoundEngine local `Sound` capture | direct `getCompleteBuffer(id)` operation wrapper |
 | recoil state shared across three Mixins | explicit `RecoilState` snapshot in each spline wrapper |
 | crawl cooldown expression | method-entry temporary state and RETURN restoration |
@@ -168,16 +174,22 @@ These are source/descriptor verified, but their visual/gameplay outcome remains 
 
 ## 5. Runtime checkpoint audit
 
-Observed successful checkpoints before the latest hardening patch:
+Observed successful checkpoints through the `.unofficial.2` run:
 
-- Fabric loaded the expected 1.21.11 dependency set;
+- Fabric loaded the expected 1.21.11 dependency set and the log identified the intended `.2` jar;
 - `tacztweaks.refmap.json` was read (there is no Tweaks missing-refmap warning);
 - MixinExtras initialized;
 - the LRTactical interface Mixin passed PREPARE after its subtype correction;
 - TaCZ C2S packet classes transformed and registered after packet guards moved to `handle`;
-- all listed TaCZ synced data keys registered;
-- startup reached `ModItems.init()` and exposed the old modern-melee call-site injection, which is now
-  replaced together with the other `ModernKineticGunItem` internal hook.
+- all listed TaCZ synced data keys registered.
+
+The `.2` run then failed while applying
+`feature.attribute.stats.damage.EntityKineticBulletMixin`: Mixin could not resolve the named full
+constructor descriptor at runtime. Four other Mixins used the same newly introduced constructor
+selector and had not yet been reached. The `.3` source candidate removes that selector from all five
+Mixins, injects at every constructor RETURN with only `CallbackInfo`, and performs work only after
+`getOwner()` becomes non-null and only once per bullet. It also makes the `AM_FACTORY` shadow
+actually `static final`, removing the separate warning emitted immediately before the crash.
 
 The Iris/Carry On/YACL missing-refmap messages and AMD RenderSystem information warning originate from
 those mods/early renderer initialization. They are not being counted as Tweaks validation failures.

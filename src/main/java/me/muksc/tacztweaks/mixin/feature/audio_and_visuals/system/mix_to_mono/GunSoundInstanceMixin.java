@@ -1,13 +1,9 @@
 package me.muksc.tacztweaks.mixin.feature.audio_and_visuals.system.mix_to_mono;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.tacz.guns.client.sound.GunSoundInstance;
 import me.muksc.tacztweaks.mixininterface.feature.audio_and_visuals.system.mix_to_mono.MonoObject;
-//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,10 +16,12 @@ public abstract class GunSoundInstanceMixin {
     @Unique
     private boolean tacztweaks$mono = false;
 
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    @Inject(method = "<init>(Lnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FFLnet/minecraft/world/entity/Entity;ILnet/minecraft/resources/ResourceLocation;ZZ)V", at = @At("TAIL"), remap = false)
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    private void tacztweaks$init$mixToMono$storeMono(SoundEvent soundEvent, SoundSource source, float volume, float pitch, Entity entity, int soundDistance, ResourceLocation registryName, boolean mono, boolean relative, CallbackInfo ci) {
+    /** Both TaCZ constructors carry mono as their first boolean argument. */
+    @Inject(method = "<init>", at = @At("RETURN"), remap = false)
+    private void tacztweaks$init$mixToMono$storeMono(
+        CallbackInfo ci,
+        @Local(argsOnly = true, ordinal = 0) boolean mono
+    ) {
         tacztweaks$mono = mono;
     }
 

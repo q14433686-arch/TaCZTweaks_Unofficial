@@ -5,18 +5,11 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.tacz.guns.entity.EntityKineticBullet;
-import com.tacz.guns.resource.pojo.data.gun.BulletData;
-import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.tacz.guns.util.TacHitResult;
 import me.muksc.tacztweaks.feature.datapack.BulletIndexContext;
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet;
-//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -51,16 +44,24 @@ public abstract class EntityKineticBulletMixin implements TaCZTweaksBullet {
     @Unique
     private @Nullable DamageModifier tacztweaks$entityHitDamageModifier = null;
 
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    @Inject(method = "<init>(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/resources/ResourceLocation;ZLcom/tacz/guns/resource/pojo/data/gun/GunData;Lcom/tacz/guns/resource/pojo/data/gun/BulletData;)V", at = @At("TAIL"))
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    private void tacztweaks$init(EntityType<? extends Projectile> type, Level worldIn, LivingEntity throwerIn, ItemStack gunItem, ResourceLocation ammoId, ResourceLocation gunId, ResourceLocation gunDisplayId, boolean isTracerAmmo, GunData gunData, BulletData bulletData, CallbackInfo ci) {
-        tacztweaks$gunStack = gunItem;
-        BulletIndexContext.Indices indices = BulletIndexContext.next();
-        if (indices != null) {
-            tacztweaks$burstIndex = indices.burstIndex();
-            tacztweaks$pelletIndex = indices.pelletIndex();
+    @Unique
+    private boolean tacztweaks$projectileDataCaptured;
+
+    /** Capture projectile metadata once the delegating constructor has assigned its owner. */
+    @Inject(method = "<init>", at = @At("RETURN"), remap = false)
+    private void tacztweaks$init(CallbackInfo ci) {
+        if (tacztweaks$projectileDataCaptured) return;
+        if (!(((EntityKineticBullet) (Object) this).getOwner() instanceof LivingEntity shooter)) return;
+        tacztweaks$projectileDataCaptured = true;
+
+        BulletIndexContext.ProjectileData data = BulletIndexContext.next();
+        if (data == null) {
+            tacztweaks$gunStack = shooter.getMainHandItem();
+            return;
         }
+        tacztweaks$gunStack = data.gunStack();
+        tacztweaks$burstIndex = data.burstIndex();
+        tacztweaks$pelletIndex = data.pelletIndex();
     }
 
     @Override

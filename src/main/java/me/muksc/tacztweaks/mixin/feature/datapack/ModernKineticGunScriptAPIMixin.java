@@ -13,8 +13,10 @@ import com.tacz.guns.resource.pojo.data.gun.GunData;
 import me.muksc.tacztweaks.feature.datapack.BulletIndexContext;
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,6 +24,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = ModernKineticGunScriptAPI.class, remap = false)
 public abstract class ModernKineticGunScriptAPIMixin {
+    @Shadow
+    private ItemStack itemStack;
+
     @Unique
     private int tacztweaks$burstIndex = 0;
 
@@ -66,7 +71,7 @@ public abstract class ModernKineticGunScriptAPIMixin {
         float yaw,
         Operation<Void> original
     ) {
-        try (BulletIndexContext.Scope ignored = BulletIndexContext.open(tacztweaks$burstIndex)) {
+        try (BulletIndexContext.Scope ignored = BulletIndexContext.open(tacztweaks$burstIndex, itemStack)) {
             original.call(gunData, bulletData, gunOperator, shotDamageMultiplier, inaccuracy,
                 processedSpeed, bulletAmount, pitch, yaw);
         }
