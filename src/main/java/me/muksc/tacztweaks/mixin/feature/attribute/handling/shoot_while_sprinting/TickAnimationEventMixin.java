@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = TickAnimationEvent.class, remap = false)
 public abstract class TickAnimationEventMixin {
     //? if >=1.21.11 {
-    /** Reproduce the small stable animation dispatcher instead of naming its Optional lambda. */
+    // Reproduce the small stable animation dispatcher instead of naming its Optional lambda.
     /*@Inject(method = "tickAnimation(Lnet/minecraft/client/Minecraft;)V", at = @At("HEAD"), cancellable = true)
     private static void tacztweaks$tickAnimation$attribute$handling$shootWhileSprinting(Minecraft client, CallbackInfo ci) {
         LocalPlayer player = client.player;
