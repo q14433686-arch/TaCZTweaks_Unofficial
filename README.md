@@ -1,4 +1,11 @@
 # TaCZ Tweaks
+
+> **Unofficial port status:** this repository adds a Fabric build for Minecraft **1.21.11**
+> targeting **[UNOFFICIAL] TaCZ Refabricated 1.1.8+fabric.1.21.11.R2**
+> ([source](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)).
+> The port is based on TaCZ Tweaks v3 (`3.0.0-alpha.10`) and uses an
+> `unofficial` version suffix to avoid being mistaken for an upstream MUKSC release.
+
 [![Modrinth](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/modrinth_vector.svg)](https://modrinth.com/mod/tacz-tweaks)
 [![CurseForge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/curseforge_vector.svg)](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks)
 [![GitHub](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/github_vector.svg)](https://github.com/MUKSC/TaCZTweaks)
@@ -22,11 +29,29 @@ NeoForge:
 - [Kotlin for Forge](https://modrinth.com/mod/kotlin-for-forge)
 - [YACL](https://modrinth.com/mod/yacl)
 
-Fabric:
+Fabric 1.20.1 / 1.21.1:
 - [TaCZ: Refabricated](https://modrinth.com/mod/tacz-refabricated)
 - [Fabric API](https://modrinth.com/mod/fabric-api)
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin)
 - [YACL](https://modrinth.com/mod/yacl)
+- [Forge Config API Port](https://modrinth.com/mod/forge-config-api-port)
+
+Fabric 1.21.11 (unofficial build):
+- [[UNOFFICIAL] TaCZ Refabricated, CurseForge file 8660664](https://www.curseforge.com/minecraft/mc-mods/unofficial-tacz-refabricated/files/8660664)
+- Fabric API `0.141.6+1.21.11`
+- Fabric Language Kotlin `1.13.8+kotlin.2.3.0` or newer
+- YACL `3.8.2+1.21.11-fabric`
+- Forge Config API Port `21.11.1`
+- Cloth Config `21.11.153` when using TaCZ's Mod Menu configuration screen
+
+## Building the 1.21.11 port
+
+```bash
+./gradlew :1.21.11-fabric:build
+```
+
+The build resolves the target TaCZ jar from CurseMaven using
+`curse.maven:unofficial-tacz-refabricated-1627909:8660664`; the large dependency is not vendored in this repository.
 
 ## Features
 TaCZ Tweaks offers various features for both regular players, and technical players such as modpack makers and server owners.  

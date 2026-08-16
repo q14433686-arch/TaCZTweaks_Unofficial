@@ -6,6 +6,15 @@ plugins {
 loom {
     accessWidenerPath = rootProject.file("src/main/resources-fabric/${mod("id")}.accesswidener")
 
+    if (sc.current.version == "1.21.11") {
+        // 1.21.11 is the final obfuscated release. Loom 1.17 no longer enables
+        // the legacy Mixin AP by default, but these official-name selectors need a refmap.
+        mixin {
+            useLegacyMixinAp = true
+            defaultRefmapName = "${mod("id")}.refmap.json"
+        }
+    }
+
     runs {
         named("client") {
             programArgs("--username=Dev")
@@ -95,6 +104,12 @@ repositories {
         }
     }
     maven("https://maven.terraformersmc.com")
+    maven("https://maven.shedaniel.me") {
+        content {
+            includeGroup("me.shedaniel.cloth")
+            includeGroup("me.shedaniel")
+        }
+    }
 }
 
 dependencies {

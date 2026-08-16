@@ -1,3 +1,14 @@
+## 3.0.0-alpha.10.unofficial.1 — Minecraft 1.21.11 Fabric
+
+- Added a Stonecutter target for Minecraft 1.21.11 and Java 21.
+- Targets `[UNOFFICIAL] TaCZ Refabricated` R2 through CurseForge project `1627909`, file `8660664`.
+- Updated Fabric Loader, Fabric API, YACL, Mod Menu, Cloth Config and Forge Config API Port dependencies.
+- Migrated Mojang's `ResourceLocation` name to `Identifier`, key categories to the new registered category API, tool tiers to `ToolMaterial`, and JSON reloaders to the modern preparable API.
+- Re-anchored shooting, reload, bolt, animation and attachment Mixins to TaCZ R2's stable named hooks instead of compiler-generated lambda names.
+- Added support for the TaCZ fork's built-in LRTactical implementation.
+- Ported crawl rendering to `AvatarRenderer` and shield interactions to the `BlocksAttacks` component pipeline.
+- Kept the existing 1.20.1 and 1.21.1 source targets through Stonecutter conditionals.
+
 ## TaCZ Tweaks V3 Alpha
 Status: Feature parity with V2; feature incomplete for V3  
 It's marked as alpha because it's still feature incomplete, not because it's unstable per se  

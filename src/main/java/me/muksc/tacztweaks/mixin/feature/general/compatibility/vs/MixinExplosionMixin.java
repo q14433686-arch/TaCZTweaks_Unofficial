@@ -1,5 +1,6 @@
 package me.muksc.tacztweaks.mixin.feature.general.compatibility.vs;
 
+//? if 1.20.1 {
 import me.muksc.tacztweaks.mixininterface.feature.general.compatibility.vs.ExplosionInvoker;
 import net.minecraft.world.level.Explosion;
 import org.spongepowered.asm.mixin.Dynamic;
@@ -20,3 +21,10 @@ public class MixinExplosionMixin implements ExplosionInvoker {
         doExplodeForce();
     }
 }
+//?} else {
+/*import net.minecraft.client.Minecraft;
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(Minecraft.class)
+public class MixinExplosionMixin { }
+*///?}

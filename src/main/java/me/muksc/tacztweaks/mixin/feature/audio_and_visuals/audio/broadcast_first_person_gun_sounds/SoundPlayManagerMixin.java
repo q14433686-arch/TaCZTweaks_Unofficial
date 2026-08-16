@@ -80,7 +80,9 @@ public abstract class SoundPlayManagerMixin {
         "playMeleeBayonetSound",
         "playMeleePushSound",
         "playMeleeStockSound"
-    }, at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/sound/SoundPlayManager;playClientSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/resources/ResourceLocation;FFI)Lcom/tacz/guns/client/sound/GunSoundInstance;"))
+    },
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
+    at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/sound/SoundPlayManager;playClientSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/resources/ResourceLocation;FFI)Lcom/tacz/guns/client/sound/GunSoundInstance;"))
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     private static GunSoundInstance tacztweaks$playLocalSound$broadcastFirstPersonGunSounds(Entity entity, ResourceLocation name, float volume, float pitch, int distance, Operation<GunSoundInstance> original) {
         tacztweaks$broadcast(name, volume, pitch, distance);

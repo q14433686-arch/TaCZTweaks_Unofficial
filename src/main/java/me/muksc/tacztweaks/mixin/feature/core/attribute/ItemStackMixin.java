@@ -46,7 +46,7 @@ public abstract class ItemStackMixin {
         AttributeModifier modifier = entry.getValue();
         return attribute.toComponent(modifier);
     }
-    //?} else {
+    //?} else if <1.21.11 {
     /*@Definition(id = "translatable", method = "Lnet/minecraft/network/chat/Component;translatable(Ljava/lang/String;[Ljava/lang/Object;)Lnet/minecraft/network/chat/MutableComponent;")
     @Expression("translatable('attribute.modifier.plus.' + ?, ?)")
     @WrapOperation(method = "addModifierTooltip", at = @At("MIXINEXTRAS:EXPRESSION"))

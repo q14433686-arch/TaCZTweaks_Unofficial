@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "me.muksc.tacztweaks.fabric.mixin",
   "compatibilityLevel": "JAVA_${java_version}",
-  "refmap": "${mod_id}-fabric.refmap.json",
+  "refmap": "${mod_id}.refmap.json",
   "mixins": [
     "LivingEntityMixin"
   ],

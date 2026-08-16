@@ -31,7 +31,7 @@ class BooleanAttribute(
         AttributeModifier.Operation.MULTIPLY_TOTAL if value == -1.0 -> TaCZTweaks.translatable("attribute.value.boolean.disable")
         else -> TaCZTweaks.translatable("attribute.value.boolean.invalid")
     }
-    //?} else if 1.21.1 {
+    //?} else if >=1.21.1 {
     /*fun toValueComponent(op: AttributeModifier.Operation?, value: Double): MutableComponent = when (op) {
         null -> TaCZTweaks.translatable("attribute.value.boolean.${if (value > 0) "enabled" else "disabled"}")
         AttributeModifier.Operation.ADD_VALUE if value > 0 -> TaCZTweaks.translatable("attribute.value.boolean.enable")
