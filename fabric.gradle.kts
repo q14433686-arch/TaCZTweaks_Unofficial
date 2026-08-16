@@ -153,7 +153,12 @@ dependencies {
     // Compatibility
     modCompileOnly("com.terraformersmc:modmenu:${libs("modmenu")}")
     if (sc.current.version == "1.20.1") {
-        modCompileOnly("org.valkyrienskies:valkyrienskies-120-fabric:${libs("valkyrienskies")}")
+        modCompileOnly("org.valkyrienskies:valkyrienskies-120-fabric:${libs("valkyrienskies")}") {
+            // Only VSGameUtilsKt and the public ship API are referenced. Pulling the full
+            // runtime graph here drags Create/Ponder's archived ForgeConfigAPIPort Maven
+            // coordinate into every Stonecutter configuration.
+            isTransitive = false
+        }
         modLocalRuntime("org.valkyrienskies:valkyrienskies-120-fabric:${libs("valkyrienskies")}") {
             isTransitive = false
         }
