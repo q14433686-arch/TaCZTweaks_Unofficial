@@ -1,5 +1,7 @@
-## 3.0.0-alpha.10.unofficial.1 — Minecraft 1.21.11 Fabric
+## 3.0.0-alpha.10.unofficial.2 — Minecraft 1.21.11 Fabric
 
+- Audited all 163 configured Mixins and replaced remaining 1.21.11 lambda, internal-call, shared-local, and arbitrary-local dependencies with stable method boundaries where possible.
+- Added a committed port audit at `docs/PORT_1_21_11_AUDIT.md` with evidence and release gates.
 - Added a Stonecutter target for Minecraft 1.21.11 and Java 21.
 - Targets `[UNOFFICIAL] TaCZ Refabricated` R2 through CurseForge project `1627909`, file `8660664`.
 - Updated Fabric Loader, Fabric API, YACL, Mod Menu, Cloth Config and Forge Config API Port dependencies.

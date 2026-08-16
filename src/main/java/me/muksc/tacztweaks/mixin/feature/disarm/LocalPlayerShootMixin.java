@@ -10,8 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = LocalPlayerShoot.class, remap = false)
 public abstract class LocalPlayerShootMixin {
-    //~ if neoforge || fabric 'Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z' -> 'Lcom/tacz/guns/api/event/common/GunShootEvent;isCanceled()Z'
-    @Inject(method = "shoot", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z"), cancellable = true)
+    @Inject(method = "shoot", at = @At("HEAD"), cancellable = true)
     private void tacztweaks$shoot$disarm(CallbackInfoReturnable<ShootResult> cir) {
         if (DisarmManager.shouldDisarm()) cir.setReturnValue(ShootResult.FORGE_EVENT_CANCEL);
     }

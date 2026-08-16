@@ -8,6 +8,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.tacz.guns.util.TacHitResult;
+import me.muksc.tacztweaks.feature.datapack.BulletIndexContext;
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet;
 //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation;
@@ -55,6 +56,11 @@ public abstract class EntityKineticBulletMixin implements TaCZTweaksBullet {
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     private void tacztweaks$init(EntityType<? extends Projectile> type, Level worldIn, LivingEntity throwerIn, ItemStack gunItem, ResourceLocation ammoId, ResourceLocation gunId, ResourceLocation gunDisplayId, boolean isTracerAmmo, GunData gunData, BulletData bulletData, CallbackInfo ci) {
         tacztweaks$gunStack = gunItem;
+        BulletIndexContext.Indices indices = BulletIndexContext.next();
+        if (indices != null) {
+            tacztweaks$burstIndex = indices.burstIndex();
+            tacztweaks$pelletIndex = indices.pelletIndex();
+        }
     }
 
     @Override

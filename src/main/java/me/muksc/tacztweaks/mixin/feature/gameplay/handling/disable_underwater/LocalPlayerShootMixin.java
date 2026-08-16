@@ -15,8 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LocalPlayerShootMixin {
     @Shadow @Final private LocalPlayer player;
 
-    //~ if neoforge || fabric 'Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z' -> 'Lcom/tacz/guns/api/event/common/GunShootEvent;isCanceled()Z'
-    @Inject(method = "shoot", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z"), cancellable = true)
+    @Inject(method = "shoot", at = @At("HEAD"), cancellable = true)
     private void tacztweaks$shoot$disableUnderwater(CallbackInfoReturnable<ShootResult> cir) {
         if (!Config.Gameplay.Handling.disableUnderwater()) return;
         if (player.isUnderWater()) cir.setReturnValue(ShootResult.FORGE_EVENT_CANCEL);

@@ -23,6 +23,7 @@ public abstract class AmmoSpeedModifierMixin {
         return (float) Config.Balancing.Speed.eval(speed);
     }
 
+    //? if <1.21.11 {
     //~ environment environment_client
     @net.minecraftforge.api.distmarker.OnlyIn(net.minecraftforge.api.distmarker.Dist.CLIENT)
     @Inject(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;"))
@@ -32,4 +33,5 @@ public abstract class AmmoSpeedModifierMixin {
     ) {
         ammoSpeedRef.set((float) Config.Balancing.Speed.eval(ammoSpeedRef.get()));
     }
+    //?}
 }

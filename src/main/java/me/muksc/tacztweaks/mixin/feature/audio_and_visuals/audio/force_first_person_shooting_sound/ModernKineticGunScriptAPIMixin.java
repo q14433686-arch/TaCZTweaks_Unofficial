@@ -10,15 +10,22 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = ModernKineticGunScriptAPI.class, remap = false)
 public abstract class ModernKineticGunScriptAPIMixin {
+    //? if >=1.21.11 {
+    /*@ModifyExpressionValue(method = "runShootCycle", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SILENCE_3P_SOUND:Ljava/lang/String;"))
+    *///?} else {
     @ModifyExpressionValue(method = "lambda$shootOnce$2", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SILENCE_3P_SOUND:Ljava/lang/String;"))
+    //?}
     private String tacztweaks$shootOnce$forceFirstPersonShootingSound$silenced(String original) {
         return Config.AudioAndVisuals.Audio.forceFirstPersonShootingSound()
             ? SoundManager.SILENCE_SOUND
             : original;
     }
 
-    //~ if >=1.21.11 'lambda$shootOnce$2' -> 'runShootCycle'
+    //? if >=1.21.11 {
+    /*@ModifyExpressionValue(method = "runShootCycle", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SHOOT_3P_SOUND:Ljava/lang/String;"))
+    *///?} else {
     @ModifyExpressionValue(method = "lambda$shootOnce$2", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SHOOT_3P_SOUND:Ljava/lang/String;"))
+    //?}
     private String tacztweaks$shootOnce$forceFirstPersonShootingSound$normal(String original) {
         return Config.AudioAndVisuals.Audio.forceFirstPersonShootingSound()
             ? SoundManager.SHOOT_SOUND

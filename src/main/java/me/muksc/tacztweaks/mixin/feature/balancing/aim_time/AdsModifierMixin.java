@@ -1,19 +1,12 @@
 package me.muksc.tacztweaks.mixin.feature.balancing.aim_time;
 
-import com.llamalad7.mixinextras.sugar.Local;
-import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
-import com.tacz.guns.resource.modifier.AttachmentCacheProperty;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.tacz.guns.resource.modifier.custom.AdsModifier;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
 import me.muksc.tacztweaks.config.Config;
-import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.List;
 
 @Mixin(value = AdsModifier.class, remap = false)
 public abstract class AdsModifierMixin {
@@ -23,13 +16,12 @@ public abstract class AdsModifierMixin {
         return (float) Config.Balancing.AimTime.eval(aimTime);
     }
 
-    //~ environment environment_client
-    @net.minecraftforge.api.distmarker.OnlyIn(net.minecraftforge.api.distmarker.Dist.CLIENT)
-    @Inject(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;"))
-    private void tacztweaks$getPropertyDiagramsData$aimTimeModifier(
-        ItemStack gunItem, GunData gunData, AttachmentCacheProperty cacheProperty, CallbackInfoReturnable<List<Object>> cir,
-        @Local(name = "aimTime") LocalFloatRef aimTimeRef
-    ) {
-        aimTimeRef.set((float) Config.Balancing.AimTime.eval(aimTimeRef.get()));
+    /** Keep diagrams consistent without capturing javac locals. */
+    @ModifyExpressionValue(
+        method = "getPropertyDiagramsData",
+        at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/GunData;getAimTime()F")
+    )
+    private float tacztweaks$getPropertyDiagramsData$aimTimeModifier(float original) {
+        return (float) Config.Balancing.AimTime.eval(original);
     }
 }

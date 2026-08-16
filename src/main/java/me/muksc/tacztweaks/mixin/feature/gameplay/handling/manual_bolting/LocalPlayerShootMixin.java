@@ -10,8 +10,11 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = LocalPlayerShoot.class, remap = false)
 public abstract class LocalPlayerShootMixin {
-    //~ if >=1.21.11 'preCheck' -> 'validateClientShoot'
+    //? if >=1.21.11 {
+    /*@WrapWithCondition(method = "validateClientShoot", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/client/gameplay/IClientPlayerGunOperator;bolt()V"))
+    *///?} else {
     @WrapWithCondition(method = "preCheck", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/client/gameplay/IClientPlayerGunOperator;bolt()V"))
+    //?}
     private boolean tacztweaks$shoot$manualBolting$disableShootToBolt(IClientPlayerGunOperator instance) {
         return Config.Gameplay.Handling.manualBolting() != EManualBoltingType.ENABLED_KEY_ONLY;
     }

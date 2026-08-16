@@ -1,13 +1,14 @@
 package me.muksc.tacztweaks.mixin.feature.gameplay.handling.manual_bolting;
 
-import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator;
+import com.tacz.guns.api.item.IGun;
 import com.tacz.guns.client.gameplay.LocalPlayerBolt;
 import com.tacz.guns.client.gameplay.LocalPlayerDataHolder;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.config.Config.Gameplay.Handling.EManualBoltingType;
 import me.muksc.tacztweaks.mixininterface.feature.gameplay.handling.manual_bolting.ManualBoltingData;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,19 +23,26 @@ public abstract class LocalPlayerBoltMixin {
 
     @Shadow public abstract void bolt();
 
-    @WrapWithCondition(method = "tickAutoBolt", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerBolt;bolt()V"))
-    private boolean tacztweaks$tickAutoBolt$manualBolting(LocalPlayerBolt instance) {
-        return Config.Gameplay.Handling.manualBolting() == EManualBoltingType.DISABLED;
-    }
-
-    @Inject(method = "tickAutoBolt", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerBolt;bolt()V", shift = At.Shift.AFTER))
-    private void tacztweaks$tickAutoBolt$manualBolting$boltBeforeReload(CallbackInfo ci) {
+    /** Replace the complete auto-bolt transaction when manual bolting is enabled. */
+    @Inject(method = "tickAutoBolt", at = @At("HEAD"), cancellable = true)
+    private void tacztweaks$tickAutoBolt$manualBolting(CallbackInfo ci) {
         if (Config.Gameplay.Handling.manualBolting() == EManualBoltingType.DISABLED) return;
-        ManualBoltingData ext = ManualBoltingData.of(data);
-        if (!ext.tacztweaks$getBoltBeforeReload()) return;
+        ci.cancel();
 
-        bolt();
-        if (!data.isBolting && !data.clientStateLock) {
+        ItemStack mainHandItem = player.getMainHandItem();
+        if (!(mainHandItem.getItem() instanceof IGun iGun)) {
+            data.isBolting = false;
+            return;
+        }
+
+        ManualBoltingData ext = ManualBoltingData.of(data);
+        if (ext.tacztweaks$getBoltBeforeReload()) {
+            bolt();
+        }
+        if (data.isBolting && iGun.hasBulletInBarrel(mainHandItem)) {
+            data.isBolting = false;
+        }
+        if (ext.tacztweaks$getBoltBeforeReload() && !data.isBolting && !data.clientStateLock) {
             ext.tacztweaks$setBoltBeforeReload(false);
             IClientPlayerGunOperator.fromLocalPlayer(player).reload();
         }

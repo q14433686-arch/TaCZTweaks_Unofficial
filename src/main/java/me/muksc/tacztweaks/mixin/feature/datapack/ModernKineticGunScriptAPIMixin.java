@@ -10,6 +10,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.item.ModernKineticGunScriptAPI;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
+import me.muksc.tacztweaks.feature.datapack.BulletIndexContext;
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -31,18 +32,43 @@ public abstract class ModernKineticGunScriptAPIMixin {
 
     //? if >=1.21.11 {
     /*@WrapMethod(method = "runShootCycle")
-    private boolean tacztweaks$shootOnce$onInitBurst(
-        boolean consumeAmmo, GunData gunData, BulletData bulletData, IGunOperator gunOperator,
-        float shotDamageMultiplier, float inaccuracy, int soundDistance, boolean useSilenceSound,
-        float processedSpeed, int bulletAmount, Operation<Boolean> original,
-        @Share("pelletIndex") LocalIntRef pelletIndexRef
+    private boolean tacztweaks$runShootCycle$indexBurst(
+        boolean consumeAmmo,
+        GunData gunData,
+        BulletData bulletData,
+        IGunOperator gunOperator,
+        float shotDamageMultiplier,
+        float inaccuracy,
+        int soundDistance,
+        boolean useSilenceSound,
+        float processedSpeed,
+        int bulletAmount,
+        Operation<Boolean> original
     ) {
         try {
-            pelletIndexRef.set(0);
             return original.call(consumeAmmo, gunData, bulletData, gunOperator, shotDamageMultiplier,
                 inaccuracy, soundDistance, useSilenceSound, processedSpeed, bulletAmount);
         } finally {
             tacztweaks$burstIndex++;
+        }
+    }
+
+    @WrapMethod(method = "spawnProjectiles")
+    private void tacztweaks$spawnProjectiles$indexPellets(
+        GunData gunData,
+        BulletData bulletData,
+        IGunOperator gunOperator,
+        float shotDamageMultiplier,
+        float inaccuracy,
+        float processedSpeed,
+        int bulletAmount,
+        float pitch,
+        float yaw,
+        Operation<Void> original
+    ) {
+        try (BulletIndexContext.Scope ignored = BulletIndexContext.open(tacztweaks$burstIndex)) {
+            original.call(gunData, bulletData, gunOperator, shotDamageMultiplier, inaccuracy,
+                processedSpeed, bulletAmount, pitch, yaw);
         }
     }
     *///?} else {
@@ -58,9 +84,7 @@ public abstract class ModernKineticGunScriptAPIMixin {
             tacztweaks$burstIndex++;
         }
     }
-    //?}
 
-    //~ if >=1.21.11 'lambda$shootOnce$2' -> 'spawnProjectiles'
     @WrapOperation(method = "lambda$shootOnce$2", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z", remap = true))
     private boolean tacztweaks$shootOnce$apply(
         Level instance, Entity entity, Operation<Boolean> original,
@@ -75,4 +99,5 @@ public abstract class ModernKineticGunScriptAPIMixin {
         }
         return original.call(instance, entity);
     }
+    //?}
 }

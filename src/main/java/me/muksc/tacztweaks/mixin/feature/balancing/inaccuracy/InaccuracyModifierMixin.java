@@ -41,6 +41,7 @@ public abstract class InaccuracyModifierMixin {
         return original;
     }
 
+    //? if <1.21.11 {
     //~ environment environment_client
     @net.minecraftforge.api.distmarker.OnlyIn(net.minecraftforge.api.distmarker.Dist.CLIENT)
     @Inject(method = "buildNormal", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;"))
@@ -62,4 +63,5 @@ public abstract class InaccuracyModifierMixin {
         inaccuracy = (float) Config.Balancing.AimInaccuracy.eval(inaccuracy);
         aimInaccuracyRef.set(1.0F - inaccuracy);
     }
+    //?}
 }
