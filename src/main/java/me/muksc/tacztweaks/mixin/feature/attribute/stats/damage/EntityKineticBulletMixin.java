@@ -30,14 +30,16 @@ public abstract class EntityKineticBulletMixin {
     /** Transform the completed constructor state instead of its cache-assignment expression. */
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @Inject(method = "<init>(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/resources/ResourceLocation;ZLcom/tacz/guns/resource/pojo/data/gun/GunData;Lcom/tacz/guns/resource/pojo/data/gun/BulletData;)V", at = @At("TAIL"))
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     private void tacztweaks$init$attribute$stats$damage(
         EntityType<? extends Projectile> type,
         Level level,
         LivingEntity shooter,
         ItemStack gunItem,
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         ResourceLocation ammoId,
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         ResourceLocation gunId,
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         ResourceLocation gunDisplayId,
         boolean tracer,
         GunData gunData,

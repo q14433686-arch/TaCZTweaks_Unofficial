@@ -70,7 +70,6 @@ public abstract class SoundPlayManagerMixin {
         );
     }
 
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @WrapOperation(method = {
         "playDryFireSound",
         "playBoltSound",

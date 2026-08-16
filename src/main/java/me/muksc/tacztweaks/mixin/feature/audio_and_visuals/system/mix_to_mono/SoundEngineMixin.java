@@ -22,9 +22,9 @@ import java.util.concurrent.CompletableFuture;
 public abstract class SoundEngineMixin {
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @WrapOperation(method = "play", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/sounds/SoundBufferLibrary;getCompleteBuffer(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/concurrent/CompletableFuture;"))
-    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     private CompletableFuture<SoundBuffer> tacztweaks$play$mixToMono(
         SoundBufferLibrary library,
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         ResourceLocation id,
         Operation<CompletableFuture<SoundBuffer>> original
     ) {

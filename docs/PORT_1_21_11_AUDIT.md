@@ -17,9 +17,17 @@ Evidence used:
 - all three maintained TaCZ R2 branches for cross-branch API comparison;
 - Minecraft 26.1.2's merged named jar for APIs shared with 1.21.11;
 - Fabric API 0.141.6 Javadocs for the Resource Loader v1 transition;
-- a real Windows `:1.21.11-fabric:build` result: **BUILD SUCCESSFUL**;
+- a real Windows `:1.21.11-fabric:build` result for the pre-audit `.unofficial.1` candidate:
+  **BUILD SUCCESSFUL**;
+- a post-audit `.unofficial.2` build attempt that reached Java compilation and exposed four
+  unconverted `ResourceLocation` parameter lines in two newly multiline method declarations;
 - real client startup traces through Fabric Mixin preparation, TaCZ packet registration,
   LRTactical interface transformation, and synced-data initialization.
+
+The four post-audit Java errors are source-fixed by putting a Stonecutter replacement directive on
+each affected physical parameter line. All 178 immediate-line replacement directives were then
+checked for an ineffective/misplaced directive, with zero remaining. A fresh `.unofficial.2` build
+is still required before the current tree can be called build-verified.
 
 Compilation alone is not treated as runtime proof. Every result below says whether it is source-
 verified, build-verified, startup-verified, gated, or still requires a gameplay smoke test.
@@ -45,7 +53,7 @@ used to dismiss any Mixin warning or startup failure.
 
 | Change | Implementation | Status |
 |---|---|---|
-| `ResourceLocation` -> `Identifier` | Stonecutter replacements plus an explicit Identifier helper branch | Build-verified |
+| `ResourceLocation` -> `Identifier` | Stonecutter replacements plus an explicit Identifier helper branch | Pre-audit build-verified; post-audit multiline fix source-verified, rebuild pending |
 | `critereon` -> `criterion` | Package replacements for predicate codecs | Build-verified |
 | Tool tiers | `Tier/Tiers` -> `ToolMaterial` codec for modern versions | Build-verified |
 | Resource reload API | Local listener interface + Fabric Resource Loader v1 registration by explicit id | Build-verified; runtime reload pending |
