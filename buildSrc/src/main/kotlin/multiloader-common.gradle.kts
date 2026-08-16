@@ -114,6 +114,7 @@ val resourceProperties = extensions.create<ResourcePropertiesExtension>("resourc
         "pack_format" to when (val mcVersion = prop("minecraft.version")) {
             "1.20.1" -> "15"
             "1.21.1" -> "34"
+            "1.21.11" -> "75"
             else -> error("Couldn't detect pack_format for version: $mcVersion")
         },
         "java_version" to prop("java.version"),

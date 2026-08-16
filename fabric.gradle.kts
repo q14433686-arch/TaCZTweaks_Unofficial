@@ -101,7 +101,11 @@ dependencies {
     minecraft("com.mojang:minecraft:${prop("minecraft.version")}")
     mappings(loom.layered {
         officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${prop("minecraft.version")}:${libs("parchment")}@zip")
+        // Parchment does not publish 1.21.11 mappings. The target TaCZ R2 jar is
+        // built against Mojang's official names, so this node must stay official-only.
+        if (sc.current.version != "1.21.11") {
+            parchment("org.parchmentmc.data:parchment-${prop("minecraft.version")}:${libs("parchment")}@zip")
+        }
     })
     include(implementation(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:${libs("mixinsquared")}")) { }) { }
     modImplementation("net.fabricmc:fabric-loader:${libs("fabric.loader")}")
@@ -109,7 +113,14 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${libs("fabric.api")}")
     modImplementation("dev.isxander:yet-another-config-lib:${libs("yacl")}")
     run {
-        modImplementation("maven.modrinth:tacz-refabricated:${libs("tacz")}")
+        if (sc.current.version == "1.21.11") {
+            // [UNOFFICIAL] TaCZ Refabricated, CurseForge project 1627909, 1.21.11 R2.
+            // CurseMaven gives this large release artifact a reproducible Maven coordinate.
+            modImplementation("curse.maven:unofficial-tacz-refabricated-1627909:${libs("tacz")}")
+            modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${libs("forge-config-api-port")}")
+        } else {
+            modImplementation("maven.modrinth:tacz-refabricated:${libs("tacz")}")
+        }
         implementation("com.maydaymemory:mae:1.1.1")
         implementation("org.apache.commons:commons-math3:3.6.1")
         localRuntime("com.github.FiguraMC.luaj:luaj-core:3.0.8-figura")
