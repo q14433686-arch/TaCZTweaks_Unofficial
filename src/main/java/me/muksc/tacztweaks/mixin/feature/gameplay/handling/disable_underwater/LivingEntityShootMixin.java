@@ -17,8 +17,12 @@ import java.util.function.Supplier;
 public abstract class LivingEntityShootMixin {
     @Shadow @Final private LivingEntity shooter;
 
+    //? if >=1.21.11 {
+    /*@Inject(method = "shootInternal(Ljava/util/function/Supplier;Ljava/util/function/Supplier;JFZ)Lcom/tacz/guns/api/entity/ShootResult;", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/event/common/GunShootEvent;isCanceled()Z"), cancellable = true)
+    *///?} else {
     //~ if neoforge || fabric 'Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z' -> 'Lcom/tacz/guns/api/event/common/GunShootEvent;isCanceled()Z'
     @Inject(method = "shoot(Ljava/util/function/Supplier;Ljava/util/function/Supplier;JFZ)Lcom/tacz/guns/api/entity/ShootResult;", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z"), cancellable = true)
+    //?}
     private void tacztweaks$shoot$disableUnderwater(Supplier<Float> pitch, Supplier<Float> yaw, long timestamp, float chargeProgress, boolean hasChargeContext, CallbackInfoReturnable<ShootResult> cir) {
         if (!Config.Gameplay.Handling.disableUnderwater()) return;
         if (shooter.isUnderWater()) cir.setReturnValue(ShootResult.FORGE_EVENT_CANCEL);

@@ -18,7 +18,11 @@ public abstract class LivingEntityShootMixin {
 
     @Definition(id = "sprintTimeS", field = "Lcom/tacz/guns/entity/shooter/ShooterDataHolder;sprintTimeS:F")
     @Expression("?.sprintTimeS > 0.0")
+    //? if >=1.21.11 {
+    /*@ModifyExpressionValue(method = "shootInternal(Ljava/util/function/Supplier;Ljava/util/function/Supplier;JFZ)Lcom/tacz/guns/api/entity/ShootResult;", at = @At("MIXINEXTRAS:EXPRESSION"))
+    *///?} else {
     @ModifyExpressionValue(method = "shoot(Ljava/util/function/Supplier;Ljava/util/function/Supplier;JFZ)Lcom/tacz/guns/api/entity/ShootResult;", at = @At("MIXINEXTRAS:EXPRESSION"))
+    //?}
     private boolean tacztweaks$shoot$attribute$handling$shootWhileSprinting(boolean original) {
         if (!shooter.getAttributes().hasAttribute(DeferredHolderExt.valueOrDelegate(ModAttributes.SHOOT_WHILE_SPRINTING))) return original;
         double value = shooter.getAttributeValue(DeferredHolderExt.valueOrDelegate(ModAttributes.SHOOT_WHILE_SPRINTING));
