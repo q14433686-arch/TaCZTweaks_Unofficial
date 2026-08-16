@@ -11,6 +11,7 @@ import com.mojang.datafixers.util.Either
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderOwner
 import net.minecraft.resources.ResourceKey
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.tags.TagKey
 import net.minecraftforge.registries.RegistryObject
@@ -32,6 +33,7 @@ class DeferredHolder<R, T : R>(
     override fun isBound(): Boolean =
         obj.isPresent
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     override fun `is`(id: ResourceLocation): Boolean =
         id == obj.key?.location()
 
@@ -65,6 +67,7 @@ fun <R, T : R> RegistryObject<T>.wrap(): DeferredHolder<R, T> = DeferredHolder(t
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderOwner
 import net.minecraft.resources.ResourceKey
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.tags.TagKey
 import java.util.Optional
@@ -83,6 +86,7 @@ class DeferredHolder<R, T : R>(
 
     override fun isBound(): Boolean = holder.isBound
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     override fun `is`(location: ResourceLocation): Boolean = holder.`is`(location)
 
     override fun `is`(resourceKey: ResourceKey<R>): Boolean = holder.`is`(resourceKey)

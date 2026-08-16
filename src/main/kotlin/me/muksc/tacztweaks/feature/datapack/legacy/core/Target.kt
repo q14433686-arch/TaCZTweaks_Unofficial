@@ -15,8 +15,11 @@ import me.muksc.tacztweaks.core.codec.strictOptionalFieldOf
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet
 import me.muksc.tacztweaks.mixininterop.burstIndex
 import me.muksc.tacztweaks.mixininterop.pelletIndex
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.EntityPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.MinMaxBounds
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.StringRepresentable
@@ -27,6 +30,7 @@ import kotlin.jvm.optionals.getOrNull
 sealed class Target(
     val type: ETargetType
 ) {
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     abstract fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean
 
     enum class ETargetType(
@@ -55,6 +59,7 @@ sealed class Target(
     }
 
     class AllOf(val terms: List<Target>) : Target(ETargetType.ALL_OF) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             terms.all { it.test(entity, weaponId, damage) }
 
@@ -66,6 +71,7 @@ sealed class Target(
     }
 
     class AnyOf(val terms: List<Target>) : Target(ETargetType.ANY_OF) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             terms.any { it.test(entity, weaponId, damage) }
 
@@ -77,6 +83,7 @@ sealed class Target(
     }
 
     class Inverted(val term: Target) : Target(ETargetType.INVERTED) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             !term.test(entity, weaponId, damage)
 
@@ -87,18 +94,22 @@ sealed class Target(
         }
     }
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     class Gun(val values: List<ResourceLocation>) : Target(ETargetType.GUN) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             values.contains(weaponId)
 
         companion object {
             val CODEC: MapCodec<Gun> = RecordCodecBuilder.mapCodec { it.group(
+                //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                 Codec.list(ResourceLocation.CODEC).strictOptionalFieldOf("values", emptyList()).forGetter(Gun::values)
             ).apply(it, ::Gun) }
         }
     }
 
     class Category(val values: List<String>) : Target(ETargetType.CATEGORY) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
             val index = TimelessAPI.getCommonGunIndex(weaponId).getOrNull() ?: return false
             return values.contains(index.type.lowercase(Locale.US))
@@ -111,12 +122,15 @@ sealed class Target(
         }
     }
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     class Ammo(val values: List<ResourceLocation>) : Target(ETargetType.AMMO) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             entity != null && values.contains(entity.ammoId)
 
         companion object {
             val CODEC: MapCodec<Ammo> = RecordCodecBuilder.mapCodec { it.group(
+                //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                 Codec.list(ResourceLocation.CODEC).strictOptionalFieldOf("values", emptyList()).forGetter(Ammo::values)
             ).apply(it, ::Ammo) }
         }
@@ -134,6 +148,7 @@ sealed class Target(
             }
         }
 
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean = regex.matches(when (match) {
             EMatchType.GUN -> weaponId.toString()
             EMatchType.AMMO -> entity?.ammoId?.toString() ?: ""
@@ -148,6 +163,7 @@ sealed class Target(
     }
 
     class Predicate(val predicate: EntityPredicate) : Target(ETargetType.PREDICATE) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             entity != null && predicate.matches(entity.level() as ServerLevel, entity.position(), entity)
 
@@ -159,6 +175,7 @@ sealed class Target(
     }
 
     class Damage(val values: List<ValueRange>) : Target(ETargetType.DAMAGE) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             entity != null && values.any { it.contains(damage) }
 
@@ -170,6 +187,7 @@ sealed class Target(
     }
 
     class Speed(val values: List<ValueRange>) : Target(ETargetType.SPEED) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             entity != null && values.any { it.contains(entity.deltaMovement.length() * 10) }
 
@@ -181,6 +199,7 @@ sealed class Target(
     }
 
     object Silenced : Target(ETargetType.SILENCED) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
             val owner = entity?.owner as? LivingEntity ?: return false
             val operator = IGunOperator.fromLivingEntity(owner)
@@ -194,6 +213,7 @@ sealed class Target(
     class BurstIndex(
         val index: MinMaxBounds.Ints
     ) : Target(ETargetType.BURST_INDEX) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
             val ext = TaCZTweaksBullet.of(entity) ?: return false
             return index.matches(ext.burstIndex)
@@ -209,6 +229,7 @@ sealed class Target(
     class PelletIndex(
         val index: MinMaxBounds.Ints
     ) : Target(ETargetType.PELLET_INDEX) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
             val ext = TaCZTweaksBullet.of(entity) ?: return false
             return index.matches(ext.pelletIndex)
@@ -222,6 +243,7 @@ sealed class Target(
     }
 
     class RandomChance(val chance: Float) : Target(ETargetType.RANDOM_CHANCE) {
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
             entity != null && entity.random.nextFloat() < chance
 

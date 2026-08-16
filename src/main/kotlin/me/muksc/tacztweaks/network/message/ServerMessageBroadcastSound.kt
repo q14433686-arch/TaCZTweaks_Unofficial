@@ -7,10 +7,12 @@ import me.muksc.tacztweaks.core.network.CustomPacketPayloadType
 import me.muksc.tacztweaks.core.codec.StreamCodec
 import net.minecraft.client.Minecraft
 import net.minecraft.network.FriendlyByteBuf
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 
 class ServerMessageBroadcastSound(
     val entityId: Int,
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     val soundName: ResourceLocation,
     val volume: Float,
     val pitch: Float,
@@ -23,12 +25,14 @@ class ServerMessageBroadcastSound(
         val STREAM_CODEC: StreamCodec<FriendlyByteBuf, ServerMessageBroadcastSound> =
             StreamCodec.of({ buf, packet ->
                 buf.writeInt(packet.entityId)
+                //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                 buf.writeResourceLocation(packet.soundName)
                 buf.writeFloat(packet.volume)
                 buf.writeFloat(packet.pitch)
                 buf.writeInt(packet.distance)
             }, { buf ->
                 val entityId = buf.readInt()
+                //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                 val soundName = buf.readResourceLocation()
                 val volume = buf.readFloat()
                 val pitch = buf.readFloat()

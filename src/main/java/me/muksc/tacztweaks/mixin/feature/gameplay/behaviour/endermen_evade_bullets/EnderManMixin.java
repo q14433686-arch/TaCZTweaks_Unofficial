@@ -18,6 +18,7 @@ public abstract class EnderManMixin {
     @Definition(id = "is", method = "Lnet/minecraft/world/damagesource/DamageSource;is(Lnet/minecraft/tags/TagKey;)Z")
     @Definition(id = "IS_PROJECTILE", field = "Lnet/minecraft/tags/DamageTypeTags;IS_PROJECTILE:Lnet/minecraft/tags/TagKey;")
     @Expression("?.is(IS_PROJECTILE)")
+    //~ if >=1.21.11 'method = "hurt"' -> 'method = "hurtServer"'
     @WrapOperation(method = "hurt", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean tacztweaks$hurt$endermenEvadeBullets$markAsProjectile(DamageSource instance, TagKey<DamageType> damageTypeKey, Operation<Boolean> original) {
         return original.call(instance, damageTypeKey)

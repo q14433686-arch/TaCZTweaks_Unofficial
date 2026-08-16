@@ -113,6 +113,7 @@
     "feature.general.compatibility.crawl.LocalPlayerCrawlMixin",
     "feature.general.compatibility.firstaid.EntityKineticBulletMixin",
     "feature.general.compatibility.firstaid.EventHandlerMixin",
+    "feature.general.compatibility.lrtactical.BuiltinMeleeWeaponMixin",
     "feature.general.compatibility.lrtactical.MeleeItemMixin_0_3_0",
     "feature.general.compatibility.lrtactical.MeleeItemMixin_0_4_0",
     "feature.general.compatibility.lso.CommonForgeEventsMixin",

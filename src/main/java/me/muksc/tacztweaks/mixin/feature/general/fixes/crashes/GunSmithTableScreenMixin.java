@@ -4,6 +4,7 @@ import com.tacz.guns.client.gui.GunSmithTableScreen;
 import com.tacz.guns.inventory.GunSmithTableMenu;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Mixin(GunSmithTableScreen.class)
 public abstract class GunSmithTableScreenMixin extends AbstractContainerScreen<GunSmithTableMenu> {
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @Shadow(remap = false) private List<ResourceLocation> selectedRecipeList;
 
     public GunSmithTableScreenMixin(GunSmithTableMenu pMenu, Inventory pPlayerInventory, Component pTitle) {

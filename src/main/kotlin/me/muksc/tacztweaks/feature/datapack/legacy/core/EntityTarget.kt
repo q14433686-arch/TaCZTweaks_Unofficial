@@ -7,6 +7,7 @@ import me.muksc.tacztweaks.core.codec.DispatchCodec
 import me.muksc.tacztweaks.core.codec.EntityPredicateCodec
 import me.muksc.tacztweaks.core.extension.id
 import me.muksc.tacztweaks.core.registry.PlatformRegistries
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.EntityPredicate
 import net.minecraft.core.registries.Registries
 import net.minecraft.server.level.ServerLevel

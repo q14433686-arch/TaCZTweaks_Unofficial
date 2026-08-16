@@ -200,7 +200,9 @@ stonecutter replacements {
             "net/minecraftforge/common/ForgeConfigSpec"
         )
         val to = "net/neoforged/neoforge/common/ModConfigSpec"
-        from.forEach { string(stonecutter.current.parsed >= "1.21", "config_spec") { replace(it, to) } }
+        // Sh1roCu's 1.21.1 port uses NeoForge's ModConfigSpec. The unofficial
+        // 1.21.11 R2 port moved back to ForgeConfigSpec through Forge Config API Port.
+        from.forEach { string(sc.current.version == "1.21.1", "config_spec") { replace(it, to) } }
     }
 }
 

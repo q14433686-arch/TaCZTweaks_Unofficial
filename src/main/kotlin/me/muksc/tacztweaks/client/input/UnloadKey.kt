@@ -12,7 +12,7 @@ object UnloadKey {
     val KEY = KeyMapping(
         TaCZTweaks.key("unload"),
         InputConstants.UNKNOWN.value,
-        TaCZTweaks.keyCategory("mod")
+        ModKeyCategory.VALUE
     )
 
     fun onEndClientTick() {

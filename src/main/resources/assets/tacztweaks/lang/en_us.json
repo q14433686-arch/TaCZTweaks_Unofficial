@@ -236,12 +236,13 @@
   "tacztweaks.attribute.capability.reloading": "Reloading",
   "tacztweaks.attribute.capability.refitting": "Refitting",
   "tacztweaks.attribute.handling.shoot_while_sprinting": "Shoot While Sprinting",
-  "tacztweaks.attribute.handling.sprint_while_reloading":"Sprint While Reloading",
+  "tacztweaks.attribute.handling.sprint_while_reloading": "Sprint While Reloading",
   "tacztweaks.commands.refill_ammo.success.single": "Refilled ammo for %1$s",
   "tacztweaks.commands.refill_ammo.success.multiple": "Refilled ammo for %1$s players",
   "tacztweaks.datapack.bullet_sounds.sound_physics_missing": "Sound Physics Remastered is required for some of the installed packs to fully function, but it is not currently installed.",
   "tacztweaks.datapack.data_manager.error": "There was an error while loading %1$s.\nCheck the logs for more detail.",
   "tacztweaks.compatibility_manager.error": "An error occurred with the compatibility code for the mod(s) listed below.\nRelated features might not work correctly.\nCheck the logs for more detail.\n%1$s",
   "effect.tacztweaks.disarm": "Disarmed",
-  "effect.tacztweaks.endless_ammo": "Endless Ammo"
+  "effect.tacztweaks.endless_ammo": "Endless Ammo",
+  "key.category.tacztweaks.mod": "TaCZ Tweaks"
 }

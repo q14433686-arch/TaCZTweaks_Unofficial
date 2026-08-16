@@ -8,6 +8,7 @@ import me.muksc.tacztweaks.core.codec.DispatchCodec
 import me.muksc.tacztweaks.core.codec.DoublesMinMaxBoundsCodec
 import me.muksc.tacztweaks.core.codec.LootItemConditionCodec
 import me.muksc.tacztweaks.core.codec.strictOptionalFieldOf
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.MinMaxBounds
 import net.minecraft.core.Registry
 import net.minecraft.resources.ResourceKey

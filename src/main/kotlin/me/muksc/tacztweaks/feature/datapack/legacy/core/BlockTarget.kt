@@ -8,11 +8,13 @@ import me.muksc.tacztweaks.core.codec.DispatchCodec
 import me.muksc.tacztweaks.core.codec.TierSortingRegistryCodec
 import me.muksc.tacztweaks.core.extension.id
 import me.muksc.tacztweaks.core.registry.PlatformRegistries
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.BlockPredicate
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.TagKey
+//~ if >=1.21.11 'net.minecraft.world.item.Tier' -> 'net.minecraft.world.item.ToolMaterial'
 import net.minecraft.world.item.Tier
 import net.minecraft.world.level.block.Block as MCBlock
 import net.minecraft.world.level.block.state.BlockState
@@ -121,9 +123,10 @@ sealed class BlockTarget(
         }
     }
 
+    //~ if >=1.21.11 'val tier: Tier' -> 'val tier: ToolMaterial'
     class HardnessTier(val tier: Tier) : BlockTarget(EBlockTargetType.TIER) {
         override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            //? if 1.21.1 {
+            //? if >=1.21.1 {
             /*!state.`is`(tier.incorrectBlocksForDrops)
             *///?} else if fabric {
             /*tier.level >= net.fabricmc.fabric.api.mininglevel.v1.MiningLevelManager.getRequiredMiningLevel(state)

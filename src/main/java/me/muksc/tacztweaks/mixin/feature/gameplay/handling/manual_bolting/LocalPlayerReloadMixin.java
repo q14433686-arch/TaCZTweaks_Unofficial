@@ -25,6 +25,7 @@ public abstract class LocalPlayerReloadMixin {
     @Shadow @Final private LocalPlayerDataHolder data;
     @Shadow @Final private LocalPlayer player;
 
+    //~ if >=1.21.11 'lambda$reload$2' -> 'reloadWithDisplay'
     @Inject(method = "lambda$reload$2", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;lockState(Ljava/util/function/Predicate;)V"), cancellable = true)
     private void tacztweaks$reload$manualBolting$boltBeforeReload(
         CallbackInfo ci,

@@ -16,7 +16,7 @@ class FlagStatusEffect(category: MobEffectCategory, color: Int) : MobEffect(cate
     override fun applyEffectTick(livingEntity: LivingEntity, amplifier: Int) = Unit
 
     override fun isDurationEffectTick(duration: Int, amplifier: Int): Boolean = false
-    //?} else {
+    //?} else if <1.21.11 {
     /*override fun applyEffectTick(livingEntity: LivingEntity, amplifier: Int): Boolean = false
     *///?}
 

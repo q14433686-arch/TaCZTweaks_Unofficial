@@ -8,6 +8,7 @@ import me.muksc.tacztweaks.feature.datapack.legacy.core.BlockTestable
 import me.muksc.tacztweaks.feature.datapack.legacy.core.EntityTestable
 import me.muksc.tacztweaks.feature.datapack.legacy.core.Target
 import me.muksc.tacztweaks.feature.datapack.legacy.core.ValueRange
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
@@ -35,6 +36,7 @@ sealed class BulletSounds(
 
     open class Sound(
         val target: List<Target>,
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         val sound: ResourceLocation,
         val volume: Float,
         val pitch: Float,
@@ -45,6 +47,7 @@ sealed class BulletSounds(
         companion object {
             val CODEC: Codec<Sound> = RecordCodecBuilder.create { instance -> instance.group(
                 singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(Sound::target),
+                //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                 ResourceLocation.CODEC.fieldOf("sound").forGetter(Sound::sound),
                 Codec.FLOAT.strictOptionalFieldOf("volume", 1.0F).forGetter(Sound::volume),
                 Codec.FLOAT.strictOptionalFieldOf("pitch", 1.0F).forGetter(Sound::pitch),
@@ -76,6 +79,7 @@ sealed class BulletSounds(
         class BlockSound(
             target: List<Target>,
             val blocks: List<BlockTestable>,
+            //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
             sound: ResourceLocation,
             volume: Float,
             pitch: Float,
@@ -85,6 +89,7 @@ sealed class BulletSounds(
                 val CODEC: Codec<BlockSound> = RecordCodecBuilder.create { instance -> instance.group(
                     singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(BlockSound::target),
                     Codec.list(BlockTestable.CODEC).strictOptionalFieldOf("blocks", emptyList()).forGetter(BlockSound::blocks),
+                    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                     ResourceLocation.CODEC.fieldOf("sound").forGetter(BlockSound::sound),
                     Codec.FLOAT.strictOptionalFieldOf("volume", 1.0F).forGetter(BlockSound::volume),
                     Codec.FLOAT.strictOptionalFieldOf("pitch", 1.0F).forGetter(BlockSound::pitch),
@@ -116,6 +121,7 @@ sealed class BulletSounds(
         class EntitySound(
             target: List<Target>,
             val entities: List<EntityTestable>,
+            //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
             sound: ResourceLocation,
             volume: Float,
             pitch: Float,
@@ -125,6 +131,7 @@ sealed class BulletSounds(
                 val CODEC: Codec<EntitySound> = RecordCodecBuilder.create { instance -> instance.group(
                     singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(EntitySound::target),
                     Codec.list(EntityTestable.CODEC).strictOptionalFieldOf("entities", emptyList()).forGetter(EntitySound::entities),
+                    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
                     ResourceLocation.CODEC.fieldOf("sound").forGetter(EntitySound::sound),
                     Codec.FLOAT.strictOptionalFieldOf("volume", 1.0F).forGetter(EntitySound::volume),
                     Codec.FLOAT.strictOptionalFieldOf("pitch", 1.0F).forGetter(EntitySound::pitch),

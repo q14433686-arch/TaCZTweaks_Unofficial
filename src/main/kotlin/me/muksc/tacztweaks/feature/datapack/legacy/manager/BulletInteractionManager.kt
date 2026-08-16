@@ -21,6 +21,7 @@ import me.muksc.tacztweaks.mixin.accessor.EntityKineticBulletAccessor
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet
 import me.muksc.tacztweaks.mixininterop.*
 import net.minecraft.core.BlockPos
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -57,6 +58,7 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
 
 object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_interactions", COMPARATOR), IdentifiableResourceReloadListener {
     private val ID = TaCZTweaks.id("bullet_interactions")
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     override fun id(): ResourceLocation = ID
 
     override val debugEnabled: Boolean get() = Config.General.Debug.bulletInteractions()
@@ -91,6 +93,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_int
         location: Vec3,
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
         interaction.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && selector(interaction).anyOrEmpty(predicate)
@@ -100,6 +103,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_int
         entity: EntityKineticBullet,
         location: Vec3,
         predicate: (T) -> Boolean
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
         interaction.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && predicate(interaction)

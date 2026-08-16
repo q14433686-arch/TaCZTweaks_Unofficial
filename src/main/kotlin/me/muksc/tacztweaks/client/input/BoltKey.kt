@@ -11,7 +11,7 @@ object BoltKey {
     val KEY = KeyMapping(
         TaCZTweaks.key("bolt"),
         InputConstants.UNKNOWN.value,
-        TaCZTweaks.keyCategory("mod")
+        ModKeyCategory.VALUE
     )
 
     fun onEndClientTick() {

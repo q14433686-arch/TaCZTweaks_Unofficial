@@ -2,9 +2,13 @@ package me.muksc.tacztweaks.core.codec
 
 //? if >=1.21 {
 /*import com.mojang.serialization.Codec
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.BlockPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.EntityPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.ItemPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.MinMaxBounds
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition
 import net.minecraft.world.level.storage.loot.providers.number.NumberProvider
@@ -28,9 +32,13 @@ import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.mojang.serialization.Codec
 import com.mojang.serialization.DataResult
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.BlockPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.EntityPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.ItemPredicate
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.MinMaxBounds
 import net.minecraft.util.ExtraCodecs
 import net.minecraft.world.level.storage.loot.Deserializers

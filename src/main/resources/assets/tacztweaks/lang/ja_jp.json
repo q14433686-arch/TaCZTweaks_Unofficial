@@ -236,12 +236,13 @@
   "tacztweaks.attribute.capability.reloading": "リロード",
   "tacztweaks.attribute.capability.refitting": "カスタマイズ",
   "tacztweaks.attribute.handling.shoot_while_sprinting": "ダッシュ中の射撃",
-  "tacztweaks.attribute.handling.sprint_while_reloading":"ダッシュ中のリロード",
+  "tacztweaks.attribute.handling.sprint_while_reloading": "ダッシュ中のリロード",
   "tacztweaks.commands.refill_ammo.success.single": "%1$sの弾薬を補充しました",
   "tacztweaks.commands.refill_ammo.success.multiple": "%1$s人のプレイヤーの弾薬を補充しました",
   "tacztweaks.datapack.bullet_sounds.sound_physics_missing": "インストールされている一部のパックの完全な動作のためにはSound Physics Remasteredが必要ですが、現在インストールされていません。",
   "tacztweaks.datapack.data_manager.error": "%1$sを読み込み中にエラーが発生しました。\n詳細はログを確認してください。",
   "tacztweaks.compatibility_manager.error": "以下のModとの互換性コードを実行中にエラーが発生しました。\n関連する機能が正常に動作しない可能性があります。\n詳細はログを確認してください。\n%1$s",
   "effect.tacztweaks.disarm": "無力化",
-  "effect.tacztweaks.endless_ammo": "無限弾薬"
+  "effect.tacztweaks.endless_ammo": "無限弾薬",
+  "key.category.tacztweaks.mod": "TaCZ Tweaks"
 }

@@ -18,6 +18,7 @@ import me.muksc.tacztweaks.registry.ModStatusEffects
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentUtils
 import net.minecraft.network.chat.MutableComponent
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -27,6 +28,7 @@ object TaCZTweaks {
     const val MOD_NAME = "TaCZ Tweaks"
     val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     fun id(path: String): ResourceLocation = Identifier(MOD_ID, path)
 
     fun translatable(key: String, vararg args: Any?): MutableComponent = Component.translatable("$MOD_ID.$key", *args)

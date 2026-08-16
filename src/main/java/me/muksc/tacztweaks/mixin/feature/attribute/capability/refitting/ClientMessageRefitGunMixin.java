@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class ClientMessageRefitGunMixin {
     //? if forge {
     @ModifyExpressionValue(method = "lambda$handle$0", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))
-    //?} else fabric && 1.20.1 {
+    //?} else if fabric && (1.20.1 || >=1.21.11) {
     /*@ModifyExpressionValue(method = "handle", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))
     *///?} else if (fabric && 1.21.1) || neoforge {
     /*@ModifyExpressionValue(method = "lambda$handle$3", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))

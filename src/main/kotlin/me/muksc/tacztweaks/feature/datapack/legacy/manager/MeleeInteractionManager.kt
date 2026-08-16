@@ -8,6 +8,7 @@ import me.muksc.tacztweaks.core.anyOrEmpty
 import me.muksc.tacztweaks.core.tacz.GunStack
 import me.muksc.tacztweaks.feature.datapack.legacy.MeleeInteraction
 import me.muksc.tacztweaks.feature.general.compatibility.LRTacticalManager
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.LivingEntity
@@ -25,6 +26,7 @@ private val COMPARATOR = compareBy<MeleeInteraction> { it.priority }
 
 object MeleeInteractionManager : BaseDataManager<MeleeInteraction>("melee_interactions", COMPARATOR) {
     val ID = TaCZTweaks.id("melee_interactions")
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     override fun id(): ResourceLocation = ID
 
     override val debugEnabled: Boolean get() = Config.General.Debug.meleeInteractions()
@@ -33,10 +35,12 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>("melee_intera
         MeleeInteraction.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow()
 
     private inline fun <reified T : MeleeInteraction, E> getMeleeInteraction(
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         weaponId: ResourceLocation,
         damage: Float,
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
         interaction.target.anyOrEmpty { it.test(null, weaponId, damage) }
             && selector(interaction).anyOrEmpty(predicate)

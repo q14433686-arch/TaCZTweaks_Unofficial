@@ -23,6 +23,7 @@ public abstract class EntityKineticBulletMixin {
     @Definition(id = "getCache", method = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;")
     @Definition(id = "ID", field = "Lcom/tacz/guns/resource/modifier/custom/DamageModifier;ID:Ljava/lang/String;")
     @Expression("this.damageAmount = @((LinkedList) ?.getCache(ID))")
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @ModifyExpressionValue(method = "<init>(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/resources/ResourceLocation;ZLcom/tacz/guns/resource/pojo/data/gun/GunData;Lcom/tacz/guns/resource/pojo/data/gun/BulletData;)V", at = @At("MIXINEXTRAS:EXPRESSION"))
     private LinkedList<ExtraDamage.DistanceDamagePair> tacztweaks$init$attribute$stats$damage(
         LinkedList<ExtraDamage.DistanceDamagePair> original,

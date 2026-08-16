@@ -10,11 +10,21 @@ import net.minecraft.client.player.LocalPlayer
 
 object TiltGunKey {
     @JvmField
+    //? if >=1.21.11 {
+    /*val KEY = ToggleKeyMapping(
+        TaCZTweaks.key("tiltGun"),
+        InputConstants.UNKNOWN.value,
+        ModKeyCategory.VALUE,
+        { Config.KeyActions.TiltGun.type().isToggle() },
+        false
+    )
+    *///?} else {
     val KEY = ToggleKeyMapping(
         TaCZTweaks.key("tiltGun"),
         InputConstants.UNKNOWN.value,
-        TaCZTweaks.keyCategory("mod")
+        ModKeyCategory.VALUE
     ) { Config.KeyActions.TiltGun.type().isToggle() }
+    //?}
 
     @JvmStatic
     fun isActive(player: LocalPlayer): Boolean =

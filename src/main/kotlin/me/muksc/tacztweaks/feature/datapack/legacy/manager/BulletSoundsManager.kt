@@ -16,6 +16,7 @@ import me.muksc.tacztweaks.network.message.ServerMessageAirspaceSounds
 import me.muksc.tacztweaks.network.message.ServerMessageSoundPhysicsRequired
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -39,6 +40,7 @@ private val COMPARATOR = compareBy<BulletSounds> { it.priority }
 
 object BulletSoundsManager : BaseDataManager<BulletSounds>("bullet_sounds", COMPARATOR) {
     private val ID = TaCZTweaks.id("bullet_sounds")
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     override fun id(): ResourceLocation = ID
 
     override val debugEnabled: Boolean get() = Config.General.Debug.bulletSounds()
@@ -56,6 +58,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>("bullet_sounds", COMP
     private inline fun <reified T : BulletSounds> getSounds(
         entity: EntityKineticBullet,
         location: Vec3
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ) : List<Pair<ResourceLocation, T>> = byType<T>().entries.filter { (_, sounds) ->
         sounds.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
     }.map { it.toPair() }
@@ -63,6 +66,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>("bullet_sounds", COMP
     private inline fun <reified T : BulletSounds> getSound(
         entity: EntityKineticBullet,
         location: Vec3
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, sounds) ->
         sounds.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
     }?.toPair()
@@ -72,6 +76,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>("bullet_sounds", COMP
         location: Vec3,
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, sounds) ->
         sounds.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && selector(sounds).anyOrEmpty(predicate)

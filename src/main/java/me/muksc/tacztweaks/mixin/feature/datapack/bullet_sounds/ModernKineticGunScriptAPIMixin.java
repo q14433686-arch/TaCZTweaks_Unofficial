@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = ModernKineticGunScriptAPI.class, remap = false)
 public abstract class ModernKineticGunScriptAPIMixin {
+    //~ if >=1.21.11 'lambda$shootOnce$2' -> 'spawnProjectiles'
     @WrapOperation(method = "lambda$shootOnce$2", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/gun/AbstractGunItem;doBulletSpread(Lcom/tacz/guns/entity/shooter/ShooterDataHolder;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/projectile/Projectile;IFFFF)V"))
     private void tacztweaks$shootOnce$handleAirspace(AbstractGunItem instance, ShooterDataHolder dataHolder, ItemStack gunItem, LivingEntity shooter, Projectile projectile, int bulletCnt, float processedSpeed, float inaccuracy, float pitch, float yaw, Operation<Void> original) {
         original.call(instance, dataHolder, gunItem, shooter, projectile, bulletCnt, processedSpeed, inaccuracy, pitch, yaw);

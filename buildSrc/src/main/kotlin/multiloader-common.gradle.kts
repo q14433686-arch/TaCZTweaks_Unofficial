@@ -18,7 +18,6 @@ base {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(prop("java.version"))
-        vendor = JvmVendorSpec.JETBRAINS
     }
     withSourcesJar()
 }

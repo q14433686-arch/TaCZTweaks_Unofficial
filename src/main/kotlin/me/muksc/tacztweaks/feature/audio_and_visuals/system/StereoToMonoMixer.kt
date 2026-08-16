@@ -4,6 +4,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.hash.Hashing
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.core.GAME_DIR
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -21,6 +22,7 @@ object StereoToMonoMixer {
     private val memoryCache = CacheBuilder.newBuilder()
         .maximumSize(100)
         .expireAfterWrite(10.minutes.toJavaDuration())
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         .build<ResourceLocation, ByteBuffer>()
     private val CACHE_DIR = GAME_DIR.resolve(".cache/${TaCZTweaks.MOD_ID}")
 
@@ -54,6 +56,7 @@ object StereoToMonoMixer {
         }
     }
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     fun computeIfAbsent(id: ResourceLocation, buffer: ByteBuffer, block: () -> ByteBuffer): ByteBuffer {
         memoryCache.getIfPresent(id)?.let { return it.duplicateOrdered() }
         val path = getCachePath(buffer)
@@ -68,6 +71,7 @@ object StereoToMonoMixer {
     }
 
     @JvmStatic
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     fun process(id: ResourceLocation, buffer: ByteBuffer, format: AudioFormat): ByteBuffer? {
         if (format.channels == 1) return buffer
         val buffer = buffer.sliceOrdered()

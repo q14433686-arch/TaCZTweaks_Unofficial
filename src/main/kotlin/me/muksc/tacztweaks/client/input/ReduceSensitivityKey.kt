@@ -9,11 +9,21 @@ import net.minecraft.client.player.LocalPlayer
 
 object ReduceSensitivityKey {
     @JvmField
+    //? if >=1.21.11 {
+    /*val KEY = ToggleKeyMapping(
+        TaCZTweaks.key("reduceSensitivity"),
+        InputConstants.UNKNOWN.value,
+        ModKeyCategory.VALUE,
+        { Config.KeyActions.ReduceSensitivity.type().isToggle() },
+        false
+    )
+    *///?} else {
     val KEY = ToggleKeyMapping(
         TaCZTweaks.key("reduceSensitivity"),
         InputConstants.UNKNOWN.value,
-        TaCZTweaks.keyCategory("mod")
+        ModKeyCategory.VALUE
     ) { Config.KeyActions.ReduceSensitivity.type().isToggle() }
+    //?}
 
     @JvmStatic
     fun getCurrentSensitivityMultiplier(player: LocalPlayer): Double {

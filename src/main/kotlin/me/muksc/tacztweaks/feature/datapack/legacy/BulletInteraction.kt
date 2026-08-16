@@ -7,6 +7,7 @@ import me.muksc.tacztweaks.core.codec.*
 import me.muksc.tacztweaks.feature.datapack.legacy.core.BlockTestable
 import me.muksc.tacztweaks.feature.datapack.legacy.core.EntityTestable
 import me.muksc.tacztweaks.feature.datapack.legacy.core.Target
+//~ if >=1.21.11 'net.minecraft.advancements.critereon' -> 'net.minecraft.advancements.criterion'
 import net.minecraft.advancements.critereon.ItemPredicate
 import net.minecraft.commands.arguments.blocks.BlockInput
 import net.minecraft.world.level.block.Blocks

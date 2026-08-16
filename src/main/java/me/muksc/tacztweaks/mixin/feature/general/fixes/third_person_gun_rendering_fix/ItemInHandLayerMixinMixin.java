@@ -1,5 +1,6 @@
 package me.muksc.tacztweaks.mixin.feature.general.fixes.third_person_gun_rendering_fix;
 
+//? if <1.21.11 {
 import com.bawnorton.mixinsquared.TargetHandler;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -35,3 +36,11 @@ public abstract class ItemInHandLayerMixinMixin {
         HumanoidOffhandRender.renderGun(livingEntity, poseStack, buffer, packedLight);
     }
 }
+//?} else {
+/*import net.minecraft.client.Minecraft;
+import org.spongepowered.asm.mixin.Mixin;
+
+// R2 already carries the corrected render-state implementation in TaCZ's ItemInHandLayerMixin.
+@Mixin(Minecraft.class)
+public abstract class ItemInHandLayerMixinMixin { }
+*///?}

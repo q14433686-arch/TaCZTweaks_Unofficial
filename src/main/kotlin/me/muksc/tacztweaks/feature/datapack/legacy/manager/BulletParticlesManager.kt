@@ -23,6 +23,7 @@ import net.minecraft.commands.arguments.coordinates.WorldCoordinate
 import net.minecraft.commands.arguments.coordinates.WorldCoordinates
 import net.minecraft.core.particles.ParticleOptions
 import net.minecraft.resources.ResourceKey
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
@@ -45,6 +46,7 @@ private val COMPARATOR = compareBy<BulletParticles> { it.priority }
 
 object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particles", COMPARATOR) {
     private val ID = TaCZTweaks.id("bullet_particles")
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     override fun id(): ResourceLocation = ID
 
     override val debugEnabled: Boolean get() = Config.General.Debug.bulletParticles()
@@ -57,6 +59,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particl
         location: Vec3,
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, particles) ->
         particles.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && selector(particles).anyOrEmpty(predicate)

@@ -3,6 +3,7 @@ package me.muksc.tacztweaks.mixin.feature.audio_and_visuals.system.mix_to_mono;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.tacz.guns.client.sound.GunSoundInstance;
 import me.muksc.tacztweaks.mixininterface.feature.audio_and_visuals.system.mix_to_mono.MonoObject;
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -19,7 +20,9 @@ public abstract class GunSoundInstanceMixin {
     @Unique
     private boolean tacztweaks$mono = false;
 
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @Inject(method = "<init>(Lnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FFLnet/minecraft/world/entity/Entity;ILnet/minecraft/resources/ResourceLocation;ZZ)V", at = @At("TAIL"), remap = false)
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     private void tacztweaks$init$mixToMono$storeMono(SoundEvent soundEvent, SoundSource source, float volume, float pitch, Entity entity, int soundDistance, ResourceLocation registryName, boolean mono, boolean relative, CallbackInfo ci) {
         tacztweaks$mono = mono;
     }

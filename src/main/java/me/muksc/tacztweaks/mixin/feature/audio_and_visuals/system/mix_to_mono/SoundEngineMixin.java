@@ -9,6 +9,7 @@ import me.muksc.tacztweaks.mixin.accessor.SoundBufferAccessor;
 import me.muksc.tacztweaks.mixininterface.feature.audio_and_visuals.system.mix_to_mono.MonoObject;
 import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.sounds.SoundEngine;
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,12 +20,14 @@ import java.util.concurrent.CompletableFuture;
 
 @Mixin(SoundEngine.class)
 public abstract class SoundEngineMixin {
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @ModifyExpressionValue(method = "play", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/sounds/SoundBufferLibrary;getCompleteBuffer(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/concurrent/CompletableFuture;"))
     private CompletableFuture<SoundBuffer> tacztweaks$play$mixToMono(
         CompletableFuture<SoundBuffer> original,
         @Local Sound sound
     ) {
         if (!Config.AudioAndVisuals.System.mixToMono()) return original;
+        //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
         ResourceLocation id = sound.getPath();
         if (!MonoObject.of(id).tacztweaks$getMono()) return original;
         return original.thenApply(buffer -> {

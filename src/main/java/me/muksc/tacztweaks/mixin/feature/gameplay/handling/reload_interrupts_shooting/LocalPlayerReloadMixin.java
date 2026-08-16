@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = LocalPlayerReload.class, remap = false)
 public abstract class LocalPlayerReloadMixin {
+    //~ if >=1.21.11 'lambda$reload$2' -> 'reloadWithDisplay'
     @WrapOperation(method = "lambda$reload$2", at = @At(value = "FIELD", opcode = Opcodes.GETFIELD, target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;clientStateLock:Z"))
     private boolean tacztweaks$reload$reloadInterruptsShoot(LocalPlayerDataHolder instance, Operation<Boolean> original) {
         return Config.Gameplay.Handling.reloadInterruptsShooting()

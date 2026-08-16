@@ -29,6 +29,23 @@ public abstract class ModernKineticGunScriptAPIMixin {
         tacztweaks$burstIndex = 0;
     }
 
+    //? if >=1.21.11 {
+    /*@WrapMethod(method = "runShootCycle")
+    private boolean tacztweaks$shootOnce$onInitBurst(
+        boolean consumeAmmo, GunData gunData, BulletData bulletData, IGunOperator gunOperator,
+        float shotDamageMultiplier, float inaccuracy, int soundDistance, boolean useSilenceSound,
+        float processedSpeed, int bulletAmount, Operation<Boolean> original,
+        @Share("pelletIndex") LocalIntRef pelletIndexRef
+    ) {
+        try {
+            pelletIndexRef.set(0);
+            return original.call(consumeAmmo, gunData, bulletData, gunOperator, shotDamageMultiplier,
+                inaccuracy, soundDistance, useSilenceSound, processedSpeed, bulletAmount);
+        } finally {
+            tacztweaks$burstIndex++;
+        }
+    }
+    *///?} else {
     @WrapMethod(method = "lambda$shootOnce$2")
     private boolean tacztweaks$shootOnce$onInitBurst(
         boolean consumeAmmo, GunData gunData, int bulletAmount, BulletData bulletData, IGunOperator gunOperator, float shotDamageMultiplier, float processedSpeed, float inaccuracy, int soundDistance, boolean useSilenceSound, Operation<Boolean> original,
@@ -41,7 +58,9 @@ public abstract class ModernKineticGunScriptAPIMixin {
             tacztweaks$burstIndex++;
         }
     }
+    //?}
 
+    //~ if >=1.21.11 'lambda$shootOnce$2' -> 'spawnProjectiles'
     @WrapOperation(method = "lambda$shootOnce$2", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z", remap = true))
     private boolean tacztweaks$shootOnce$apply(
         Level instance, Entity entity, Operation<Boolean> original,

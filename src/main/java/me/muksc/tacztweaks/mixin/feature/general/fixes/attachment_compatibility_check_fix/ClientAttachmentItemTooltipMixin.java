@@ -1,24 +1,32 @@
 package me.muksc.tacztweaks.mixin.feature.general.fixes.attachment_compatibility_check_fix;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.tacz.guns.api.item.IAttachment;
 import com.tacz.guns.api.item.IGun;
+import com.tacz.guns.api.item.builder.AttachmentItemBuilder;
 import com.tacz.guns.client.tooltip.ClientAttachmentItemTooltip;
 import me.muksc.tacztweaks.config.Config;
+//~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
 
 @Mixin(value = ClientAttachmentItemTooltip.class, remap = false)
 public abstract class ClientAttachmentItemTooltipMixin {
-    @WrapOperation(method = "lambda$getAllAllowGuns$0", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;allowAttachment(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z"))
-    private static boolean tacztweaks$getAllAllowGuns$attachmentCompatibilityCheckFix(IGun instance, ItemStack gun, ItemStack attachmentItem, Operation<Boolean> original) {
-        if (!Config.General.Fixes.attachmentCompatibilityCheckFix()) return original.call(instance, gun, attachmentItem);
-        IAttachment attachment = IAttachment.getIAttachmentOrNull(attachmentItem);
-        if (attachment == null) return original.call(instance, gun, attachmentItem);
-        return original.call(instance, gun, attachmentItem)
-            && instance.allowAttachmentType(gun, attachment.getType(attachmentItem));
+    @Inject(method = "getAllAllowGuns", at = @At("RETURN"))
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
+    private static void tacztweaks$getAllAllowGuns$attachmentCompatibilityCheckFix(List<ItemStack> output, ResourceLocation attachmentId, CallbackInfoReturnable<List<ItemStack>> cir) {
+        if (!Config.General.Fixes.attachmentCompatibilityCheckFix()) return;
+        ItemStack attachmentStack = AttachmentItemBuilder.create().setId(attachmentId).build();
+        IAttachment attachment = IAttachment.getIAttachmentOrNull(attachmentStack);
+        if (attachment == null) return;
+        output.removeIf(gun -> {
+            IGun iGun = IGun.getIGunOrNull(gun);
+            return iGun != null && !iGun.allowAttachmentType(gun, attachment.getType(attachmentStack));
+        });
     }
-
 }
