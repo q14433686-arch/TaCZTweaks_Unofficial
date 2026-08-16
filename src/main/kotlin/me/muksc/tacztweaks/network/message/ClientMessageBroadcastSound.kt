@@ -10,7 +10,6 @@ import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.level.ChunkPos
 
 class ClientMessageBroadcastSound(
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
@@ -41,15 +40,11 @@ class ClientMessageBroadcastSound(
 
         fun handle(packet: ClientMessageBroadcastSound, server: MinecraftServer, player: ServerPlayer?) {
             if (player == null) return
-            val blockPos = player.blockPosition()
-            player.serverLevel().chunkSource.chunkMap.getPlayers(ChunkPos(blockPos), false)
-                .filter {
-                    if (it.id == player.id) return@filter false
-                    val distance = it.distanceToSqr(player.x, player.y, player.z)
-                    distance < packet.distance * packet.distance
-                }
-                .forEach {
-                    NetworkManager.sendS2C(it, ServerMessageBroadcastSound(
+            server.playerList.players.asSequence()
+                .filter { it !== player && it.level() === player.level() }
+                .filter { it.distanceToSqr(player) < packet.distance.toDouble() * packet.distance }
+                .forEach { listener ->
+                    NetworkManager.sendS2C(listener, ServerMessageBroadcastSound(
                         player.id,
                         packet.soundName,
                         packet.volume,

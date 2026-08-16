@@ -21,8 +21,9 @@ class DeferredRegister<R : Any>(
         fun <R : Any> create(registry: Registry<R>, namespace: String): DeferredRegister<R> = DeferredRegister(registry, namespace)
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun <T : R> register(path: String, supplier: Supplier<T>): DeferredHolder<R, T> {
-        val holder = Registry.registerForHolder(registry, Identifier(namespace, path), supplier.get())
+        val holder = Registry.registerForHolder(registry, Identifier(namespace, path), supplier.get()) as net.minecraft.core.Holder<R>
         return DeferredHolder(holder)
     }
 }

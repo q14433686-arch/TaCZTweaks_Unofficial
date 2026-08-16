@@ -9,7 +9,11 @@ import me.muksc.tacztweaks.core.codec.strictOptionalFieldOf
 import me.muksc.tacztweaks.core.toImmutableSet
 import net.minecraft.util.StringRepresentable
 import net.minecraft.world.level.storage.loot.LootContext
+//? if >=1.21.11 {
+/*import net.minecraft.util.context.ContextKey
+*///?} else {
 import net.minecraft.world.level.storage.loot.parameters.LootContextParam
+//?}
 import net.minecraft.world.level.storage.loot.providers.number.NumberProvider
 import java.util.Optional
 import java.util.function.Function
@@ -104,7 +108,7 @@ abstract class AdvancedMinMaxBounds(
         }
     }
 
-    fun getReferencedContextParams(): Set<LootContextParam<*>> = buildSet<LootContextParam<*>> {
+    fun getReferencedContextParams(): Set</*? if >=1.21.11 {*/ /*ContextKey<*>*/ /*?} else {*/ LootContextParam<*> /*?}*/> = buildSet</*? if >=1.21.11 {*/ /*ContextKey<*>*/ /*?} else {*/ LootContextParam<*> /*?}*/> {
         if (min != null) addAll(min.value.referencedContextParams)
         if (max != null) addAll(max.value.referencedContextParams)
     }.toImmutableSet()

@@ -12,13 +12,13 @@ import net.minecraft.core.registries.BuiltInRegistries
 val BlockInputCodec: Codec<BlockInput> = Codec.STRING.comapFlatMap({
     val result = try {
         @Suppress("DEPRECATION")
-        BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK.asLookup(), it, true)
+        BlockStateParser.parseForBlock(/*? if >=1.21.11 {*/ /*BuiltInRegistries.BLOCK*/ /*?} else {*/ BuiltInRegistries.BLOCK.asLookup() /*?}*/, it, true)
     } catch (e: CommandSyntaxException) {
         return@comapFlatMap DataResult.error { e.message }
     }
     DataResult.success(BlockInput(result.blockState, result.properties.keys, result.nbt))
 }, {
     val tag = (it as BlockInputAccessor).tag?.takeIf { tag -> !tag.isEmpty }
-    if (tag != null) return@comapFlatMap "${BlockStateParser.serialize(it.state)}${tag.asString}"
+    if (tag != null) return@comapFlatMap "${BlockStateParser.serialize(it.state)}${/*? if >=1.21.11 {*/ /*tag.toString()*/ /*?} else {*/ tag.asString /*?}*/}"
     BlockStateParser.serialize(it.state)
 })

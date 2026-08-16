@@ -11,12 +11,15 @@ import net.minecraft.commands.Commands
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
+//? if >=1.21.11 {
+/*import net.minecraft.server.permissions.Permissions
+*///?}
 import java.util.function.Supplier
 
 object RefillAmmoCommand : BaseCommand("refill_ammo") {
     override fun build(builder: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> =
         builder.requires { context ->
-            context.hasPermission(2)
+            /*? if >=1.21.11 {*/ /*context.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)*/ /*?} else {*/ context.hasPermission(2) /*?}*/
         }.executes { context ->
             execute(listOf(context.source.playerOrException), context.source::sendSuccess)
         }.then(Commands.argument("targets", EntityArgument.players()).executes { context ->
@@ -26,7 +29,7 @@ object RefillAmmoCommand : BaseCommand("refill_ammo") {
 
     fun execute(players: Collection<ServerPlayer>, sendSuccess: (messageSupplier: Supplier<Component>, allowLogging: Boolean) -> Unit): Int {
         for (player in players) {
-            for (stack in player.inventory.items) {
+            for (stack in /*? if >=1.21.11 {*/ /*player.inventory.nonEquipmentItems*/ /*?} else {*/ player.inventory.items /*?}*/) {
                 val gun = stack.item as? IGun ?: continue
                 val maxAmmoCount = GunStack(stack).index?.gunData?.let { gunData ->
                     AttachmentDataUtils.getAmmoCountWithAttachment(stack, gunData)

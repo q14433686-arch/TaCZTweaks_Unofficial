@@ -14,7 +14,7 @@ object ModRegistries {
         )
     )
 
-    data class DataPackRegistry<T>(
+    data class DataPackRegistry<T : Any>(
         val key: ResourceKey<Registry<T>>,
         val codec: Codec<T>
     )

@@ -264,7 +264,11 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_int
         *///?}
         val replaceWith = blockBreak.replaceWith
         if (replaceWith.state.isAir && replaceWith.place(level, pos, Block.UPDATE_CLIENTS)) {
+            //? if >=1.21.11 {
+            /*level.updateNeighboursOnBlockSet(pos, replaceWith.state)
+            *///?} else {
             level.blockUpdated(pos, replaceWith.state.block)
+            //?}
         }
     }
 

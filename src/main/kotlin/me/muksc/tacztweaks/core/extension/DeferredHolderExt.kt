@@ -6,7 +6,7 @@ import me.muksc.tacztweaks.core.registry.DeferredHolder
 //import net.minecraft.core.Holder
 
 //? if <1.21 {
-fun <R, T : R> DeferredHolder<R, T>.valueOrDelegate(): T = value()
+fun <R : Any, T : R> DeferredHolder<R, T>.valueOrDelegate(): T = value()
 //?} else {
-/*fun <R, T : R> DeferredHolder<R, T>.valueOrDelegate(): Holder<R> = getDelegate()
+/*fun <R : Any, T : R> DeferredHolder<R, T>.valueOrDelegate(): Holder<R> = getDelegate()
 *///?}

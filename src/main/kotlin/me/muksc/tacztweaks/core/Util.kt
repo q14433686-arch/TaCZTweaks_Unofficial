@@ -14,8 +14,8 @@ fun <T1, T2, R> ((T1, T2) -> R).reverse(): (T2, T1) -> R = { t2, t1 -> invoke(t1
 
 inline fun <T> Collection<T>.anyOrEmpty(predicate: (T) -> Boolean): Boolean = isEmpty() || any(predicate)
 
-fun <K, V> Map<K, V>.toImmutableMap(): ImmutableMap<K, V> =
+fun <K : Any, V : Any> Map<K, V>.toImmutableMap(): ImmutableMap<K, V> =
     ImmutableMap.copyOf(this)
 
-fun <E> Set<E>.toImmutableSet(): ImmutableSet<E> =
+fun <E : Any> Set<E>.toImmutableSet(): ImmutableSet<E> =
     ImmutableSet.copyOf(this)

@@ -103,6 +103,9 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particl
                     player,
                     emitter.options,
                     emitter.particle.force,
+                    //? if >=1.21.11 {
+                    /*false,
+                    *///?}
                     emitter.coordinates.x,
                     emitter.coordinates.y,
                     emitter.coordinates.z,
@@ -119,7 +122,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particl
 
     private fun BulletParticles.Particle.summon(level: ServerLevel, bullet: EntityKineticBullet, context: String? = null) {
         val ext = RayTracingBullet.of(bullet)
-        val source = bullet.createCommandSourceStack()
+        val source = /*? if >=1.21.11 {*/ /*bullet.createCommandSourceStackForNameResolution(level)*/ /*?} else {*/ bullet.createCommandSourceStack() /*?}*/
             .withPosition(ext.currentHitPosition)
         val reader = StringReader(if (context != null) particle.format(context) else particle)
         //? if <1.20.5 {

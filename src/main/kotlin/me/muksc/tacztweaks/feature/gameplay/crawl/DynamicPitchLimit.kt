@@ -8,7 +8,7 @@ import kotlin.math.acos
 
 fun getDynamicPitchLimitOrNull(): Double? {
     val player = Minecraft.getInstance().player ?: return null
-    val result = player.clientLevel.clip(ClipContext(
+    val result = /*? if >=1.21.11 {*/ /*player.level()*/ /*?} else {*/ player.clientLevel /*?}*/.clip(ClipContext(
         player.eyePosition,
         player.eyePosition.add(player.lookAngle.scale(1.5)),
         ClipContext.Block.COLLIDER,

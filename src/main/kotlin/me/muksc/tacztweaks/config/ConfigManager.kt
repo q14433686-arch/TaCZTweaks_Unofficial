@@ -9,6 +9,9 @@ import me.muksc.tacztweaks.network.message.ServerMessageSyncConfig
 import net.minecraft.client.Minecraft
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+//? if >=1.21.11 {
+/*import net.minecraft.server.permissions.Permissions
+*///?}
 import net.minecraft.world.entity.player.Player
 
 object ConfigManager {
@@ -29,7 +32,7 @@ object ConfigManager {
     }
 
     fun canUpdateServerConfig(player: Player) =
-        player.hasPermissions(2)
+        /*? if >=1.21.11 {*/ /*player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)*/ /*?} else {*/ player.hasPermissions(2) /*?}*/
 
     fun canUpdateServerConfig(): Boolean {
         return canUpdateServerConfig(Minecraft.getInstance().player ?: return false)

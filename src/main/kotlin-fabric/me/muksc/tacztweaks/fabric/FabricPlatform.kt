@@ -9,7 +9,11 @@ import me.muksc.tacztweaks.platform.PlatformNetwork
 import me.muksc.tacztweaks.registry.ModRegistries
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.registry.DynamicRegistries
+//? if >=1.21.9 {
+/*import net.fabricmc.fabric.api.resource.v1.ResourceLoader
+*///?} else {
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
+//?}
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.server.packs.PackType
 
@@ -19,15 +23,24 @@ object FabricPlatform : Platform {
 
     override fun registerDeferredRegistries(registries: List<DeferredRegister<*>>) = Unit // Not deferred in Fabric
 
+    @Suppress("UNCHECKED_CAST")
     override fun registerDatapackRegistries(registries: List<ModRegistries.DataPackRegistry<*>>) {
         for (registry in registries) {
-            registry.run { DynamicRegistries.register(key, codec) }
+            registerDatapackRegistry(registry as ModRegistries.DataPackRegistry<Any>)
         }
+    }
+
+    private fun <T : Any> registerDatapackRegistry(registry: ModRegistries.DataPackRegistry<T>) {
+        DynamicRegistries.register(registry.key, registry.codec)
     }
 
     override fun registerReloadListeners(listeners: List<IdentifiableResourceReloadListener>) {
         for (listener in listeners) {
+            //? if >=1.21.9 {
+            /*ResourceLoader.get(PackType.SERVER_DATA).registerReloader(listener.id(), listener)
+            *///?} else {
             ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(listener)
+            //?}
         }
     }
 

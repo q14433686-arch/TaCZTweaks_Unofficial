@@ -5,7 +5,7 @@ package me.muksc.tacztweaks.core.registry
 
 typealias DeferredHolder<R, T> = NeoDeferredHolder<R, T>
 
-fun <R, T : R> NeoDeferredHolder<R, T>.wrap(): DeferredHolder<R, T> = this
+fun <R : Any, T : R> NeoDeferredHolder<R, T>.wrap(): DeferredHolder<R, T> = this
 *///?} else if forge {
 import com.mojang.datafixers.util.Either
 import net.minecraft.core.Holder
@@ -20,7 +20,7 @@ import java.util.function.Predicate
 import java.util.stream.Stream
 import kotlin.jvm.optionals.getOrNull
 
-class DeferredHolder<R, T : R>(
+class DeferredHolder<R : Any, T : R>(
     private val base: RegistryObject<T>
 ) : Holder<R> {
     @Suppress("UNCHECKED_CAST")
@@ -61,7 +61,7 @@ class DeferredHolder<R, T : R>(
         obj.holder.getOrNull()?.canSerializeIn(owner) == true
 }
 
-fun <R, T : R> RegistryObject<T>.wrap(): DeferredHolder<R, T> = DeferredHolder(this)
+fun <R : Any, T : R> RegistryObject<T>.wrap(): DeferredHolder<R, T> = DeferredHolder(this)
 //?} else if fabric {
 /*import com.mojang.datafixers.util.Either
 import net.minecraft.core.Holder
@@ -75,7 +75,7 @@ import java.util.function.Predicate
 import java.util.function.Supplier
 import java.util.stream.Stream
 
-class DeferredHolder<R, T : R>(
+class DeferredHolder<R : Any, T : R>(
     private val holder: Holder<R>
 ) : Holder<R>, Supplier<T> {
     @Suppress("UNCHECKED_CAST")
@@ -113,5 +113,5 @@ class DeferredHolder<R, T : R>(
     fun getDelegate(): Holder<R> = holder
 }
 
-fun <R, T : R> DeferredHolder<R, T>.wrap() = this
+fun <R : Any, T : R> DeferredHolder<R, T>.wrap() = this
 *///?}

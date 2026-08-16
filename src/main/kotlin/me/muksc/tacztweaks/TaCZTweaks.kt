@@ -31,7 +31,7 @@ object TaCZTweaks {
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     fun id(path: String): ResourceLocation = Identifier(MOD_ID, path)
 
-    fun translatable(key: String, vararg args: Any?): MutableComponent = Component.translatable("$MOD_ID.$key", *args)
+    fun translatable(key: String, vararg args: Any): MutableComponent = Component.translatable("$MOD_ID.$key", *args)
 
     fun message(): MutableComponent = ComponentUtils.wrapInSquareBrackets(Component.literal(MOD_NAME)).append(" ")
 
