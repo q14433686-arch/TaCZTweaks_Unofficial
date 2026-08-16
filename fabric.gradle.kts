@@ -48,14 +48,6 @@ loom {
 repositories {
     exclusiveContent {
         forRepository {
-            maven("https://raw.githubusercontent.com/Fuzss/modresources/main/maven")
-        }
-        filter {
-            includeGroup("fuzs.forgeconfigapiport")
-        }
-    }
-    exclusiveContent {
-        forRepository {
             maven("https://maven.ladysnake.org/releases")
         }
         filter {
@@ -132,7 +124,10 @@ dependencies {
             // [UNOFFICIAL] TaCZ Refabricated, CurseForge project 1627909, 1.21.11 R2.
             // CurseMaven gives this large release artifact a reproducible Maven coordinate.
             modImplementation("curse.maven:unofficial-tacz-refabricated-1627909:${libs("tacz")}")
-            modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${libs("forge-config-api-port")}")
+            modImplementation("curse.maven:forge-config-api-port-547434:${libs("forge-config-api-port")}")
+            // CurseMaven exposes only the selected TaCZ artifact and cannot carry
+            // its compile-time Cloth Config relation transitively.
+            modImplementation("me.shedaniel.cloth:cloth-config-fabric:${libs("cloth-config")}")
         } else {
             modImplementation("maven.modrinth:tacz-refabricated:${libs("tacz")}")
         }
@@ -146,12 +141,12 @@ dependencies {
             modLocalRuntime("dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.2.3")
             modLocalRuntime("dev.onyxstudios.cardinal-components-api:cardinal-components-entity:5.2.3")
             modLocalRuntime("maven.modrinth:modernkeybinding:1.20.X-1.2.0")
-            modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.3")
+            modImplementation("curse.maven:forge-config-api-port-547434:${libs("forge-config-api-port")}")
         } else if (sc.current.version == "1.21.1") {
             modImplementation("libs:simplebedrockmodel-fabric:2.3.0.1+mc1.21.1")  // https://github.com/Sh1roCu/TACZ-Refabricated/blob/1.21.1/libs
             modLocalRuntime("org.ladysnake.cardinal-components-api:cardinal-components-base:6.1.2")
             modLocalRuntime("org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.2")
-            modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.1.6")
+            modImplementation("curse.maven:forge-config-api-port-547434:${libs("forge-config-api-port")}")
         }
     }
 
