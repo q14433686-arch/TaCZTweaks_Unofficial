@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = IMeleeWeapon.class, remap = false)
-public abstract class BuiltinMeleeWeaponMixin {
+public interface BuiltinMeleeWeaponMixin {
     @ModifyReturnValue(method = "performAttack", at = @At("RETURN"))
     private int tacztweaks$performAttack$handleBlockInteraction(
         int hitCount,
