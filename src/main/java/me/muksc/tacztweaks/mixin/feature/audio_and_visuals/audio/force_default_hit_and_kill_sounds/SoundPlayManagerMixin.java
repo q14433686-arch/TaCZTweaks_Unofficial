@@ -16,15 +16,23 @@ import static me.muksc.tacztweaks.core.IdentifierKt.Identifier;
 public abstract class SoundPlayManagerMixin {
     @Unique
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    private static final ResourceLocation tacztweaks$defaultHeadHit = Identifier(GunMod.MOD_ID, "head_hit");
+    private static final ResourceLocation tacztweaks$defaultHeadHit = tacztweaks$id("head_hit");
 
     @Unique
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    private static final ResourceLocation tacztweaks$defaultFreshHit = Identifier(GunMod.MOD_ID, "flesh_hit");
+    private static final ResourceLocation tacztweaks$defaultFreshHit = tacztweaks$id("flesh_hit");
 
     @Unique
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    private static final ResourceLocation tacztweaks$defaultKill = Identifier(GunMod.MOD_ID, "kill");
+    private static final ResourceLocation tacztweaks$defaultKill = tacztweaks$id("kill");
+
+    @Unique
+    //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
+    private static ResourceLocation tacztweaks$id(String path) {
+        // Keep this call off replacement-controlled lines: Stonecutter reverses string
+        // substitutions for older targets, and the helper function is also named Identifier.
+        return Identifier(GunMod.MOD_ID, path);
+    }
 
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
     @ModifyExpressionValue(method = "playHeadHitSound", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/resource/GunDisplayInstance;getSounds(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;"))

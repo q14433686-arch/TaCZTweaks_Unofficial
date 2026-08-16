@@ -29,7 +29,9 @@ object TaCZTweaks {
     val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
     //~ if >=1.21.11 'ResourceLocation' -> 'Identifier'
-    fun id(path: String): ResourceLocation = Identifier(MOD_ID, path)
+    fun id(path: String): ResourceLocation = createIdentifier(path)
+
+    private fun createIdentifier(path: String) = Identifier(MOD_ID, path)
 
     fun translatable(key: String, vararg args: Any): MutableComponent = Component.translatable("$MOD_ID.$key", *args)
 
