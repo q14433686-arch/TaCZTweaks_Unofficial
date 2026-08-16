@@ -3,7 +3,7 @@ package me.muksc.tacztweaks.fabric.mixin;
 import me.muksc.tacztweaks.fabric.event.ShieldBlockEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-//? if >=1.21.11
+//? if >=1.21.11 {
 /*import net.minecraft.server.level.ServerLevel;
 *///?}
 import org.spongepowered.asm.mixin.Mixin;

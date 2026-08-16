@@ -1,7 +1,7 @@
 package me.muksc.tacztweaks.client.input
 
 import me.muksc.tacztweaks.TaCZTweaks
-//? if >=1.21.11
+//? if >=1.21.11 {
 /*import net.minecraft.client.KeyMapping
 *///?}
 
