@@ -2,57 +2,58 @@ package me.muksc.tacztweaks.network.message
 
 import com.tacz.guns.client.sound.SoundPlayManager
 import me.muksc.tacztweaks.TaCZTweaks
-import me.muksc.tacztweaks.network.CustomPacketPayload
-import me.muksc.tacztweaks.network.StreamCodec
 import net.minecraft.client.Minecraft
-import net.minecraft.resources.ResourceLocation
-import net.minecraft.world.entity.Entity
+import net.minecraft.network.FriendlyByteBuf
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload
+import net.minecraft.resources.Identifier
 
 class ServerMessageBroadcastSound(
-    val entityId: Int,
-    val soundName: ResourceLocation,
-    val volume: Float,
-    val pitch: Float,
-    val distance: Int
+    private val entityId: Int,
+    private val soundName: Identifier,
+    private val volume: Float,
+    private val pitch: Float,
+    private val distance: Int
 ) : CustomPacketPayload {
-    constructor(entity: Entity, soundName: ResourceLocation, volume: Float, pitch: Float, distance: Int) : this(entity.id, soundName, volume, pitch, distance)
+    constructor(buf: FriendlyByteBuf) : this(
+        buf.readInt(),
+        buf.readIdentifier(),
+        buf.readFloat(),
+        buf.readFloat(),
+        buf.readInt()
+    )
+
+    fun write(out: FriendlyByteBuf) {
+        out.writeInt(entityId)
+        out.writeIdentifier(soundName)
+        out.writeFloat(volume)
+        out.writeFloat(pitch)
+        out.writeInt(distance)
+    }
+
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
 
     companion object {
         val TYPE = CustomPacketPayload.Type<ServerMessageBroadcastSound>(
-            TaCZTweaks.id("server_broadcast_sound")
+            Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "server_broadcast_sound")
         )
-        val STREAM_CODEC = StreamCodec.of(
-            encoder = { packet, buf ->
-                buf.writeInt(packet.entityId)
-                buf.writeResourceLocation(packet.soundName)
-                buf.writeFloat(packet.volume)
-                buf.writeFloat(packet.pitch)
-                buf.writeInt(packet.distance)
-            },
-            decoder = { buf ->
-                val entityId = buf.readInt()
-                val soundName = buf.readResourceLocation()
-                val volume = buf.readFloat()
-                val pitch = buf.readFloat()
-                val distance = buf.readInt()
-                ServerMessageBroadcastSound(entityId, soundName, volume, pitch, distance)
-            }
+        val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageBroadcastSound> = StreamCodec.ofMember(
+            ServerMessageBroadcastSound::write,
+            { buf -> ServerMessageBroadcastSound(buf) }
         )
 
-        fun handle(packet: ServerMessageBroadcastSound, minecraft: Minecraft) {
-            val entity = minecraft.level?.getEntity(packet.entityId) ?: return
-            minecraft.execute {
+        fun handle(msg: ServerMessageBroadcastSound, client: Minecraft) {
+            val entity = client.level?.getEntity(msg.entityId) ?: return
+            client.execute {
                 SoundPlayManager.playClientSound(
                     entity,
-                    packet.soundName,
-                    packet.volume,
-                    packet.pitch,
-                    packet.distance,
+                    msg.soundName,
+                    msg.volume,
+                    msg.pitch,
+                    msg.distance,
                     true
                 )
             }
         }
     }
-
-    override fun type(): CustomPacketPayload.Type<ServerMessageBroadcastSound> = TYPE
 }

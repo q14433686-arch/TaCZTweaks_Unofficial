@@ -1,13 +1,10 @@
 package me.muksc.tacztweaks.mixin.gun;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.api.client.animation.statemachine.LuaAnimationStateMachine;
 import com.tacz.guns.api.item.IGun;
 import com.tacz.guns.client.animation.statemachine.GunAnimationStateContext;
 import com.tacz.guns.client.resource.GunDisplayInstance;
-import me.muksc.tacztweaks.client.input.TiltGunKey;
-import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder;
 import me.muksc.tacztweaks.network.NetworkHandler;
 import me.muksc.tacztweaks.network.message.ClientMessagePlayerShouldSlide;
@@ -19,15 +16,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.function.Supplier;
 
+/**
+ * Detects the "tilt gun" (slide) state every client tick and keeps the server informed via
+ * {@link ClientMessagePlayerShouldSlide}. The {@code shouldSlide} flag itself lives on
+ * {@code LivingEntity} (see {@code gun.LivingEntityMixin}); this mixin only declares the
+ * {@link SlideDataHolder} interface for the cast and publishes state changes.
+ */
 @Mixin(LocalPlayer.class)
 public abstract class LocalPlayerMixin implements SlideDataHolder {
-    @ModifyReturnValue(method = "canStartSprinting", at = @At("RETURN"))
-    private boolean tacztweaks$canStartSprinting$tiltGunKeyCancelsSprint(boolean original) {
-        if (!Config.Gun.INSTANCE.tiltGunKeyCancelsSprint()) return original;
-        var instance = LocalPlayer.class.cast(this);
-        return original && !TiltGunKey.isActive(instance);
-    }
-
     @Inject(method = "tick", at = @At("TAIL"))
     private void tacztweaks$tick$tiltCheck(CallbackInfo ci) {
         Supplier<Boolean> supplier = () -> {
@@ -42,7 +38,7 @@ public abstract class LocalPlayerMixin implements SlideDataHolder {
             return context.shouldSlide();
         };
         boolean shouldSlide = supplier.get();
-        if (shouldSlide != tacztweaks$getShouldSlide()) NetworkHandler.INSTANCE.sendC2S(new ClientMessagePlayerShouldSlide(shouldSlide));
+        if (shouldSlide != tacztweaks$getShouldSlide()) NetworkHandler.INSTANCE.sendC2S(ClientMessagePlayerShouldSlide.create(shouldSlide));
         tacztweaks$setShouldSlide(shouldSlide);
     }
 }

@@ -11,10 +11,15 @@ import net.minecraft.world.entity.monster.EnderMan;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+/**
+ * Makes endermen treat gun bullets as projectiles, so they teleport away from them.
+ * The first {@code DamageSource#is(TagKey)} call in {@code hurtServer} is the
+ * {@code IS_PROJECTILE} check (verified against the 26.2 bytecode).
+ */
 @Mixin(EnderMan.class)
 public abstract class EnderManMixin {
-    @WrapOperation(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/damagesource/DamageSource;is(Lnet/minecraft/tags/TagKey;)Z"))
-    private boolean tacztweaks$hurt$bulletsAreProjectiles(DamageSource instance, TagKey<DamageType> pDamageTypeKey, Operation<Boolean> original) {
+    @WrapOperation(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/damagesource/DamageSource;is(Lnet/minecraft/tags/TagKey;)Z"))
+    private boolean tacztweaks$hurtServer$bulletsAreProjectiles(DamageSource instance, TagKey<DamageType> pDamageTypeKey, Operation<Boolean> original) {
         boolean result = original.call(instance, pDamageTypeKey);
         if (!Config.Tweaks.INSTANCE.endermenEvadeBullets()) return result;
         return result || instance.is(ModDamageTypes.BULLETS_TAG);

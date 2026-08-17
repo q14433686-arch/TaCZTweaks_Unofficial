@@ -1,8 +1,8 @@
 {
   "effect.tacztweaks.endless_ammo": "Endless Ammo",
   "tacztweaks.key.unload": "Unload",
-  "tacztweaks.key.reduceSensitivity":"Reduce Sensitivity",
-  "tacztweaks.key.tiltGun":"Tilt Gun",
+  "tacztweaks.key.reduceSensitivity": "Reduce Sensitivity",
+  "tacztweaks.key.tiltGun": "Tilt Gun",
   "tacztweaks.search": "Search...",
   "tacztweaks.packs.filter": "Filter",
   "tacztweaks.bullet_sounds.sound_physics_missing": "Sound Physics Remastered is required for some of your installed packs to fully function, but it is not currently installed.",
@@ -170,5 +170,6 @@
   "tacztweaks.config.label.ETiltGun.DEFAULT": "Default",
   "tacztweaks.config.label.ETiltGun.ALWAYS": "Always",
   "tacztweaks.config.label.ETiltGun.NEVER": "Never",
-  "tacztweaks.property_diagrams.rps": "RPS"
+  "tacztweaks.property_diagrams.rps": "RPS",
+  "key.category.tacztweaks.general": "TaCZ Tweaks"
 }

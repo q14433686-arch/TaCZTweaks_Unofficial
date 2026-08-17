@@ -11,6 +11,9 @@ import net.minecraft.world.level.GameType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+/**
+ * Blocks the refit (attachment modification) screen while in adventure mode.
+ */
 @Mixin(value = RefitKey.class, remap = false)
 public abstract class RefitKeyMixin {
     @ModifyExpressionValue(method = "onRefitPress", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))

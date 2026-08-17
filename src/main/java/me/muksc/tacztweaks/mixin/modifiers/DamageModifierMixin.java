@@ -1,33 +1,29 @@
 package me.muksc.tacztweaks.mixin.modifiers;
 
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.tacz.guns.resource.modifier.custom.DamageModifier;
 import me.muksc.tacztweaks.config.Config;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
+/**
+ * Applies the global damage modifier to the base damage stored in the
+ * {@link com.tacz.guns.resource.pojo.data.gun.ExtraDamage.DistanceDamagePair} cache.
+ *
+ * <p>{@code initCache} builds the cache in two places (verified against the 26.2 bytecode):
+ * the distance-falloff loop (ordinal 0) and the plain-damage branch (ordinal 1). Both
+ * {@code DistanceDamagePair} constructions must be modified, otherwise guns without
+ * distance falloff would keep their unmodified damage.</p>
+ */
 @Mixin(value = DamageModifier.class, remap = false)
 public abstract class DamageModifierMixin {
-    @Definition(id = "DAMAGE_BASE_MULTIPLIER", field = "Lcom/tacz/guns/config/sync/SyncConfig;DAMAGE_BASE_MULTIPLIER:Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;")
-    @Definition(id = "get", method = "Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;get()Ljava/lang/Object;")
-    @Definition(id = "Double", type = Double.class)
-    @Expression("? * (Double) DAMAGE_BASE_MULTIPLIER.get()")
-    @ModifyExpressionValue(method = "initCache", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private double tacztweaks$initCache$damageModifier(double original) {
-        return Config.Modifiers.Damage.INSTANCE.eval(original);
+    @ModifyArg(method = "initCache", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/ExtraDamage$DistanceDamagePair;<init>(FF)V", ordinal = 0), index = 1)
+    private float tacztweaks$initCache$damageModifier$falloff(float damage) {
+        return (float) Config.Modifiers.Damage.INSTANCE.eval(damage);
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @Definition(id = "DAMAGE_BASE_MULTIPLIER", field = "Lcom/tacz/guns/config/sync/SyncConfig;DAMAGE_BASE_MULTIPLIER:Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;")
-    @Definition(id = "get", method = "Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;get()Ljava/lang/Object;")
-    @Definition(id = "Double", type = Double.class)
-    @Expression("? * (Double) DAMAGE_BASE_MULTIPLIER.get()")
-    @ModifyExpressionValue(method = "getPropertyDiagramsData", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private double tacztweaks$getPropertyDiagramsData$damageModifier(double original) {
-        return Config.Modifiers.Damage.INSTANCE.eval(original);
+    @ModifyArg(method = "initCache", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/ExtraDamage$DistanceDamagePair;<init>(FF)V", ordinal = 1), index = 1)
+    private float tacztweaks$initCache$damageModifier$plain(float damage) {
+        return (float) Config.Modifiers.Damage.INSTANCE.eval(damage);
     }
 }

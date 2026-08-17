@@ -12,7 +12,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LocalPlayerDraw.class, remap = false)
 public abstract class LocalPlayerDrawMixin {
-    @Shadow @Final private LocalPlayerDataHolder data;
+    @Shadow
+    @Final
+    private LocalPlayerDataHolder data;
 
     @Inject(method = "resetData", at = @At("TAIL"))
     private void tacztweaks$resetData(CallbackInfo ci) {

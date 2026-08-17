@@ -1,216 +1,83 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    alias(libs.plugins.dotenv)
-    alias(libs.plugins.kotlin)
-    alias(libs.plugins.forge.gradle)
-    alias(libs.plugins.librarian.forgegradle)
-    alias(libs.plugins.mixin)
-    alias(libs.plugins.mod.publish)
+    id("net.fabricmc.fabric-loom") version "1.17-SNAPSHOT"
+    kotlin("jvm") version "2.4.10"
+    id("maven-publish")
 }
 
 version = project.property("mod_version") as String
 group = project.property("maven_group") as String
 
 base {
-    archivesName.set(project.property("archives_base_name") as String)
+    archivesName = project.property("archives_base_name") as String
 }
 
-java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
-}
-
-mixin {
-    add(sourceSets.main.get(), "tacztweaks.refmap.json")
-    config("tacztweaks.mixins.json")
-}
-
-minecraft {
-    accessTransformer("src/main/resources/META-INF/accesstransformer.cfg")
-    mappings(mapOf(
-        "channel" to "parchment",
-        "version" to "${libs.versions.parchment.get()}-${libs.versions.minecraft.asProvider().get()}"
-    ))
-    runs {
-        configureEach {
-            workingDirectory(project.file("run"))
-            property("forge.logging.markers", "REGISTRIES")
-            property("forge.logging.console.level", "debug")
-            mods {
-                create("tacztweaks") {
-                    source(sourceSets["main"])
-                }
-            }
-        }
-
-        val client = create("client")
-        create("client2") {
-            parent(client)
-            args("--username", "Dev2")
-        }
-        create("server") {
-            workingDirectory(project.file("run/server"))
-            args("--nogui")
-        }
-    }
-}
+// ============================================================
+// From Minecraft 26.1+ Minecraft is no longer obfuscated and Loom
+// runs in unobfuscated mode, so no mappings dependency is needed.
+// Same approach as TaCZ_Refabricated_Unofficial's 26.2 branch.
+// ============================================================
 
 repositories {
     mavenCentral()
-    maven("https://thedarkcolour.github.io/KotlinForForge")
-    maven("https://maven.bawnorton.com/releases")
-    maven("https://repo.spongepowered.org/repository/maven-public")
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = uri("https://api.modrinth.com/maven")
-            }
-        }
-        forRepositories(fg.repository)
-        filter {
-            includeGroup("maven.modrinth")
-        }
-    }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "CurseForge"
-                url = uri("https://cursemaven.com")
-            }
-        }
-        forRepositories(fg.repository)
-        filter {
-            includeGroup("curse.maven")
-        }
-    }
-    maven("https://maven.isxander.dev/releases")
-    maven("https://maven.valkyrienskies.org")
-    flatDir {
-        dir("libs")
-    }
+    maven { url = uri("https://maven.fabricmc.net/") }
+    maven { url = uri("https://maven.terraformersmc.com/releases/") } // modmenu
+    maven { url = uri("https://api.modrinth.com/maven") }
+    flatDir { dirs("libs") }
 }
 
 dependencies {
-    minecraft(libs.net.minecraftforge.forge)
-    implementation(libs.thedarkcolour.kotlinforforge)
-    compileOnly(annotationProcessor(libs.com.github.bawnorton.mixinsquared.common.get())) { }
-    implementation(jarJar(libs.com.github.bawnorton.mixinsquared.forge.get())) {
-        jarJar.ranged(this, "[${libs.versions.mixinsquared.get()},)")
-    }
-    compileOnly(annotationProcessor(libs.io.github.llamalad7.mixinextras.common.get())) { }
-    implementation(jarJar(libs.io.github.llamalad7.mixinextras.forge.get())) {
-        jarJar.ranged(this, "[${libs.versions.mixinextras.get()},)")
-    }
-    annotationProcessor(variantOf(libs.org.spongepowered.mixin) { classifier("processor") })
+    // Minecraft & Fabric
+    minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
+    implementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
+    implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
 
-    implementation(fg.deobf(libs.dev.isxander.yacl.get()))
-    implementation(fg.deobf(libs.modrinth.tacz.get()))
+    // Kotlin runtime is provided by Fabric Language Kotlin at runtime;
+    // putting it on the compile classpath keeps stdlib versions aligned.
+    implementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
+
+    // YACL (YetAnotherConfigLib) — Fabric 26.2 build, provided as a hard dependency
+    implementation(files("libs/yacl-fabric.jar"))
+
+    // The TaCZ refabricated port we integrate with (compile only)
+    compileOnly(files("libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar"))
+
+    // MixinExtras (runtime bundled into our jar; AP used for compile-time validation)
+    val mixinExtrasVersion = project.property("mixinextras_version") as String
+    implementation("io.github.llamalad7:mixinextras-fabric:$mixinExtrasVersion")
+    annotationProcessor("io.github.llamalad7:mixinextras-common:$mixinExtrasVersion")
+    include("io.github.llamalad7:mixinextras-fabric:$mixinExtrasVersion")
+
+    // ModMenu (optional config screen entry)
+    compileOnly("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
+
+    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+
+    // commons-math3 is bundled inside the TaCZ jar; we only need it at compile time
     compileOnly("org.apache.commons:commons-math3:3.6.1")
-    compileOnly(fg.deobf(libs.modrinth.firstaid.get()))
-    compileOnly(fg.deobf(libs.curseforge.legendary.survival.overhaul.get()))
-    implementation(fg.deobf(libs.modrinth.sound.physics.remastered.get()))
-    compileOnly(fg.deobf(libs.modrinth.lrtactical.get()))
-    compileOnly(fg.deobf(libs.curseforge.pillagers.gun.get()))
-    compileOnly(fg.deobf(libs.org.valkyrienskies.forge.get()))
-    compileOnly(libs.org.valkyrienskies.core.api)
-    compileOnly(libs.org.valkyrienskies.core.api.game)
-    compileOnly(libs.org.valkyrienskies.core.util)
-    compileOnly(libs.org.valkyrienskies.core.impl)
-    compileOnly(fg.deobf("libs:vs_addition:1.20.1-0.0.10+bfee7aaede"))
-    runtimeOnly(fg.deobf(libs.modrinth.neat.get()))
-}
-
-tasks.processResources {
-    val properties = mapOf(
-        "id" to project.property("mod_id") as String,
-        "version" to project.version as String,
-        "name" to project.property("mod_name") as String,
-        "minecraft_version" to libs.versions.minecraft.asProvider().get(),
-        "minecraft_version_range" to libs.versions.minecraft.range.get(),
-        "forge_version" to libs.versions.forge.asProvider().get(),
-        "forge_version_range" to "[${libs.versions.forge.asProvider().get().substringBefore('.')},)",
-        "loader_version_range" to "[${libs.versions.forge.asProvider().get().substringBefore('.')},)",
-        "tacz_version_range" to libs.versions.tacz.range.get(),
-        "kotlinforforge_version_range" to "[${libs.versions.kotlinforforge.get().substringBeforeLast('.')},)",
-        "yacl_version_range" to "[${libs.versions.yacl.get().substringBeforeLast('.')},)"
-    )
-    inputs.properties(properties)
-    filesMatching(listOf("META-INF/mods.toml", "pack.mcmeta")) { expand(properties) }
-}
-
-tasks.jar {
-    manifest {
-        attributes(mapOf(
-            "Implementation-Title" to project.name,
-            "Implementation-Version" to project.version
-        ))
-    }
-    from("LICENSE") {
-        rename { "${it}_${archiveBaseName.get()}" }
-    }
-    finalizedBy("reobfJar")
-}
-
-tasks.jarJar {
-    from("LICENSE") {
-        rename { "${it}_${archiveBaseName.get()}" }
-    }
-    finalizedBy("reobfJarJar")
-}
-
-val packageExamplePack = tasks.register<Zip>("packageExamplePack") {
-    from(layout.projectDirectory.dir("tacz-tweaks-example-pack"))
-    destinationDirectory = layout.buildDirectory
-    archiveFileName = "tacz-tweaks-example-pack.zip"
-}
-
-tasks.build {
-    dependsOn(packageExamplePack)
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+    options.release.set(25)
 }
 
-publishMods {
-    displayName = "${project.findProperty("mod_name")} ${project.version} for TaCZ ${libs.versions.tacz.target.get()}"
-    changelog = providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText
-    file = tasks.jarJar.get().archiveFile
-    type = STABLE
-    modLoaders.add("forge")
-
-    modrinth {
-        projectId = project.findProperty("modrinth_id") as String
-        projectDescription = providers.fileContents(layout.projectDirectory.file("README.md")).asText
-        additionalFiles.from(packageExamplePack.get().archiveFile)
-        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
-            .orElse(provider { env.fetch("MODRINTH_TOKEN") })
-        minecraftVersions.addAll(libs.versions.minecraft.list.get().split(','))
-
-        requires("kotlin-for-forge")
-        requires("yacl")
-        requires("timeless-and-classics-zero")
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_25)
     }
+}
 
-    curseforge {
-        projectId = project.findProperty("curseforge_id") as String
-        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-            .orElse(provider { env.fetch("CURSEFORGE_TOKEN") })
-        minecraftVersions.addAll(libs.versions.minecraft.list.get().split(','))
+tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
+    inputs.property("version", project.version)
+    filteringCharset = "UTF-8"
 
-        clientRequired = true
-        serverRequired = true
-
-        requires("kotlin-for-forge")
-        requires("yacl")
-        requires("timeless-and-classics-zero")
+    filesMatching("fabric.mod.json") {
+        expand("version" to project.version)
     }
+}
 
-    github {
-        repository = project.findProperty("repository") as String
-        additionalFiles.from(packageExamplePack.get().archiveFile)
-        accessToken = providers.environmentVariable("GITHUB_TOKEN")
-            .orElse(provider { env.fetch("GITHUB_TOKEN") })
-        commitish = "main"
-        tagName = "v${project.version}"
-    }
+java {
+    withSourcesJar()
 }

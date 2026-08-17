@@ -15,8 +15,13 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = LocalPlayerFireSelect.class, remap = false)
 public abstract class LocalPlayerFireSelectMixin {
-    @Shadow @Final private LocalPlayer player;
-    @Shadow @Final private LocalPlayerDataHolder data;
+    @Shadow
+    @Final
+    private LocalPlayer player;
+
+    @Shadow
+    @Final
+    private LocalPlayerDataHolder data;
 
     @ModifyExpressionValue(method = "fireSelect", at = @At(value = "FIELD", opcode = Opcodes.GETFIELD, target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;clientStateLock:Z"))
     private boolean tacztweaks$fireSelect$fireSelectWhileShoot(boolean original) {
@@ -24,9 +29,9 @@ public abstract class LocalPlayerFireSelectMixin {
         IGunOperator operator = IGunOperator.fromLivingEntity(player);
         if (data.lockedCondition == LocalPlayerShootAccessor.getShootLockedCondition()) return false;
         if (data.lockedCondition == null && !operator.getSynReloadState().getStateType().isReloading()
-            && operator.getSynDrawCoolDown() <= 0
-            && !operator.getSynIsBolting()
-            && operator.getSynMeleeCoolDown() <= 0L) return false;
+                && operator.getSynDrawCoolDown() <= 0
+                && !operator.getSynIsBolting()
+                && operator.getSynMeleeCoolDown() <= 0L) return false;
         return original;
     }
 }

@@ -1,88 +1,61 @@
 package me.muksc.tacztweaks;
 
-import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.event.common.GunShootEvent;
+import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.resource.pojo.data.gun.InaccuracyType;
-import me.muksc.tacztweaks.client.input.ReduceSensitivityKey;
-import me.muksc.tacztweaks.client.input.TiltGunKey;
-import me.muksc.tacztweaks.client.input.UnloadKey;
-import me.muksc.tacztweaks.compat.lrtactical.LRTacticalCompat;
-import me.muksc.tacztweaks.compat.pillagers_gun.PillagersGunCompat;
-import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat;
 import me.muksc.tacztweaks.config.Config;
-import me.muksc.tacztweaks.core.BlockBreakingManager;
-import me.muksc.tacztweaks.data.manager.*;
 import me.muksc.tacztweaks.mixin.accessor.InaccuracyTypeAccessor;
 import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder;
 import me.muksc.tacztweaks.network.NetworkHandler;
 import me.muksc.tacztweaks.registry.ModStatusEffects;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@Mod(TaCZTweaks.MOD_ID)
-public class TaCZTweaks {
+public class TaCZTweaks implements ModInitializer {
     public static final String MOD_ID = "tacztweaks";
+    public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
-    public static ResourceLocation id(String path) {
-        return new ResourceLocation(MOD_ID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
     }
 
     public static MutableComponent translatable(String key, Object... args) {
         return Component.translatable("%s.%s".formatted(MOD_ID, key), args);
     }
 
-    public static MutableComponent message() {
-        return ComponentUtils.wrapInSquareBrackets(Component.literal(container.getModInfo().getDisplayName())).append(" ");
-    }
-
-    public static ModContainer container;
-
-    public static List<BaseDataManager<?>> managers = Collections.emptyList();
-
-    public TaCZTweaks() {
-        IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-        container = ModLoadingContext.get().getActiveContainer();
-        managers = List.of(
-            BulletInteractionManager.INSTANCE,
-            BulletParticlesManager.INSTANCE,
-            BulletSoundsManager.INSTANCE,
-            MeleeInteractionManager.INSTANCE
-        );
+    @Override
+    public void onInitialize() {
         Config.INSTANCE.touch();
-        ModStatusEffects.INSTANCE.register(bus);
-        NetworkHandler.INSTANCE.register();
-        LRTacticalCompat.INSTANCE.initialize();
-        PillagersGunCompat.INSTANCE.initialize();
-        SoundPhysicsCompat.INSTANCE.initialize();
-        MinecraftForge.EVENT_BUS.register(this);
+        NetworkHandler.INSTANCE.registerServer();
+        // Force initialization of the ModStatusEffects object so the effect registers at startup.
+        net.minecraft.core.Holder<?> endlessAmmo = ModStatusEffects.INSTANCE.ENDLESS_AMMO;
+
+        // Disable shooting while underwater (server authoritative).
+        GunShootEvent.CALLBACK.register(event -> {
+            if (!Config.Gun.INSTANCE.disableUnderwater()) return;
+            if (event.getShooter().isUnderWater()) event.setCanceled(true);
+        });
+
+        // Push server-authoritative config to players as they join.
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            NetworkHandler.INSTANCE.sendSyncConfig(handler.getPlayer());
+        });
     }
 
+    /**
+     * Collects every inaccuracy "state" an entity is currently in, ordered by importance.
+     * Mirrors the upstream TaCZ Tweaks implementation (uses {@code InaccuracyType#isMove}
+     * via an invoker since it is package-private in the refabricated port).
+     */
     public static List<InaccuracyType> getInaccuracyTypes(LivingEntity entity) {
         IGunOperator operator = IGunOperator.fromLivingEntity(entity);
         List<InaccuracyType> list = new ArrayList<>();
@@ -93,6 +66,10 @@ public class TaCZTweaks {
         return list;
     }
 
+    /**
+     * The "better inaccuracy" calculation: combines the inaccuracy map multiplicatively
+     * (or additively when the base is <= 0) across all active states.
+     */
     public static float getBetterInaccuracy(Map<InaccuracyType, Float> map, LivingEntity entity) {
         List<InaccuracyType> inaccuracyTypes = getInaccuracyTypes(entity);
         float base = map.get(InaccuracyType.STAND);
@@ -111,54 +88,5 @@ public class TaCZTweaks {
             if (Config.Tweaks.INSTANCE.betterGunTilt() && ((SlideDataHolder) entity).tacztweaks$getShouldSlide()) inaccuracy += map.get(InaccuracyType.SNEAK);
         }
         return inaccuracy;
-    }
-
-    @SubscribeEvent
-    public void onGunShoot(GunShootEvent e) {
-        if (!Config.Gun.INSTANCE.disableUnderwater()) return;
-        if (e.getShooter().isUnderWater()) e.setCanceled(true);
-    }
-
-    @SubscribeEvent
-    public void registerReloadListeners(AddReloadListenerEvent e) {
-        managers.forEach(e::addListener);
-    }
-
-    @SubscribeEvent
-    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent e) {
-        if (!(e.getEntity() instanceof ServerPlayer player)) return;
-        managers.forEach(manager -> manager.notifyPlayer(player));
-    }
-
-    @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent e) {
-        if (e.phase != TickEvent.Phase.END) return;
-        if (!(e.level instanceof ServerLevel level)) return;
-        BlockBreakingManager.INSTANCE.onLevelTick(level);
-        BulletParticlesManager.INSTANCE.onLevelTick(level);
-    }
-
-    @SubscribeEvent
-    public void onBlockBreak(BlockEvent.BreakEvent e) {
-        if (!(e.getLevel() instanceof ServerLevel level)) return;
-        BlockBreakingManager.INSTANCE.onBlockBreak(level, e.getPos());
-    }
-
-    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, modid = MOD_ID, value = Dist.CLIENT)
-    static class ClientModEvents {
-        @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-            ModLoadingContext.get().registerExtensionPoint(
-                ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory((client, screen) -> Config.INSTANCE.generateConfigScreen(screen))
-            );
-        }
-
-        @SubscribeEvent
-        public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-            event.register(ReduceSensitivityKey.KEY);
-            event.register(TiltGunKey.KEY);
-            event.register(UnloadKey.KEY);
-        }
     }
 }

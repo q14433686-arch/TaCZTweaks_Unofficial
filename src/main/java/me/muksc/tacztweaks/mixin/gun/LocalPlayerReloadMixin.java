@@ -22,16 +22,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LocalPlayerReload.class, remap = false)
 public abstract class LocalPlayerReloadMixin {
-    @Shadow @Final private LocalPlayerDataHolder data;
-    @Shadow @Final private LocalPlayer player;
+    @Shadow
+    @Final
+    private LocalPlayerDataHolder data;
 
-    @Inject(method = "lambda$reload$2", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;lockState(Ljava/util/function/Predicate;)V"), cancellable = true)
+    @Shadow
+    @Final
+    private LocalPlayer player;
+
+    // NOTE: upstream targeted `lambda$reload$2`; the 26.2 refabricated port renamed the
+    // reload body to the stable hook `reloadWithDisplay`.
+    @Inject(method = "reloadWithDisplay", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;lockState(Ljava/util/function/Predicate;)V"), cancellable = true)
     private void tacztweaks$reload$boltBeforeReload(CallbackInfo ci, @Local(argsOnly = true) ItemStack mainHandItem, @Local(argsOnly = true) AbstractGunItem gunItem) {
         if (!Config.Gun.INSTANCE.manualBolting()) return;
         LocalPlayerDataHolderExtension ext = (LocalPlayerDataHolderExtension) data;
         boolean shouldBoltBeforeReload = ext.tacztweaks$getBoltBeforeReload();
         if (!shouldBoltBeforeReload) {
-            // https://github.com/MCModderAnchor/TACZ/blob/1.1.8-release/src/main/java/com/tacz/guns/client/gameplay/LocalPlayerBolt.java#L44-L66
             ClientGunIndex index = TimelessAPI.getClientGunIndex(gunItem.getGunId(mainHandItem)).orElse(null);
             if (index != null && index.getGunData() != null) {
                 GunData gunData = index.getGunData();

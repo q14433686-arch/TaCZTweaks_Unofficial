@@ -170,5 +170,6 @@
   "tacztweaks.config.label.ETiltGun.DEFAULT": "デフォルト",
   "tacztweaks.config.label.ETiltGun.ALWAYS": "常時",
   "tacztweaks.config.label.ETiltGun.NEVER": "無効",
-  "tacztweaks.property_diagrams.rps": "RPS"
+  "tacztweaks.property_diagrams.rps": "RPS",
+  "key.category.tacztweaks.general": "TaCZ Tweaks"
 }

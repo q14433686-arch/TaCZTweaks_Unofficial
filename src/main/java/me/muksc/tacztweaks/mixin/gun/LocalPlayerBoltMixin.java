@@ -16,11 +16,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LocalPlayerBolt.class, remap = false)
 public abstract class LocalPlayerBoltMixin {
-    @Shadow @Final private LocalPlayer player;
+    @Shadow
+    @Final
+    private LocalPlayer player;
 
-    @Shadow @Final private LocalPlayerDataHolder data;
+    @Shadow
+    @Final
+    private LocalPlayerDataHolder data;
 
-    @Shadow public abstract void bolt();
+    @Shadow
+    public abstract void bolt();
 
     @WrapWithCondition(method = "tickAutoBolt", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerBolt;bolt()V"))
     private boolean tacztweaks$tickAutoBolt$manualBolt(LocalPlayerBolt instance) {

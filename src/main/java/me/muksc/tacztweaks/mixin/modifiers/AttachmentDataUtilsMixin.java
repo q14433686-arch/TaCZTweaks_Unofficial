@@ -1,39 +1,29 @@
 package me.muksc.tacztweaks.mixin.modifiers;
 
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.tacz.guns.util.AttachmentDataUtils;
 import me.muksc.tacztweaks.config.Config;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
+/**
+ * Global multipliers for the damage / headshot / armor-ignore values computed by
+ * {@link AttachmentDataUtils} (used by tooltips, the gun smith table, etc.).
+ */
 @Mixin(value = AttachmentDataUtils.class, remap = false)
 public abstract class AttachmentDataUtilsMixin {
-    @Definition(id = "DAMAGE_BASE_MULTIPLIER", field = "Lcom/tacz/guns/config/sync/SyncConfig;DAMAGE_BASE_MULTIPLIER:Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;")
-    @Definition(id = "get", method = "Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;get()Ljava/lang/Object;")
-    @Definition(id = "Double", type = Double.class)
-    @Expression("? * (Double) DAMAGE_BASE_MULTIPLIER.get()")
-    @ModifyExpressionValue(method = "getDamageWithAttachment", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private static double tacztweaks$getDamageWithAttachment$damageModifier(double original) {
-        return Config.Modifiers.Damage.INSTANCE.eval(original);
+    @ModifyArg(method = "getDamageWithAttachment", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentPropertyManager;eval(Ljava/util/List;D)D"), index = 1)
+    private static double tacztweaks$getDamageWithAttachment$damageModifier(double base) {
+        return Config.Modifiers.Damage.INSTANCE.eval(base);
     }
 
-    @Definition(id = "HEAD_SHOT_BASE_MULTIPLIER", field = "Lcom/tacz/guns/config/sync/SyncConfig;HEAD_SHOT_BASE_MULTIPLIER:Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;")
-    @Definition(id = "get", method = "Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;get()Ljava/lang/Object;")
-    @Definition(id = "Double", type = Double.class)
-    @Expression("? * (Double) HEAD_SHOT_BASE_MULTIPLIER.get()")
-    @ModifyExpressionValue(method = "getHeadshotMultiplier", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private static double tacztweaks$getHeadshotMultiplier$headshotModifier(double original) {
-        return Config.Modifiers.Headshot.INSTANCE.eval(original);
+    @ModifyArg(method = "getHeadshotMultiplier", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentPropertyManager;eval(Ljava/util/List;D)D"), index = 1)
+    private static double tacztweaks$getHeadshotMultiplier$headshotModifier(double base) {
+        return Config.Modifiers.Headshot.INSTANCE.eval(base);
     }
 
-    @Definition(id = "ARMOR_IGNORE_BASE_MULTIPLIER", field = "Lcom/tacz/guns/config/sync/SyncConfig;ARMOR_IGNORE_BASE_MULTIPLIER:Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;")
-    @Definition(id = "get", method = "Lnet/minecraftforge/common/ForgeConfigSpec$DoubleValue;get()Ljava/lang/Object;")
-    @Definition(id = "Double", type = Double.class)
-    @Expression("? * (Double) ARMOR_IGNORE_BASE_MULTIPLIER.get()")
-    @ModifyExpressionValue(method = "getArmorIgnoreWithAttachment", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private static double tacztweaks$getArmorIgnoreWithAttachment$armorIgnoreModifier(double original) {
-        return Config.Modifiers.ArmorIgnore.INSTANCE.eval(original);
+    @ModifyArg(method = "getArmorIgnoreWithAttachment", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentPropertyManager;eval(Ljava/util/List;D)D"), index = 1)
+    private static double tacztweaks$getArmorIgnoreWithAttachment$armorIgnoreModifier(double base) {
+        return Config.Modifiers.ArmorIgnore.INSTANCE.eval(base);
     }
 }

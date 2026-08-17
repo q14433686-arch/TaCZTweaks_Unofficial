@@ -1,31 +1,30 @@
 package me.muksc.tacztweaks.mixin.modifiers;
 
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
-import com.tacz.guns.api.event.common.GunFireEvent;
 import com.tacz.guns.client.event.CameraSetupEvent;
+import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.tacz.guns.resource.pojo.data.gun.GunRecoil;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.mixininterface.modifiers.GunRecoilExtension;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Applies vertical / horizontal (and crawl / aim) recoil modifiers to the recoil
+ * spline functions generated when a shot is fired.
+ */
 @Mixin(value = CameraSetupEvent.class, remap = false)
 public abstract class CameraSetupEventMixin {
-    @Definition(id = "getCrawlRecoilMultiplier", method = "Lcom/tacz/guns/resource/pojo/data/gun/GunData;getCrawlRecoilMultiplier()F")
-    @Expression("? * ?.getCrawlRecoilMultiplier()")
-    @Inject(method = "initialCameraRecoil", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private static void tacztweaks$initialCameraRecoil$setCrawl(GunFireEvent event, CallbackInfo ci, @Share("crawl") LocalBooleanRef crawlRef) {
+    @WrapOperation(method = "initialCameraRecoil", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/GunData;getCrawlRecoilMultiplier()F"))
+    private static float tacztweaks$initialCameraRecoil$setCrawl(GunData instance, Operation<Float> original, @Share("crawl") LocalBooleanRef crawlRef) {
         crawlRef.set(true);
+        return original.call(instance);
     }
 
     @ModifyExpressionValue(method = "initialCameraRecoil", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/client/gameplay/IClientPlayerGunOperator;getClientAimingProgress(F)F"))

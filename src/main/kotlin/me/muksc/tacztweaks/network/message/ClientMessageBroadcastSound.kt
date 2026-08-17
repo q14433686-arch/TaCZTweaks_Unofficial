@@ -1,59 +1,61 @@
 package me.muksc.tacztweaks.network.message
 
 import me.muksc.tacztweaks.TaCZTweaks
-import me.muksc.tacztweaks.network.CustomPacketPayload
 import me.muksc.tacztweaks.network.NetworkHandler
-import me.muksc.tacztweaks.network.StreamCodec
-import net.minecraft.resources.ResourceLocation
+import net.fabricmc.fabric.api.networking.v1.PacketSender
+import net.minecraft.network.FriendlyByteBuf
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload
+import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.level.ChunkPos
 
 class ClientMessageBroadcastSound(
-    val soundName: ResourceLocation,
-    val volume: Float,
-    val pitch: Float,
-    val distance: Int
+    private val soundName: Identifier,
+    private val volume: Float,
+    private val pitch: Float,
+    private val distance: Int
 ) : CustomPacketPayload {
+    constructor(buf: FriendlyByteBuf) : this(
+        buf.readIdentifier(),
+        buf.readFloat(),
+        buf.readFloat(),
+        buf.readInt()
+    )
+
+    fun write(out: FriendlyByteBuf) {
+        out.writeIdentifier(soundName)
+        out.writeFloat(volume)
+        out.writeFloat(pitch)
+        out.writeInt(distance)
+    }
+
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+
     companion object {
         val TYPE = CustomPacketPayload.Type<ClientMessageBroadcastSound>(
-            TaCZTweaks.id("client_broadcast_sound")
+            Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "client_broadcast_sound")
         )
-        val STREAM_CODEC = StreamCodec.of(
-            encoder = { packet, buf ->
-                buf.writeResourceLocation(packet.soundName)
-                buf.writeFloat(packet.volume)
-                buf.writeFloat(packet.pitch)
-                buf.writeInt(packet.distance)
-            },
-            decoder = { buf ->
-                val soundName = buf.readResourceLocation()
-                val volume = buf.readFloat()
-                val pitch = buf.readFloat()
-                val distance = buf.readInt()
-                ClientMessageBroadcastSound(soundName, volume, pitch, distance)
-            }
+        val CODEC: StreamCodec<FriendlyByteBuf, ClientMessageBroadcastSound> = StreamCodec.ofMember(
+            ClientMessageBroadcastSound::write,
+            { buf -> ClientMessageBroadcastSound(buf) }
         )
 
-        fun handle(packet: ClientMessageBroadcastSound, server: MinecraftServer, player: ServerPlayer?) {
+        fun handle(msg: ClientMessageBroadcastSound, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
             server.execute {
                 if (player == null) return@execute
                 val pos = player.blockPosition()
-                player.serverLevel().chunkSource.chunkMap.getPlayers(ChunkPos(pos), false)
-                    .filter { it.distanceToSqr(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble()) < packet.distance * packet.distance }
+                val distanceSqr = msg.distance * msg.distance
+                server.playerList.players
+                    .filter { it.distanceToSqr(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble()) < distanceSqr }
                     .filter { it.id != player.id }
                     .forEach {
-                        NetworkHandler.sendS2C(it, ServerMessageBroadcastSound(
-                            player,
-                            packet.soundName,
-                            packet.volume,
-                            packet.pitch,
-                            packet.distance
-                        ))
+                        NetworkHandler.sendS2C(
+                            it,
+                            ServerMessageBroadcastSound(player.id, msg.soundName, msg.volume, msg.pitch, msg.distance)
+                        )
                     }
             }
         }
     }
-
-    override fun type(): CustomPacketPayload.Type<ClientMessageBroadcastSound> = TYPE
 }

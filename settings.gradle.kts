@@ -1,13 +1,9 @@
 pluginManagement {
     repositories {
-        maven {
-            name = "MinecraftForge"
-            url = uri("https://maven.minecraftforge.net")
-        }
-        maven("https://maven.parchmentmc.org")
-        maven("https://repo.spongepowered.org/repository/maven-public")
+        maven { url = uri("https://maven.fabricmc.net/") }
         gradlePluginPortal()
+        mavenCentral()
     }
 }
 
-rootProject.name = "tacz-tweaks"
+rootProject.name = "tacztweaks"

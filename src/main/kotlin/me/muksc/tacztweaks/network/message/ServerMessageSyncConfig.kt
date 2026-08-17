@@ -4,50 +4,39 @@ import com.tacz.guns.resource.modifier.AttachmentPropertyManager
 import io.netty.buffer.Unpooled
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
-import me.muksc.tacztweaks.config.ConfigManager
 import me.muksc.tacztweaks.config.sync.ESyncDirection
-import me.muksc.tacztweaks.network.CustomPacketPayload
-import me.muksc.tacztweaks.network.StreamCodec
 import net.minecraft.client.Minecraft
 import net.minecraft.network.FriendlyByteBuf
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload
+import net.minecraft.resources.Identifier
 
-class ServerMessageSyncConfig(
-    val buf: FriendlyByteBuf
-) : LoginIndexedMessage(), CustomPacketPayload {
+class ServerMessageSyncConfig private constructor(private val buf: FriendlyByteBuf) : CustomPacketPayload {
+    fun write(out: FriendlyByteBuf) {
+        out.writeInt(buf.writerIndex())
+        out.writeBytes(buf)
+    }
+
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+
     companion object {
         val TYPE = CustomPacketPayload.Type<ServerMessageSyncConfig>(
-            TaCZTweaks.id("server_sync_config")
+            Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "server_sync_config")
         )
-        val STREAM_CODEC = StreamCodec.of(
-            encoder = { packet, buf ->
-                buf.writeInt(packet.buf.writerIndex())
-                buf.writeBytes(packet.buf)
-            },
-            decoder = { buf ->
-                val size = buf.readInt()
-                val data = FriendlyByteBuf(buf.readBytes(size))
-                ServerMessageSyncConfig(data)
-            }
+        val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageSyncConfig> = StreamCodec.ofMember(
+            ServerMessageSyncConfig::write,
+            { buf -> ServerMessageSyncConfig(FriendlyByteBuf(buf.readBytes(buf.readInt()))) }
         )
 
-        fun handle(packet: ServerMessageSyncConfig, minecraft: Minecraft) {
-            Config.decode(packet.buf)
+        fun create(): ServerMessageSyncConfig =
+            ServerMessageSyncConfig(FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) })
+
+        fun handle(msg: ServerMessageSyncConfig, client: Minecraft) {
+            Config.decode(msg.buf)
             Config.sync(ESyncDirection.SERVER_TO_CLIENT)
-            minecraft.player?.also { player ->
+            client.player?.also { player ->
                 AttachmentPropertyManager.postChangeEvent(player, player.mainHandItem)
             }
         }
-
-        fun handleLogin(packet: ServerMessageSyncConfig, minecraft: Minecraft) {
-            if (minecraft.isSingleplayer) return
-            ConfigManager.syncedWithServer = true
-            handle(packet, minecraft)
-        }
     }
-
-    constructor() : this(FriendlyByteBuf(Unpooled.buffer()).apply {
-        Config.encode(this)
-    })
-
-    override fun type(): CustomPacketPayload.Type<ServerMessageSyncConfig> = TYPE
 }

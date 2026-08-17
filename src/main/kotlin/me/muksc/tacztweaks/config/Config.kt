@@ -395,11 +395,11 @@ object Config : SyncableJsonFileCodecConfig<Config>(
         title(TaCZTweaks.translatable("config.title"))
         save {
             if (ConfigManager.syncedWithServer && ConfigManager.canUpdateServerConfig()) {
-                NetworkHandler.sendC2S(ClientMessageSyncConfig())
+                NetworkHandler.sendC2S(ClientMessageSyncConfig.create())
             } else {
                 sync(ESyncDirection.NONE)
                 run {
-                    val server = Minecraft.getInstance().singleplayerServer ?: return@run
+                    val server = Minecraft.getInstance().getSingleplayerServer() ?: return@run
                     val player = server.playerList.getPlayer(Minecraft.getInstance().player?.uuid ?: return@run) ?: return@run
                     AttachmentPropertyManager.postChangeEvent(player, player.mainHandItem)
                 }
@@ -753,13 +753,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
-                    name(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.name"))
-                    description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.description")))
-                    binding(Tweaks.betterMonoConversion.asBinding())
-                    controller(booleanController())
-                    flag(OptionFlag.ASSET_RELOAD)
-                }.build())
-                option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.betterInaccuracy.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterInaccuracy.description")))
                     binding(Tweaks.betterInaccuracy.asSyncedBinding())
@@ -770,13 +763,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     nameSynced(TaCZTweaks.translatable("config.tweaks.betterGunTilt.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterGunTilt.description")))
                     binding(Tweaks.betterGunTilt.asSyncedBinding())
-                    controller(booleanController())
-                    available(canUpdateServerConfig)
-                }.build())
-                option(Option.createBuilder<Boolean>().apply {
-                    nameSynced(TaCZTweaks.translatable("config.tweaks.bulletProtection.name"))
-                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.bulletProtection.description")))
-                    binding(Tweaks.bulletProtection.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())

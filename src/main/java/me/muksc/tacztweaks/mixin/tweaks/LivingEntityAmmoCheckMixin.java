@@ -16,13 +16,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = LivingEntityAmmoCheck.class, remap = false)
 public abstract class LivingEntityAmmoCheckMixin {
-    @Shadow @Final private LivingEntity shooter;
+    @Shadow
+    @Final
+    private LivingEntity shooter;
 
     @Inject(method = "consumesAmmoOrNot", at = @At("HEAD"), cancellable = true)
     private void tacztweaks$consumesAmmoOrNot$disableAmmoConsumption(CallbackInfoReturnable<Boolean> cir) {
         if (!(shooter instanceof Player player) || !(player.getMainHandItem().getItem() instanceof IGun)) return;
 
-        if (player.hasEffect(ModStatusEffects.ENDLESS_AMMO.get())) {
+        if (player.hasEffect(ModStatusEffects.INSTANCE.ENDLESS_AMMO)) {
             cir.setReturnValue(false);
         } else if (Config.Tweaks.INSTANCE.infiniteAmmoDisablesConsumption() && Context.INSTANCE.hasInfiniteAmmo(player.getInventory(), player.getMainHandItem())) {
             cir.setReturnValue(false);

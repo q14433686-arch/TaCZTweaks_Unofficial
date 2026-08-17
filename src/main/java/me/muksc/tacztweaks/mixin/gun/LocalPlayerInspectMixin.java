@@ -20,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LocalPlayerInspect.class, remap = false)
 public abstract class LocalPlayerInspectMixin {
-    @Shadow @Final private LocalPlayer player;
+    @Shadow
+    @Final
+    private LocalPlayer player;
 
     @Unique
     private long tacztweaks$lastInspect = -1L;

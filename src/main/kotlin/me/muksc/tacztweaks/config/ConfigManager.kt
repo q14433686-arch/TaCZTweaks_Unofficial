@@ -1,15 +1,9 @@
 package me.muksc.tacztweaks.config
 
-import me.muksc.tacztweaks.TaCZTweaks
-import me.muksc.tacztweaks.config.sync.ESyncDirection
 import net.minecraft.client.Minecraft
-import net.minecraft.world.entity.player.Player
-import net.minecraftforge.api.distmarker.Dist
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.server.permissions.Permissions
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, modid = TaCZTweaks.MOD_ID, value = [Dist.CLIENT])
 object ConfigManager {
     var syncedWithServer = false
 
@@ -19,13 +13,8 @@ object ConfigManager {
         return canUpdateServerConfig(player)
     }
 
-    fun canUpdateServerConfig(player: Player) =
-        player.hasPermissions(2)
-
-    @JvmStatic
-    @SubscribeEvent
-    fun onLoggingOut(e: ClientPlayerNetworkEvent.LoggingOut) {
-        syncedWithServer = false
-        Config.sync(ESyncDirection.RESET)
+    fun canUpdateServerConfig(player: net.minecraft.world.entity.player.Player): Boolean {
+        val serverPlayer = player as? ServerPlayer ?: return false
+        return serverPlayer.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)
     }
 }

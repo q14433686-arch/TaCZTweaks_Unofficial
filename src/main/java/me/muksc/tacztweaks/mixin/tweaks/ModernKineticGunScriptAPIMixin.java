@@ -1,7 +1,5 @@
 package me.muksc.tacztweaks.mixin.tweaks;
 
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -18,30 +16,39 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.Map;
 
+/**
+ * Two tweaks on the server-side gun script API:
+ * <ul>
+ *   <li>{@code forceFirstPersonShootingSound}: uses the first-person shoot sound (stereo)
+ *       instead of the third-person one when other players shoot. The two {@code 3P_SOUND}
+ *       static fields are read inside the named hook {@code runShootCycle} (the refabricated
+ *       port renamed the upstream {@code lambda$shootOnce$2});</li>
+ *   <li>{@code betterInaccuracy}: replaces the single-state inaccuracy lookup with the
+ *       combined multi-state calculation in {@link TaCZTweaks#getBetterInaccuracy}.</li>
+ * </ul>
+ */
 @Mixin(value = ModernKineticGunScriptAPI.class, remap = false)
 public abstract class ModernKineticGunScriptAPIMixin {
-    @Shadow private LivingEntity shooter;
+    @Shadow
+    private LivingEntity shooter;
 
-    @ModifyExpressionValue(method = "lambda$shootOnce$2", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SILENCE_3P_SOUND:Ljava/lang/String;"))
-    private String tacztweaks$shootOnce$forceFirstPersonShootSound$silenced(String original) {
+    // ---- forceFirstPersonShootingSound ----
+    @ModifyExpressionValue(method = "runShootCycle", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SILENCE_3P_SOUND:Ljava/lang/String;"))
+    private String tacztweaks$runShootCycle$forceFirstPersonShootSound$silenced(String original) {
         if (!Config.Tweaks.INSTANCE.forceFirstPersonShootingSound()) return original;
         return SoundManager.SILENCE_SOUND;
     }
 
-    @ModifyExpressionValue(method = "lambda$shootOnce$2", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SHOOT_3P_SOUND:Ljava/lang/String;"))
-    private String tacztweaks$shootOnce$forceFirstPersonShootSound$normal(String original) {
+    @ModifyExpressionValue(method = "runShootCycle", at = @At(value = "FIELD", opcode = Opcodes.GETSTATIC, target = "Lcom/tacz/guns/sound/SoundManager;SHOOT_3P_SOUND:Ljava/lang/String;"))
+    private String tacztweaks$runShootCycle$forceFirstPersonShootSound$normal(String original) {
         if (!Config.Tweaks.INSTANCE.forceFirstPersonShootingSound()) return original;
         return SoundManager.SHOOT_SOUND;
     }
 
-    @Definition(id = "Map", type = Map.class)
-    @Definition(id = "getCache", method = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Lcom/tacz/guns/api/GunProperty;)Ljava/lang/Object;")
-    @Definition(id = "INACCURACY", field = "Lcom/tacz/guns/api/GunProperties;INACCURACY:Lcom/tacz/guns/api/GunProperty;")
-    @Definition(id = "get", method = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;")
-    @Expression("((Map) ?.getCache(INACCURACY)).get(?)")
-    @WrapOperation(method = "shootOnce", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private Object tacztweaks$shootOnce$betterInaccuracy(Map<InaccuracyType, Float> instance, Object o, Operation<Float> original) {
-        if (!Config.Tweaks.INSTANCE.betterInaccuracy()) return original.call(instance, o);
+    // ---- betterInaccuracy ----
+    @WrapOperation(method = "shootOnce", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
+    private Object tacztweaks$shootOnce$betterInaccuracy(Map<InaccuracyType, Float> instance, Object key, Operation<Object> original) {
+        if (!Config.Tweaks.INSTANCE.betterInaccuracy()) return original.call(instance, key);
         return TaCZTweaks.getBetterInaccuracy(instance, shooter);
     }
 }
