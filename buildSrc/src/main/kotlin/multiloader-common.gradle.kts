@@ -93,6 +93,13 @@ repositories {
 sourceSets {
     main {
         val sourceSet = this
+        // Per-MC-version overlay dirs (e.g. src/main/java-fabric-26.2), used by the 26.2 port:
+        // files there shadow the shared/loader files. Java/kotlin overlays are PREPENDED
+        // (first srcDir wins for compilation); the resources overlay is APPENDED so its
+        // files are copied last and win in processResources. See docs/PORT_PLAN_26.2.md.
+        val overlayDir = { name: String -> file("src/${sourceSet.name}/$name-$loader-${prop("minecraft.version")}") }
+        java.setSrcDirs(listOf(overlayDir("java")) + java.srcDirs)
+        kotlin.setSrcDirs(listOf(overlayDir("kotlin")) + kotlin.srcDirs)
         for ((name, srcDir) in arrayOf(
             "java" to java,
             "kotlin" to kotlin,
@@ -100,6 +107,7 @@ sourceSets {
         )) {
             srcDir.srcDirs("src/${sourceSet.name}/$name-$loader")
         }
+        resources.srcDirs(overlayDir("resources"))
     }
 }
 
@@ -114,6 +122,9 @@ val resourceProperties = extensions.create<ResourcePropertiesExtension>("resourc
         "pack_format" to when (val mcVersion = prop("minecraft.version")) {
             "1.20.1" -> "15"
             "1.21.1" -> "34"
+            // 26.x no longer ships pack.mcmeta (excluded from the jar in 26.2-fabric.gradle.kts),
+            // so the value below is never written into a file.
+            "26.2" -> "0"
             else -> error("Couldn't detect pack_format for version: $mcVersion")
         },
         "java_version" to prop("java.version"),

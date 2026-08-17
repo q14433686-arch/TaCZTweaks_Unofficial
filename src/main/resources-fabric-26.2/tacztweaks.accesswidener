@@ -1,0 +1,8 @@
+accessWidener v2 official
+
+# TaCZ Tweaks 26.2 access widener.
+# Header must be `v2 official` (26.1+ unobfuscated Minecraft has no intermediary).
+#
+# AbstractSelectionList$Entry still exists in 26.2 (verified against the upstream 26.2
+# port's GunPackList). Additional entries are added as the Phase 1 build pass demands.
+accessible class net/minecraft/client/gui/components/AbstractSelectionList$Entry

@@ -33,6 +33,10 @@ stonecutter {
 
         mc("1.20.1", listOf("fabric", "forge"))
         mc("1.21.1", listOf("fabric", "neoforge"))
+        // Unofficial TaCZ Refabricated port: https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial
+        // 26.2 needs plain fabric-loom 1.17 (unobfuscated pipeline), so it gets its own buildscript.
+        // (see docs/PORT_PLAN_26.2.md)
+        version(project = "26.2-fabric", version = "26.2").buildscript("26.2-fabric.gradle.kts")
         vcsVersion = "1.20.1-forge"
     }
 }
