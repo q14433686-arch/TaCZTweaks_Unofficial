@@ -22,12 +22,8 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.util.concurrent.CompletableFuture
 
-//? if >=1.20.5 {
-/*import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.minecraft.network.RegistryFriendlyByteBuf
-*///?} else {
-import net.minecraft.network.FriendlyByteBuf as RegistryFriendlyByteBuf
-//?}
 
 object FabricPlatformNetwork : PlatformNetwork {
     override fun <T : CustomPacketPayload<T>> sendC2S(packet: T) {
@@ -55,16 +51,10 @@ object FabricPlatformNetwork : PlatformNetwork {
         codec: StreamCodec<in RegistryFriendlyByteBuf, T>,
         handler: ServerHandler<T>
     ) {
-        //? if <1.20.5 {
-        ServerPlayNetworking.registerGlobalReceiver(type.toPacketType(codec)) { packet, player, sender ->
-            handler.handle(packet, player.server, player)
-        }
-        //?} else {
-        /*PayloadTypeRegistry.playC2S().register(type, codec)
+        PayloadTypeRegistry.playC2S().register(type, codec)
         ServerPlayNetworking.registerGlobalReceiver(type) { packet, context ->
             handler.handle(packet, context.server(), context.player())
         }
-        *///?}
     }
 
     override fun <T : CustomPacketPayload<T>> registerS2C(
@@ -73,20 +63,12 @@ object FabricPlatformNetwork : PlatformNetwork {
         codec: StreamCodec<in RegistryFriendlyByteBuf, T>,
         handler: ClientHandler<T>
     ) {
-        //? if <1.20.5 {
-        if (FabricLoader.getInstance().environmentType == EnvType.CLIENT) {
-            ClientPlayNetworking.registerGlobalReceiver(type.toPacketType(codec)) { packet, player, sender ->
-                handler.handle(packet, Minecraft.getInstance())
-            }
-        }
-        //?} else {
-        /*PayloadTypeRegistry.playS2C().register(type, codec)
+        PayloadTypeRegistry.playS2C().register(type, codec)
         if (FabricLoader.getInstance().environmentType == EnvType.CLIENT) {
             ClientPlayNetworking.registerGlobalReceiver(type) { packet, context ->
                 handler.handle(packet, Minecraft.getInstance())
             }
         }
-        *///?}
     }
 
     override fun <T : LoginIndexedMessage<T>> registerLoginS2C(

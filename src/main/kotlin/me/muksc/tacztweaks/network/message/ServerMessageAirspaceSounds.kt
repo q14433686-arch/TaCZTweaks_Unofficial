@@ -12,13 +12,9 @@ import net.minecraft.core.NonNullList
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 
-//? if >=1.20.5 {
-/*import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.RegistryFriendlyByteBuf
 import me.muksc.tacztweaks.core.codec.readCollection
 import me.muksc.tacztweaks.core.codec.writeCollection
-*///?} else {
-import net.minecraft.network.FriendlyByteBuf as RegistryFriendlyByteBuf
-//?}
 
 class ServerMessageAirspaceSounds(
     val sounds: List<AirspaceSound>,
@@ -76,20 +72,12 @@ class ServerMessageAirspaceSounds(
     ) {
         companion object {
             val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, AirspaceSound> = StreamCodec.of({ buf, value ->
-                //? if >=1.20.5 {
-                /*buf.writeCollection(value.packets, ClientboundSoundPacket.STREAM_CODEC::encode)
-                *///?} else {
-                buf.writeCollection(value.packets) { buf, element -> element.write(buf) }
-                //?}
+                buf.writeCollection(value.packets, ClientboundSoundPacket.STREAM_CODEC::encode)
                 buf.writeDoubleRange(value.airspace)
                 buf.writeDoubleRange(value.occlusionAccumulation)
                 buf.writeDoubleRange(value.reflectivity)
             }, { buf ->
-                //? if >=1.20.5 {
-                /*val packets = buf.readCollection<RegistryFriendlyByteBuf, ClientboundSoundPacket, NonNullList<ClientboundSoundPacket>>(NonNullList<*>::createWithCapacity, ClientboundSoundPacket.STREAM_CODEC::decode)
-                *///?} else {
-                val packets = buf.readCollection(NonNullList<*>::createWithCapacity, ::ClientboundSoundPacket)
-                //?}
+                val packets = buf.readCollection<RegistryFriendlyByteBuf, ClientboundSoundPacket, NonNullList<ClientboundSoundPacket>>(NonNullList<*>::createWithCapacity, ClientboundSoundPacket.STREAM_CODEC::decode)
                 val airspace = buf.readDoubleRange()
                 val occlusionAccumulation = buf.readDoubleRange()
                 val reflectivity = buf.readDoubleRange()

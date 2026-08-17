@@ -17,10 +17,6 @@ import net.minecraft.world.item.Tier
 import net.minecraft.world.level.block.Block as MCBlock
 import net.minecraft.world.level.block.state.BlockState
 
-//? if forge {
-import me.muksc.tacztweaks.core.registry.PlatformRegistries.byNameCodec
-import net.minecraftforge.common.TierSortingRegistry
-//?}
 
 sealed class BlockTarget(
     val type: EBlockTargetType
@@ -123,13 +119,7 @@ sealed class BlockTarget(
 
     class HardnessTier(val tier: Tier) : BlockTarget(EBlockTargetType.TIER) {
         override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            //? if 1.21.1 {
-            /*!state.`is`(tier.incorrectBlocksForDrops)
-            *///?} else if fabric {
-            /*tier.level >= net.fabricmc.fabric.api.mininglevel.v1.MiningLevelManager.getRequiredMiningLevel(state)
-            *///?} else if forge {
-            TierSortingRegistry.isCorrectTierForDrops(tier, state)
-            //?}
+            tier.level >= net.fabricmc.fabric.api.mininglevel.v1.MiningLevelManager.getRequiredMiningLevel(state)
 
         companion object {
             val CODEC: MapCodec<HardnessTier> = RecordCodecBuilder.mapCodec { it.group(

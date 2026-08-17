@@ -8,7 +8,7 @@ import me.muksc.tacztweaks.core.logger.withMarker
 import me.muksc.tacztweaks.core.resource.IdentifiableResourceReloadListener
 import me.muksc.tacztweaks.core.toImmutableMap
 import net.minecraft.ChatFormatting
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener
@@ -38,7 +38,7 @@ abstract class BaseDataManager<E : Any>(
     val logger = TaCZTweaks.logger.withMarker(
         MarkerFactory.getMarker(this::class.simpleName)
     )
-    protected var map: Map<KClass<*>, Map<ResourceLocation, E>> = emptyMap()
+    protected var map: Map<KClass<*>, Map<Identifier, E>> = emptyMap()
 
     protected var hasError: Boolean = false
         private set
@@ -57,16 +57,16 @@ abstract class BaseDataManager<E : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    protected inline fun <reified T: E> byType(): Map<ResourceLocation, T> =
-        map.getOrElse(T::class) { emptyMap() } as Map<ResourceLocation, T>
+    protected inline fun <reified T: E> byType(): Map<Identifier, T> =
+        map.getOrElse(T::class) { emptyMap() } as Map<Identifier, T>
 
     override fun apply(
-        elements: Map<ResourceLocation, JsonElement>,
+        elements: Map<Identifier, JsonElement>,
         resourceManager: ResourceManager,
         profiler: ProfilerFiller
     ) {
         hasError = false
-        map = buildMap<KClass<*>, ImmutableMap.Builder<ResourceLocation, E>> {
+        map = buildMap<KClass<*>, ImmutableMap.Builder<Identifier, E>> {
             for ((id, json) in elements) {
                 try {
                     val element = parseElement(json)

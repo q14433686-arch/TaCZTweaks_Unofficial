@@ -4,10 +4,6 @@ import com.tacz.guns.entity.EntityKineticBullet
 import com.tacz.guns.util.TacHitResult
 import me.muksc.tacztweaks.core.compatibility.ModCompatibilityManager
 
-//? if 1.20.1 && forge {
-import ichttt.mods.firstaid.common.EventHandler
-import net.minecraftforge.event.entity.ProjectileImpactEvent
-//?}
 
 object FirstAidManager : ModCompatibilityManager(
     modId = "firstaid",
@@ -20,8 +16,3 @@ object FirstAidManager : ModCompatibilityManager(
 
     private object Inner {
         fun onProjectileImpact(bullet: EntityKineticBullet, result: TacHitResult) {
-            //? if 1.20.1 && forge
-            EventHandler.onProjectileImpact(ProjectileImpactEvent(bullet, result))
-        }
-    }
-}

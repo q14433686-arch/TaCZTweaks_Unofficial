@@ -9,11 +9,7 @@ import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
-//? if >=1.20.5 {
-/*import net.minecraft.network.RegistryFriendlyByteBuf
-*///?} else {
-import net.minecraft.network.FriendlyByteBuf as RegistryFriendlyByteBuf
-//?}
+import net.minecraft.network.RegistryFriendlyByteBuf
 
 interface PlatformNetwork {
     fun <T : CustomPacketPayload<T>> sendC2S(packet: T)

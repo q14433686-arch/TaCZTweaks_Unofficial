@@ -1,7 +1,6 @@
 package me.muksc.tacztweaks.core.codec
 
-//? if >=1.20.5 {
-/*import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamDecoder
 import net.minecraft.network.codec.StreamEncoder
 import java.util.function.IntFunction
@@ -27,4 +26,3 @@ fun <B : RegistryFriendlyByteBuf, T : Any> B.writeCollection(
         elementWriter.encode(this, element)
     }
 }
-*///?}

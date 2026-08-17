@@ -10,13 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = ClientMessageUnloadAttachment.class, remap = false)
 public abstract class ClientMessageUnloadAttachmentMixin {
-    //? if forge {
-    @ModifyExpressionValue(method = "lambda$handle$0", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))
-    //?} else if fabric && 1.20.1 {
-    /*@ModifyExpressionValue(method = "handle", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))
-    *///?} else if (fabric && 1.21.1) || neoforge {
-    /*@ModifyExpressionValue(method = "lambda$handle$2", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/IGun;hasAttachmentLock(Lnet/minecraft/world/item/ItemStack;)Z"))
-    *///?}
     private static boolean tacztweaks$handle$disarm(
         boolean original,
         @Local ServerPlayer player

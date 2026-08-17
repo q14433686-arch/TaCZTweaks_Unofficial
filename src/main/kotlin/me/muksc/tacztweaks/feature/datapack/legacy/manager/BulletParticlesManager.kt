@@ -23,7 +23,7 @@ import net.minecraft.commands.arguments.coordinates.WorldCoordinate
 import net.minecraft.commands.arguments.coordinates.WorldCoordinates
 import net.minecraft.core.particles.ParticleOptions
 import net.minecraft.resources.ResourceKey
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
@@ -31,10 +31,6 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 import net.minecraft.commands.arguments.coordinates.Coordinates as MCCoordinates
 
-//? if <1.20.5 {
-import me.muksc.tacztweaks.core.extension.getOrThrow
-import net.minecraft.core.registries.Registries
-//?}
 
 private val COMPARATOR = compareBy<BulletParticles> { it.priority }
     .thenByDescending { it.target.isNotEmpty() }
@@ -45,7 +41,7 @@ private val COMPARATOR = compareBy<BulletParticles> { it.priority }
 
 object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particles", COMPARATOR) {
     private val ID = TaCZTweaks.id("bullet_particles")
-    override fun id(): ResourceLocation = ID
+    override fun id(): Identifier = ID
 
     override val debugEnabled: Boolean get() = Config.General.Debug.bulletParticles()
 
@@ -57,7 +53,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particl
         location: Vec3,
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
-    ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, particles) ->
+    ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, particles) ->
         particles.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && selector(particles).anyOrEmpty(predicate)
     }?.toPair()
@@ -119,11 +115,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>("bullet_particl
         val source = bullet.createCommandSourceStack()
             .withPosition(ext.currentHitPosition)
         val reader = StringReader(if (context != null) particle.format(context) else particle)
-        //? if <1.20.5 {
-        val registries = level.registryAccess().lookupOrThrow(Registries.PARTICLE_TYPE)
-        //?} else {
-        /*val registries = level.registryAccess()
-        *///?}
+        val registries = level.registryAccess()
         val particleOptions = ParticleArgument.readParticle(reader, registries)
         emitters.computeIfAbsent(level.dimension()) {
             ObjectArrayList()

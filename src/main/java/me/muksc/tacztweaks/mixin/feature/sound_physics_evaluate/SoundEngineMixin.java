@@ -37,11 +37,7 @@ public abstract class SoundEngineMixin {
     }
 
     @SuppressWarnings("MixinExtrasOperationParameters") // MinecraftDev :(
-    //? if fabric {
-    /*@WrapOperation(method = "method_19752", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Channel;play()V"))
-    *///?} else {
-    @WrapOperation(method = "lambda$play$6", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Channel;play()V", remap = true), remap = false)
-    //?}
+    @WrapOperation(method = "method_19752", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Channel;play()V"))
     private static void tacztweaks$play$soundPhysicsEvaluate$1(Channel instance, Operation<Void> original) {
         SoundInstance soundInstance = ChannelExtraContext.of(instance).tacztweaks$getSoundInstance();
         if (!(soundInstance instanceof SoundPhysicsEvaluationSoundInstance sound)) {
@@ -53,11 +49,7 @@ public abstract class SoundEngineMixin {
     }
 
     @SuppressWarnings("MixinExtrasOperationParameters") // MinecraftDev :(
-    //? if fabric {
-    /*@WrapOperation(method = "method_19755", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Channel;play()V"))
-    *///?} else {
-    @WrapOperation(method = "lambda$play$8", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Channel;play()V", remap = true), remap = false)
-    //?}
+    @WrapOperation(method = "method_19755", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/Channel;play()V"))
     private static void tacztweaks$play$soundPhysicsEvaluate$2(Channel instance, Operation<Void> original) {
         SoundInstance soundInstance = ChannelExtraContext.of(instance).tacztweaks$getSoundInstance();
         if (!(soundInstance instanceof SoundPhysicsEvaluationSoundInstance sound)) {

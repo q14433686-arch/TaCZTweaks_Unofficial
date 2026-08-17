@@ -8,13 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-//? if forge {
-import net.minecraftforge.client.event.InputEvent;
-//?} else if neoforge {
-/*import net.neoforged.neoforge.client.event.InputEvent;
-*///?} else if fabric {
-/*import cn.sh1rocu.tacz.api.event.InputEvent;
-*///?}
+import cn.sh1rocu.tacz.api.event.InputEvent;
 
 @Mixin(value = InteractKey.class, remap = false)
 public abstract class InteractKeyMixin {

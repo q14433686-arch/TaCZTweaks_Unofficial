@@ -7,15 +7,15 @@ import com.tacz.guns.client.sound.GunSoundInstance;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.network.NetworkManager;
 import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = ObjectAnimationSoundChannel.class, remap = false)
 public abstract class ObjectAnimationSoundChannelMixin {
-    @WrapOperation(method = "playSound", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/sound/SoundPlayManager;playAnimationSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/resources/ResourceLocation;FFI)Lcom/tacz/guns/client/sound/GunSoundInstance;"))
-    private GunSoundInstance tacztweaks$playSound$broadcastFirstPersonGunSounds(Entity entity, ResourceLocation name, float volume, float pitch, int distance, Operation<GunSoundInstance> original) {
+    @WrapOperation(method = "playSound", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/sound/SoundPlayManager;playAnimationSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/resources/Identifier;FFI)Lcom/tacz/guns/client/sound/GunSoundInstance;"))
+    private GunSoundInstance tacztweaks$playSound$broadcastFirstPersonGunSounds(Entity entity, Identifier name, float volume, float pitch, int distance, Operation<GunSoundInstance> original) {
         if (Config.AudioAndVisuals.Audio.broadcastFirstPersonGunSounds()) NetworkManager.sendC2S(
             new ClientMessageBroadcastSound(name, volume, pitch, distance)
         );

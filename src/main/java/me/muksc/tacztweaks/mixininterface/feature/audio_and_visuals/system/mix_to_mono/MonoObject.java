@@ -1,10 +1,10 @@
 package me.muksc.tacztweaks.mixininterface.feature.audio_and_visuals.system.mix_to_mono;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public interface MonoObject {
-    static MonoObject of(ResourceLocation instance) {
-        return /*? if <1.21 {*/ (MonoObject) instance /*?} else {*/ /*MonoObject.class.cast(instance) *//*?}*/;
+    static MonoObject of(Identifier instance) {
+        return MonoObject.class.cast(instance);
     }
 
     /**

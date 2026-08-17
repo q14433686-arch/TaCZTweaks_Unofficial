@@ -3,17 +3,14 @@ package me.muksc.tacztweaks.core.logger
 import org.slf4j.Logger
 import org.slf4j.Marker
 
-//? if >=1.20.5 {
-/*import org.slf4j.event.Level
+import org.slf4j.event.Level
 import org.slf4j.spi.LoggingEventBuilder
-*///?}
 
 class MarkerLogger(
     val base: Logger,
     val marker: Marker
 ) : Logger by base {
-    //? if >=1.20.5 {
-    /*override fun makeLoggingEventBuilder(level: Level?): LoggingEventBuilder? = base.makeLoggingEventBuilder(level)
+    override fun makeLoggingEventBuilder(level: Level?): LoggingEventBuilder? = base.makeLoggingEventBuilder(level)
 
     override fun atLevel(level: Level?): LoggingEventBuilder? = base.atLevel(level)
 
@@ -28,7 +25,6 @@ class MarkerLogger(
     override fun atWarn(): LoggingEventBuilder? = base.atWarn()
 
     override fun atError(): LoggingEventBuilder? = base.atError()
-    *///?}
 
     override fun isTraceEnabled(): Boolean = base.isTraceEnabled(marker)
 

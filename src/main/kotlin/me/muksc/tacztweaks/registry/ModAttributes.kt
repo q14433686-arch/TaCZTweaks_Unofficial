@@ -44,7 +44,6 @@ object ModAttributes {
         SHOOT_WHILE_SPRINTING, SPRINT_WHILE_RELOADING
     )
 
-    //? if fabric
     //@Suppress("RedundantSamConstructor")
     fun <T : Attribute> register(name: String, block: (descriptionId: String) -> T): DeferredHolder<Attribute, T> =
         REGISTRY.register(name, Supplier {

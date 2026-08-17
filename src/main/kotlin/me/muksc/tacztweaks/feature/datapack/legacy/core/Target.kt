@@ -17,7 +17,7 @@ import me.muksc.tacztweaks.mixininterop.burstIndex
 import me.muksc.tacztweaks.mixininterop.pelletIndex
 import net.minecraft.advancements.critereon.EntityPredicate
 import net.minecraft.advancements.critereon.MinMaxBounds
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.StringRepresentable
 import net.minecraft.world.entity.LivingEntity
@@ -27,7 +27,7 @@ import kotlin.jvm.optionals.getOrNull
 sealed class Target(
     val type: ETargetType
 ) {
-    abstract fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean
+    abstract fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean
 
     enum class ETargetType(
         override val key: String,
@@ -55,7 +55,7 @@ sealed class Target(
     }
 
     class AllOf(val terms: List<Target>) : Target(ETargetType.ALL_OF) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             terms.all { it.test(entity, weaponId, damage) }
 
         companion object {
@@ -66,7 +66,7 @@ sealed class Target(
     }
 
     class AnyOf(val terms: List<Target>) : Target(ETargetType.ANY_OF) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             terms.any { it.test(entity, weaponId, damage) }
 
         companion object {
@@ -77,7 +77,7 @@ sealed class Target(
     }
 
     class Inverted(val term: Target) : Target(ETargetType.INVERTED) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             !term.test(entity, weaponId, damage)
 
         companion object {
@@ -87,19 +87,19 @@ sealed class Target(
         }
     }
 
-    class Gun(val values: List<ResourceLocation>) : Target(ETargetType.GUN) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+    class Gun(val values: List<Identifier>) : Target(ETargetType.GUN) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             values.contains(weaponId)
 
         companion object {
             val CODEC: MapCodec<Gun> = RecordCodecBuilder.mapCodec { it.group(
-                Codec.list(ResourceLocation.CODEC).strictOptionalFieldOf("values", emptyList()).forGetter(Gun::values)
+                Codec.list(Identifier.CODEC).strictOptionalFieldOf("values", emptyList()).forGetter(Gun::values)
             ).apply(it, ::Gun) }
         }
     }
 
     class Category(val values: List<String>) : Target(ETargetType.CATEGORY) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
             val index = TimelessAPI.getCommonGunIndex(weaponId).getOrNull() ?: return false
             return values.contains(index.type.lowercase(Locale.US))
         }
@@ -111,13 +111,13 @@ sealed class Target(
         }
     }
 
-    class Ammo(val values: List<ResourceLocation>) : Target(ETargetType.AMMO) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+    class Ammo(val values: List<Identifier>) : Target(ETargetType.AMMO) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             entity != null && values.contains(entity.ammoId)
 
         companion object {
             val CODEC: MapCodec<Ammo> = RecordCodecBuilder.mapCodec { it.group(
-                Codec.list(ResourceLocation.CODEC).strictOptionalFieldOf("values", emptyList()).forGetter(Ammo::values)
+                Codec.list(Identifier.CODEC).strictOptionalFieldOf("values", emptyList()).forGetter(Ammo::values)
             ).apply(it, ::Ammo) }
         }
     }
@@ -134,7 +134,7 @@ sealed class Target(
             }
         }
 
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean = regex.matches(when (match) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean = regex.matches(when (match) {
             EMatchType.GUN -> weaponId.toString()
             EMatchType.AMMO -> entity?.ammoId?.toString() ?: ""
         })
@@ -148,7 +148,7 @@ sealed class Target(
     }
 
     class Predicate(val predicate: EntityPredicate) : Target(ETargetType.PREDICATE) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             entity != null && predicate.matches(entity.level() as ServerLevel, entity.position(), entity)
 
         companion object {
@@ -159,7 +159,7 @@ sealed class Target(
     }
 
     class Damage(val values: List<ValueRange>) : Target(ETargetType.DAMAGE) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             entity != null && values.any { it.contains(damage) }
 
         companion object {
@@ -170,7 +170,7 @@ sealed class Target(
     }
 
     class Speed(val values: List<ValueRange>) : Target(ETargetType.SPEED) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             entity != null && values.any { it.contains(entity.deltaMovement.length() * 10) }
 
         companion object {
@@ -181,7 +181,7 @@ sealed class Target(
     }
 
     object Silenced : Target(ETargetType.SILENCED) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
             val owner = entity?.owner as? LivingEntity ?: return false
             val operator = IGunOperator.fromLivingEntity(owner)
             val silence = operator.cacheProperty?.getCache<ObjectObjectImmutablePair<Integer, Boolean>>(SilenceModifier.ID) ?: return false
@@ -194,7 +194,7 @@ sealed class Target(
     class BurstIndex(
         val index: MinMaxBounds.Ints
     ) : Target(ETargetType.BURST_INDEX) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
             val ext = TaCZTweaksBullet.of(entity) ?: return false
             return index.matches(ext.burstIndex)
         }
@@ -209,7 +209,7 @@ sealed class Target(
     class PelletIndex(
         val index: MinMaxBounds.Ints
     ) : Target(ETargetType.PELLET_INDEX) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
             val ext = TaCZTweaksBullet.of(entity) ?: return false
             return index.matches(ext.pelletIndex)
         }
@@ -222,7 +222,7 @@ sealed class Target(
     }
 
     class RandomChance(val chance: Float) : Target(ETargetType.RANDOM_CHANCE) {
-        override fun test(entity: EntityKineticBullet?, weaponId: ResourceLocation, damage: Float): Boolean =
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             entity != null && entity.random.nextFloat() < chance
 
         companion object {

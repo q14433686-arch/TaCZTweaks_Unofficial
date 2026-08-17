@@ -1,11 +1,11 @@
 package me.muksc.tacztweaks.mixin.feature.audio_and_visuals.system.mix_to_mono;
 
 import me.muksc.tacztweaks.mixininterface.feature.audio_and_visuals.system.mix_to_mono.MonoObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(ResourceLocation.class)
+@Mixin(Identifier.class)
 public abstract class ResourceLocationMixin implements MonoObject {
     @Unique
     private boolean tacztweaks$mono = false;

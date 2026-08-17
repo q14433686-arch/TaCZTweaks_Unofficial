@@ -21,7 +21,7 @@ import me.muksc.tacztweaks.mixin.accessor.EntityKineticBulletAccessor
 import me.muksc.tacztweaks.mixininterface.feature.datapack.TaCZTweaksBullet
 import me.muksc.tacztweaks.mixininterop.*
 import net.minecraft.core.BlockPos
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -33,19 +33,7 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 
-//? if <1.20.5 {
-import me.muksc.tacztweaks.core.extension.getOrThrow
-import me.muksc.tacztweaks.core.extension.test
-//?}
-//? if fabric {
-/*import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
-*///?} else if forge {
-import net.minecraftforge.common.MinecraftForge
-import net.minecraftforge.event.level.BlockEvent
-//?} else if neoforge {
-/*import net.neoforged.neoforge.common.NeoForge
-import net.neoforged.neoforge.event.level.BlockEvent
-*///?}
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 
 private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
     .thenByDescending { it.target.isNotEmpty() }
@@ -57,7 +45,7 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
 
 object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_interactions", COMPARATOR), IdentifiableResourceReloadListener {
     private val ID = TaCZTweaks.id("bullet_interactions")
-    override fun id(): ResourceLocation = ID
+    override fun id(): Identifier = ID
 
     override val debugEnabled: Boolean get() = Config.General.Debug.bulletInteractions()
 
@@ -91,7 +79,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_int
         location: Vec3,
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
-    ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
+    ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
         interaction.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && selector(interaction).anyOrEmpty(predicate)
     }?.toPair()
@@ -100,7 +88,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_int
         entity: EntityKineticBullet,
         location: Vec3,
         predicate: (T) -> Boolean
-    ): Pair<ResourceLocation, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
+    ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
         interaction.target.anyOrEmpty { it.test(entity, entity.gunId, entity.getDamage(location)) }
             && predicate(interaction)
     }?.toPair()
@@ -236,28 +224,17 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>("bullet_int
         entity: Entity?, state: BlockState,
         level: ServerLevel, pos: BlockPos
     ) {
-        //? if fabric
         //val blockEntity by lazy { level.getBlockEntity(pos) }
         if (entity is ServerPlayer) {
-            //? if fabric {
-            /*if (!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level, entity, pos, state, blockEntity)) {
+            if (!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level, entity, pos, state, blockEntity)) {
                 PlayerBlockBreakEvents.CANCELED.invoker().onBlockBreakCanceled(level, entity, pos, state, blockEntity)
                 return
             }
-            *///?} else if forge {
-            val event = BlockEvent.BreakEvent(level, pos, state, entity)
-            if (MinecraftForge.EVENT_BUS.post(event)) return
-            //?} else if neoforge {
-            /*val event = BlockEvent.BreakEvent(level, pos, state, entity)
-            if (NeoForge.EVENT_BUS.post(event).isCanceled) return
-            *///?}
         }
         level.destroyBlock(pos, blockBreak.drop, entity)
-        //?if fabric {
-        /*if (entity is ServerPlayer) {
+        if (entity is ServerPlayer) {
             PlayerBlockBreakEvents.AFTER.invoker().afterBlockBreak(level, entity, pos, state, blockEntity)
         }
-        *///?}
         val replaceWith = blockBreak.replaceWith
         if (replaceWith.state.isAir && replaceWith.place(level, pos, Block.UPDATE_CLIENTS)) {
             level.blockUpdated(pos, replaceWith.state.block)

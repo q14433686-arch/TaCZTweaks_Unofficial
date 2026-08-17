@@ -17,6 +17,6 @@ object MTSManager : ModCompatibilityManager(
     }
 
     private object Inner {
-        val entityId = Identifier("mts", "builder_existing")
+        val entityId = Identifier.fromNamespaceAndPath("mts", "builder_existing")
     }
 }

@@ -7,11 +7,11 @@ import me.muksc.tacztweaks.core.network.CustomPacketPayloadType
 import me.muksc.tacztweaks.core.codec.StreamCodec
 import net.minecraft.client.Minecraft
 import net.minecraft.network.FriendlyByteBuf
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 
 class ServerMessageBroadcastSound(
     val entityId: Int,
-    val soundName: ResourceLocation,
+    val soundName: Identifier,
     val volume: Float,
     val pitch: Float,
     val distance: Int

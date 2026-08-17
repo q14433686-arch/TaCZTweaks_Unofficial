@@ -1,14 +1,13 @@
-import co.uzzu.dotenv.gradle.DotEnvRoot
-import dev.kikugie.stonecutter.build.StonecutterBuildExtension
+import org.gradle.api.UnknownDomainObjectException
 
 plugins {
     kotlin("jvm")
-    id("me.modmuss50.mod-publish-plugin")
 }
 
-val env = extensions.getByType<DotEnvRoot>()
-val stonecutter = extensions.getByType<StonecutterBuildExtension>()
-val loader = stonecutter.node.metadata.project.substringAfterLast('-')
+// TaCZ Tweaks — single-loader Fabric 26.2 build.
+// Adapted from the multi-loader Stonecutter build. Loader is fixed to "fabric".
+
+val loader = "fabric"
 version = "${prop("version")}+${prop("minecraft.version")}-$loader"
 
 base {
@@ -34,22 +33,6 @@ repositories {
     }
     exclusiveContent {
         forRepository {
-            maven("https://cursemaven.com")
-        }
-        filter {
-            includeGroup("curse.maven")
-        }
-    }
-    exclusiveContent {
-        forRepository {
-            maven("https://maven.parchmentmc.org")
-        }
-        filter {
-            includeGroup("org.parchmentmc.data")
-        }
-    }
-    exclusiveContent {
-        forRepository {
             maven("https://maven.bawnorton.com/releases")
         }
         filter {
@@ -64,27 +47,11 @@ repositories {
             includeGroupAndSubgroups("org.spongepowered")
         }
     }
-    exclusiveContent {
-        forRepository {
-            maven("https://maven.valkyrienskies.org")
-        }
-        filter {
-            includeGroupAndSubgroups("org.valkyrienskies")
-            includeGroup("com.github.Rubydesic")
-        }
-    }
-    exclusiveContent {
-        forRepository {
-            maven("https://maven.blamejared.com")
-        }
-        filter {
-            includeGroup("foundry.veil")
-            includeGroup("io.github.ocelot")
-        }
-    }
     mavenCentral()
     maven("https://maven.isxander.dev/releases")
-    maven("https://maven.ryanhcode.dev/releases")
+    maven("https://maven.terraformersmc.com")
+    maven("https://maven.shedaniel.me")
+    mavenLocal()
     flatDir {
         dirs(rootProject.file("libs"))
     }
@@ -111,11 +78,7 @@ tasks.withType<Jar>().configureEach {
 
 val resourceProperties = extensions.create<ResourcePropertiesExtension>("resourceProperties").apply {
     properties.putAll(mapOf(
-        "pack_format" to when (val mcVersion = prop("minecraft.version")) {
-            "1.20.1" -> "15"
-            "1.21.1" -> "34"
-            else -> error("Couldn't detect pack_format for version: $mcVersion")
-        },
+        "pack_format" to "61", // Minecraft 26.2
         "java_version" to prop("java.version"),
         "minecraft_version" to prop("minecraft.version"),
         "version" to prop("version"),
@@ -130,68 +93,9 @@ tasks.processResources {
     inputs.properties(properties)
     doFirst {
         filesMatching(listOf(
-            "pack.mcmeta", "*.mixins.json",
-            "fabric.mod.json",
-            "META-INF/mods.toml",
-            "META-INF/neoforge.mods.toml"
+            "pack.mcmeta", "*.mixins.json", "fabric.mod.json"
         )) {
             expand(properties)
         }
-    }
-}
-
-publishMods {
-    displayName = "${mod("name")} ${prop("version")} for TaCZ ${prop("version.target")}"
-    changelog = providers.fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md")).asText
-    type = ALPHA
-    modLoaders.add(loader)
-    dryRun = providers.gradleProperty("publish.dry").map(String::toBoolean)
-
-    modrinth {
-        projectId = prop("publish.modrinth")
-        // FIXME: projectDescription = providers.fileContents(rootProject.layout.projectDirectory.file("README.md")).asText
-        minecraftVersions.add(prop("minecraft.version"))
-        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
-            .orElse(provider { env.fetch("MODRINTH_TOKEN") })
-
-        if (loader == "fabric") requires("fabric-api")
-        when (loader) {
-            "forge", "neoforge" -> requires("kotlin-for-forge")
-            "fabric" -> requires("fabric-language-kotlin")
-        }
-        requires("yacl")
-        when (loader) {
-            "forge" -> requires("timeless-and-classics-zero")
-            "neoforge" -> requires("tacz-1.21.1")
-            "fabric" -> requires("tacz-refabricated")
-        }
-    }
-
-    curseforge {
-        projectId = prop("publish.curseforge")
-        minecraftVersions.add(prop("minecraft.version"))
-        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-            .orElse(provider { env.fetch("CURSEFORGE_TOKEN") })
-
-        clientRequired = true
-        serverRequired = true
-
-        if (loader == "fabric") requires("fabric-api")
-        when (loader) {
-            "forge", "neoforge" -> requires("kotlin-for-forge")
-            "fabric" -> requires("fabric-language-kotlin")
-        }
-        requires("yacl")
-        when (loader) {
-            "forge" -> requires("timeless-and-classics-zero")
-            "neoforge" -> requires("tacz-1-21-1")
-            "fabric" -> requires("tacz-refabricated")
-        }
-    }
-
-    github {
-        accessToken = providers.environmentVariable("GITHUB_TOKEN")
-            .orElse(provider { env.fetch("GITHUB_TOKEN") })
-        parent(rootProject.tasks.named("publishGithub"))
     }
 }

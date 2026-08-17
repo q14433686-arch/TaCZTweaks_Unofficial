@@ -10,41 +10,11 @@ import me.muksc.tacztweaks.feature.general.compatibility.FirstAidManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-//? if forge {
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.IEventBus;
-//?} else if neoforge || fabric {
-/*import com.tacz.guns.api.event.common.EntityHurtByGunEvent;
-*///?}
+import com.tacz.guns.api.event.common.EntityHurtByGunEvent;
 
 @Mixin(value = EntityKineticBullet.class, remap = false)
 public abstract class EntityKineticBulletMixin {
-    //? if forge {
-    @WrapOperation(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/eventbus/api/IEventBus;post(Lnet/minecraftforge/eventbus/api/Event;)Z"))
-    private boolean tacztweaks$onHitEntity$firstAidCompat(
-        IEventBus instance, Event event, Operation<Boolean> original,
-        @Local(argsOnly = true) TacHitResult result
-    ) {
-        boolean cancelled = original.call(instance, event);
-        if (Config.General.Compatibility.firstAidCompat() && !cancelled) {
-            FirstAidManager.onHitEntity(EntityKineticBullet.class.cast(this), result);
-        }
-        return cancelled;
-    }
-    //?} else if neoforge {
-    /*@WrapOperation(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/event/common/EntityHurtByGunEvent$Pre;isCanceled()Z"))
-    private boolean tacztweaks$onHitEntity$firstAidCompat(
-        EntityHurtByGunEvent.Pre instance, Operation<Boolean> original,
-        @Local(argsOnly = true) TacHitResult result
-    ) {
-        boolean cancelled = original.call(instance);
-        if (Config.General.Compatibility.firstAidCompat() && !cancelled) {
-            FirstAidManager.onHitEntity(EntityKineticBullet.class.cast(this), result);
-        }
-        return cancelled;
-    }
-    *///?} else if fabric {
-    /*@WrapOperation(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/event/common/EntityHurtByGunEvent$PreCallBack;post(Lcom/tacz/guns/api/event/common/EntityHurtByGunEvent$Pre;)V"))
+    @WrapOperation(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/event/common/EntityHurtByGunEvent$PreCallBack;post(Lcom/tacz/guns/api/event/common/EntityHurtByGunEvent$Pre;)V"))
     private void tacztweaks$onHitEntity$firstAidCompat(
         EntityHurtByGunEvent.PreCallBack instance, EntityHurtByGunEvent.Pre event, Operation<Void> original,
         @Local(argsOnly = true) TacHitResult result
@@ -54,5 +24,4 @@ public abstract class EntityKineticBulletMixin {
             FirstAidManager.onHitEntity(EntityKineticBullet.class.cast(this), result);
         }
     }
-    *///?}
 }

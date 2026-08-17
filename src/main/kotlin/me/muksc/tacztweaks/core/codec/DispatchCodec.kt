@@ -8,11 +8,7 @@ interface DispatchCodec<T> {
     val key: String
     val codecProvider: () -> MapCodec<out T>
 
-    //? if <1.20.5 {
-    fun codec(): Codec<out T> = codecProvider().codec()
-    //?} else {
-    /*fun codec(): MapCodec<out T> = codecProvider()
-    *///?}
+    fun codec(): MapCodec<out T> = codecProvider()
 
     companion object {
         fun <T : DispatchCodec<*>> getCodec(valueOf: (String) -> T): Codec<T> = Codec.STRING.comapFlatMap({

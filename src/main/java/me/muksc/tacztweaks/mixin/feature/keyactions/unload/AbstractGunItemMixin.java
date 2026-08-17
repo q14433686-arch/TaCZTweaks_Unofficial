@@ -14,7 +14,7 @@ import com.tacz.guns.api.item.gun.AbstractGunItem;
 import com.tacz.guns.resource.index.CommonAmmoIndex;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.mixininterface.feature.keyactions.unload.UnloadableGun;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,13 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-//? if forge {
-import net.minecraftforge.items.ItemHandlerHelper;
-//?} else if neoforge {
-/*import net.neoforged.neoforge.items.ItemHandlerHelper;
-*///?} else if fabric {
-/*import cn.sh1rocu.tacz.util.itemhandler.ItemHandlerHelper;
-*///?}
+import cn.sh1rocu.tacz.util.itemhandler.ItemHandlerHelper;
 
 @Mixin(value = AbstractGunItem.class, remap = false)
 public abstract class AbstractGunItemMixin implements UnloadableGun {
@@ -74,13 +68,7 @@ public abstract class AbstractGunItemMixin implements UnloadableGun {
         return original.call(instance, count);
     }
 
-    //? if forge {
-    @WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/items/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
-    //?} else if neoforge {
-    /*@WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lnet/neoforged/neoforge/items/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
-     *///?} else if fabric {
-    /*@WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lcn/sh1rocu/tacz/util/itemhandler/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
-    *///?}
+    @WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lcn/sh1rocu/tacz/util/itemhandler/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
     private boolean tacztweaks$dropAllAmmo$unloadKey$unloadRoundInChamber$skipIfZero(
         Player player, ItemStack stack,
         @Share("count") LocalIntRef countRef
@@ -96,19 +84,13 @@ public abstract class AbstractGunItemMixin implements UnloadableGun {
         instance.setBulletInBarrel(itemStack, false);
     }
 
-    //? if forge {
-    @WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/items/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
-    //?} else if neoforge {
-    /*@WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lnet/neoforged/neoforge/items/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
-    *///?} else if fabric {
-    /*@WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lcn/sh1rocu/tacz/util/itemhandler/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
-    *///?}
+    @WrapWithCondition(method = "lambda$dropAllAmmo$2", at = @At(value = "INVOKE", target = "Lcn/sh1rocu/tacz/util/itemhandler/ItemHandlerHelper;giveItemToPlayer(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;)V"))
     private boolean tacztweaks$dropAllAmmo$unloadKey$cancelGivingItem(Player player, ItemStack stack) {
         return !tacztweaks$unloading || !player.isCreative();
     }
 
     @Inject(method = "lambda$dropAllAmmo$2", at = @At("TAIL"))
-    private void tacztweaks$dropAll$unloadKey(int ammoCount, ResourceLocation ammoId, Player player, ItemStack gunItem, CommonAmmoIndex ammoIndex, CallbackInfo ci) {
+    private void tacztweaks$dropAll$unloadKey(int ammoCount, Identifier ammoId, Player player, ItemStack gunItem, CommonAmmoIndex ammoIndex, CallbackInfo ci) {
         if (!Config.KeyActions.Unload.unloadRoundInChamber()) return;
         AbstractGunItem instance = AbstractGunItem.class.cast(this);
         if (!tacztweaks$unloading || !instance.hasBulletInBarrel(gunItem)) return;

@@ -10,10 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-//? if fabric {
-/*import com.llamalad7.mixinextras.sugar.Local;
-*///?}
-//? if fabric || forge
+import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(LivingEntity.class)
@@ -31,23 +28,19 @@ public abstract class LivingEntityMixin implements CustomShieldEntity {
         tacztweaks$customShieldResult = result;
     }
 
-    //? if fabric {
-    /*@Definition(id = "amount", local = @Local(type = float.class, argsOnly = true, ordinal = 0))
+    @Definition(id = "amount", local = @Local(type = float.class, argsOnly = true, ordinal = 0))
     @Expression("amount = @(0.0)")
     @ModifyExpressionValue(method = "hurt", at = @At("MIXINEXTRAS:EXPRESSION"))
     private float tacztweaks$hurt$shield$damage(float original) {
         if (!(tacztweaks$customShieldResult instanceof CustomShieldResult.Blocked blocked)) return original;
         return blocked.damage();
     }
-    *///?}
 
-    //? if fabric || forge {
     @ModifyArg(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;hurtCurrentlyUsedShield(F)V"), index = 0)
     private float tacztweaks$hurt$shield$durabilityDamage(float damageAmount) {
         if (!(tacztweaks$customShieldResult instanceof CustomShieldResult.Blocked blocked)) return damageAmount;
         return blocked.durabilityDamage().apply(damageAmount);
     }
-    //?}
 
     @Definition(id = "is", method = "Lnet/minecraft/world/damagesource/DamageSource;is(Lnet/minecraft/tags/TagKey;)Z")
     @Definition(id = "IS_PROJECTILE", field = "Lnet/minecraft/tags/DamageTypeTags;IS_PROJECTILE:Lnet/minecraft/tags/TagKey;")

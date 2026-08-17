@@ -6,13 +6,13 @@ import me.muksc.tacztweaks.core.network.CustomPacketPayloadType
 import me.muksc.tacztweaks.core.codec.StreamCodec
 import me.muksc.tacztweaks.network.NetworkManager
 import net.minecraft.network.FriendlyByteBuf
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.ChunkPos
 
 class ClientMessageBroadcastSound(
-    val soundName: ResourceLocation,
+    val soundName: Identifier,
     val volume: Float,
     val pitch: Float,
     val distance: Int

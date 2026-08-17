@@ -2,7 +2,7 @@ package me.muksc.tacztweaks.mixin.feature.audio_and_visuals.system.mix_to_mono;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import me.muksc.tacztweaks.mixininterface.feature.audio_and_visuals.system.mix_to_mono.MonoObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,7 +23,7 @@ public abstract class GunSoundInstance_TaczSoundMixin implements MonoObject {
     }
 
     @ModifyReturnValue(method = "getPath", at = @At("RETURN"))
-    private ResourceLocation tacztweaks$mixToMono$setMono(ResourceLocation original) {
+    private Identifier tacztweaks$mixToMono$setMono(Identifier original) {
         MonoObject object = MonoObject.of(original);
         object.tacztweaks$setMono(tacztweaks$mono);
         return original;

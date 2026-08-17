@@ -16,17 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = AttachmentPropertyManager.class, remap = false)
 public abstract class AttachmentPropertyManagerMixin {
     @Inject(method = "lambda$postChangeEvent$1", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/event/ChangeGunPropertyEvent;internalOnAttachmentPropertyEvent(Lcom/tacz/guns/api/event/common/AttachmentPropertyEvent;)V", shift = At.Shift.AFTER))
-    //? if forge || fabric {
     private static void tacztweaks$postChangeEvent$attribute$onPropertyUpdated(
         ItemStack gunItem, LivingEntity shooter, IGun iGun, CommonGunIndex index, CallbackInfo ci,
         @Local AttachmentCacheProperty cacheProperty
     ) {
-    //?} else if neoforge {
-    /*private static void tacztweaks$postChangeEvent$onPropertyUpdated(
-        LivingEntity shooter, ItemStack gunItem, IGun iGun, CommonGunIndex index, CallbackInfo ci,
-        @Local AttachmentCacheProperty cacheProperty
-    ) {
-    *///?}
         AttributeManager.INSTANCE.onPropertyUpdated(shooter, gunItem, cacheProperty);
     }
 

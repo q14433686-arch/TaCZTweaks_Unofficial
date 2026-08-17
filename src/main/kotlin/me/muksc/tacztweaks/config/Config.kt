@@ -355,36 +355,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                 optionSynced(General.Compatibility::forceDisableCrawl) {
                     builder.controller(booleanController())
                 }
-                //? if 1.20.1 && forge {
-                optionSynced(General.Compatibility::firstAidCompat) {
-                    builder.controller(booleanController())
-                }
-                //?}
-                //? if (1.20.1 && forge) || (1.21.1 && neoforge) {
-                optionSynced(General.Compatibility::lsoCompat) {
-                    builder.controller(booleanController())
-                }
-                //?}
-                //? if 1.20.1 && forge {
-                optionSynced(General.Compatibility::cuffedCompat) {
-                    builder.controller(booleanController())
-                }
-                //?}
-                //? if 1.20.1 {
-                optionSynced(General.Compatibility::vsCompat) {
-                    builder.controller(booleanController())
-                }
-                //?}
-                //? if 1.21.1 {
-                /*optionSynced(General.Compatibility::sableCompat) {
-                    builder.controller(booleanController())
-                }
-                *///?}
-                //? if (1.20.1 && forge) || (1.21.1 && neoforge) {
-                optionSynced(General.Compatibility::mtsCompat) {
-                    builder.controller(booleanController())
-                }
-                //?}
             }
             group("fixes") {
                 option(General.Fixes::crawlCooldownFix, image = true) {
@@ -497,11 +467,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                 optionSynced(Gameplay.Behaviour::magazineStyleReloading) {
                     builder.controller(booleanController())
                 }
-                //? if 1.20.1 {
-                optionSynced(Gameplay.Behaviour::bulletProtection) {
-                    builder.controller(booleanController())
-                }
-                //?}
                 optionSynced(Gameplay.Behaviour::endermenEvadeBullets) {
                     builder.controller(booleanController())
                 }
