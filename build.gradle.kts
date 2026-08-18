@@ -136,5 +136,10 @@ tasks.named("assemble") {
 }
 
 java {
+    // Do not silently use the JVM which happened to start an old Gradle daemon as javac.
+    // The target Minecraft/TaCZ classes require Java 25, so select an installed JDK 25 toolchain.
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
     withSourcesJar()
 }

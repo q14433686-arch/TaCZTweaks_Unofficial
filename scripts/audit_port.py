@@ -785,6 +785,8 @@ def audit_release_guards() -> list[str]:
         errors.append("YACL 3.9.6+26.1-fabric is not pinned to its verified Modrinth artifact")
     if 'implementation(files("libs/yacl-fabric.jar"))' in build_script:
         errors.append("build still requires an undocumented local YACL jar")
+    if "languageVersion.set(JavaLanguageVersion.of(25))" not in build_script:
+        errors.append("Gradle Java toolchain is not pinned to JDK 25")
     if "stagedTestRuntimeDir" not in build_script or "gradle.gradleUserHomeDir" not in build_script:
         errors.append("Gradle test worker runtime is not staged away from non-ASCII project paths")
     fixture_pairs = (

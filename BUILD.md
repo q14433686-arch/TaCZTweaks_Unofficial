@@ -114,7 +114,7 @@ python scripts/check_server_log.py run/logs/latest.log
 |---|---|
 | `Could not resolve ... TACZ-Refabricated ...` | `libs/` 里的 TaCZ jar 缺失或文件名不对，按第 3 步重新放 |
 | `Could not resolve maven.modrinth:1eAoo2KR:svTkvBec` | 检查网络能否访问 `https://api.modrinth.com/maven`，然后重试构建 |
-| `java.lang.UnsupportedClassVersionError` / `invalid source release 25` | 用了旧 JDK，换成 JDK 25 并设好 `JAVA_HOME` |
+| `java.lang.UnsupportedClassVersionError` / `不支持发行版本 25` / `invalid source release 25` | Gradle daemon 仍在使用旧 JDK。先执行 `gradlew.bat --stop`，确认 `gradlew.bat --version` 的 JVM 为 25，再构建；工程也已固定 Java 25 toolchain |
 | 下载依赖超时 | 重跑一次；国内网络可给 Gradle 配镜像仓库 |
 | `Daemon` 内存不足 | 编辑 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` 调大（如 `-Xmx4G`） |
 
