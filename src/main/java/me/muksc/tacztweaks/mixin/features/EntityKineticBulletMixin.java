@@ -56,6 +56,12 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     @Unique
     private final Set<UUID> tacztweaks$whizzedPlayers = new HashSet<>();
 
+    @Unique
+    private int tacztweaks$burstIndex = 0;
+
+    @Unique
+    private int tacztweaks$pelletIndex = 0;
+
     @Override
     public ItemStack tacztweaks$getGunStack() {
         return tacztweaks$gunStack;
@@ -99,6 +105,26 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     @Override
     public void tacztweaks$popDamageModifier() {
         if (!tacztweaks$damageModifiers.isEmpty()) tacztweaks$damageModifiers.remove(tacztweaks$damageModifiers.size() - 1);
+    }
+
+    @Override
+    public int tacztweaks$getBurstIndex() {
+        return tacztweaks$burstIndex;
+    }
+
+    @Override
+    public void tacztweaks$setBurstIndex(int index) {
+        tacztweaks$burstIndex = index;
+    }
+
+    @Override
+    public int tacztweaks$getPelletIndex() {
+        return tacztweaks$pelletIndex;
+    }
+
+    @Override
+    public void tacztweaks$setPelletIndex(int index) {
+        tacztweaks$pelletIndex = index;
     }
 
     private static final String INIT = "(Lnet/minecraft/class_1299;Lnet/minecraft/class_1937;Lnet/minecraft/class_1309;Lnet/minecraft/class_1799;Lnet/minecraft/class_2960;Lnet/minecraft/class_2960;Lnet/minecraft/class_2960;ZLcom/tacz/guns/resource/pojo/data/gun/GunData;Lcom/tacz/guns/resource/pojo/data/gun/BulletData;)V";

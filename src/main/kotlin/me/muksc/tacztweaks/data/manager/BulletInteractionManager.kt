@@ -57,17 +57,8 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
     ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
-        interaction.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }
-                && selector(interaction).anyOrEmpty(predicate)
-    }?.toPair()
-
-    private inline fun <reified T : BulletInteraction> getBulletInteraction(
-        entity: EntityKineticBullet,
-        location: Vec3,
-        predicate: (T) -> Boolean
-    ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
-        interaction.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }
-                && predicate(interaction)
+        interaction.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) } &&
+            selector(interaction).anyOrEmpty(predicate)
     }?.toPair()
 
     fun handleBlockInteraction(ammo: EntityKineticBullet, result: BlockHitResult, state: BlockState): InteractionResult {
@@ -82,6 +73,8 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         val breakBlock = run {
             val hardness = state.getDestroySpeed(level, blockPos)
             if (hardness !in interaction.blockBreak.hardness) return@run false
+            val tier = interaction.blockBreak.tier
+            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops)) return@run false
 
             val gun = Context.Gun(ext.`tacztweaks$getGunStack`())
             val gunStack = gun.stack
@@ -109,7 +102,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
             }
         }
         if (breakBlock) run {
-            val owner = ammo.getOwner()
+            val owner = ammo.owner
             level.destroyBlock(blockPos, interaction.blockBreak.drop, owner)
             val replaceWith = interaction.blockBreak.replaceWith
             if (!replaceWith.state.isAir && replaceWith.place(level, blockPos, Block.UPDATE_CLIENTS)) {
@@ -164,7 +157,6 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         return true
     }
 
-    /** Maps bullet damage into bounded vanilla-style block-breaking progress. */
     fun calcBlockBreakingDelta(
         damage: Float,
         armorIgnore: Double,

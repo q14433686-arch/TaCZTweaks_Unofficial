@@ -1,22 +1,23 @@
 package me.muksc.tacztweaks.data.core
 
 import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.id
+import net.minecraft.advancements.critereon.BlockPredicate
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.TagKey
+import net.minecraft.world.item.Tier
+import net.minecraft.world.item.Tiers
 import net.minecraft.world.level.block.state.BlockState
 
-/**
- * Structured block matcher used by `block`/`melee` bullet interactions.
- * 26.2 note: the Forge-only `tier` type and the 1.20 `predicate` type (removed in 26.2)
- * are dropped from the dispatch.
- */
+/** Structured block matcher used by `block`/`melee` bullet interactions. */
 sealed class BlockTarget(
     val type: EBlockTargetType
 ) : BlockTestable {
@@ -30,6 +31,8 @@ sealed class BlockTarget(
         BLOCK("block", { Block.CODEC }),
         BLOCK_TAG("block_tag", { BlockTag.CODEC }),
         REGEX("regex", { RegexPattern.CODEC }),
+        PREDICATE("predicate", { Predicate.CODEC }),
+        TIER("tier", { HardnessTier.CODEC }),
         HARDNESS("hardness", { Hardness.CODEC });
 
         companion object {
@@ -71,8 +74,7 @@ sealed class BlockTarget(
     }
 
     class Block(val values: List<net.minecraft.world.level.block.Block>) : BlockTarget(EBlockTargetType.BLOCK) {
-        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            values.any { state.`is`(it) }
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = values.any { state.`is`(it) }
 
         companion object {
             val CODEC: Codec<Block> = RecordCodecBuilder.create<Block> { it.group(
@@ -82,8 +84,7 @@ sealed class BlockTarget(
     }
 
     class BlockTag(val values: List<TagKey<net.minecraft.world.level.block.Block>>) : BlockTarget(EBlockTargetType.BLOCK_TAG) {
-        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            values.any { state.`is`(it) }
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = values.any { state.`is`(it) }
 
         companion object {
             val CODEC: Codec<BlockTag> = RecordCodecBuilder.create<BlockTag> { it.group(
@@ -103,9 +104,47 @@ sealed class BlockTarget(
         }
     }
 
-    class Hardness(val range: ValueRange) : BlockTarget(EBlockTargetType.HARDNESS) {
+    class Predicate(val predicate: BlockPredicate) : BlockTarget(EBlockTargetType.PREDICATE) {
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = predicate.matches(level, pos)
+
+        companion object {
+            val CODEC: Codec<Predicate> = RecordCodecBuilder.create<Predicate> { it.group(
+                BlockPredicate.CODEC.fieldOf("predicate").forGetter(Predicate::predicate)
+            ).apply(it, ::Predicate) }
+        }
+    }
+
+    class HardnessTier(val tier: TierDefinition) : BlockTarget(EBlockTargetType.TIER) {
         override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            state.getDestroySpeed(level, pos) in range
+            !state.`is`(tier.material.incorrectBlocksForDrops)
+
+        companion object {
+            val CODEC: Codec<HardnessTier> = RecordCodecBuilder.create<HardnessTier> { it.group(
+                TierDefinition.CODEC.fieldOf("tier").forGetter(HardnessTier::tier)
+            ).apply(it, ::HardnessTier) }
+        }
+    }
+
+    data class TierDefinition(val id: Identifier, val material: Tier) {
+        companion object {
+            private val VALUES = listOf(
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "wood"), Tiers.WOOD),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "stone"), Tiers.STONE),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "iron"), Tiers.IRON),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "diamond"), Tiers.DIAMOND),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "gold"), Tiers.GOLD),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "netherite"), Tiers.NETHERITE)
+            )
+            private val BY_ID = VALUES.associateBy(TierDefinition::id)
+            val CODEC: Codec<TierDefinition> = Identifier.CODEC.comapFlatMap(
+                { id -> BY_ID[id]?.let { DataResult.success(it) } ?: DataResult.error { "Unknown tool tier: $id" } },
+                TierDefinition::id
+            )
+        }
+    }
+
+    class Hardness(val range: ValueRange) : BlockTarget(EBlockTargetType.HARDNESS) {
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = state.getDestroySpeed(level, pos) in range
 
         companion object {
             val CODEC: Codec<Hardness> = RecordCodecBuilder.create<Hardness> { it.group(

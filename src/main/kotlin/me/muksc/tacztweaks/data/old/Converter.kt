@@ -5,6 +5,7 @@ import me.muksc.tacztweaks.data.BulletInteraction
 import me.muksc.tacztweaks.data.core.Target
 import me.muksc.tacztweaks.data.core.ValueRange
 import net.minecraft.world.level.block.Blocks
+import java.util.Optional
 import me.muksc.tacztweaks.data.old.BulletInteraction as OldBulletInteraction
 
 /** Converts the old v2 schema to the current block interaction format at load time. */
@@ -17,6 +18,7 @@ fun OldBulletInteraction.convert(): BulletInteraction.Block = BulletInteraction.
             count = blockBreak.count,
             replaceWith = Blocks.AIR.defaultBlockState().blockInput(),
             hardness = ValueRange.DEFAULT,
+            tier = Optional.empty(),
             drop = drop
         )
         is OldBulletInteraction.BlockBreak.FixedDamage -> BulletInteraction.Block.BlockBreak.FixedDamage(
@@ -24,6 +26,7 @@ fun OldBulletInteraction.convert(): BulletInteraction.Block = BulletInteraction.
             accumulate = blockBreak.accumulate,
             replaceWith = Blocks.AIR.defaultBlockState().blockInput(),
             hardness = ValueRange.DEFAULT,
+            tier = Optional.empty(),
             drop = drop
         )
         is OldBulletInteraction.BlockBreak.DynamicDamage -> BulletInteraction.Block.BlockBreak.DynamicDamage(
@@ -32,6 +35,7 @@ fun OldBulletInteraction.convert(): BulletInteraction.Block = BulletInteraction.
             accumulate = blockBreak.accumulate,
             replaceWith = Blocks.AIR.defaultBlockState().blockInput(),
             hardness = ValueRange.DEFAULT,
+            tier = Optional.empty(),
             drop = drop
         )
     },

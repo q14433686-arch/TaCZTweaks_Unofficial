@@ -37,6 +37,16 @@ class CodecSmokeTest {
     }
 
     @Test
+    fun `schema smoke fixture decodes restored predicate tier burst and pellet matchers`() {
+        assertFixtureDecodes("/fixtures/schema_smoke.json", BulletInteraction.CODEC)
+    }
+
+    @Test
+    fun `airspace fixture decodes`() {
+        assertFixtureDecodes("/fixtures/airspace.json", BulletSounds.CODEC)
+    }
+
+    @Test
     fun `legacy v2 bullet interaction decodes and converts`() {
         val decoded = BULLET_INTERACTION_CODEC.parse(
             JsonOps.INSTANCE,
