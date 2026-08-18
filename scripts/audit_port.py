@@ -33,6 +33,17 @@ MIXIN_DIR = SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin"
 DEFAULT_TACZ_JAR = ROOT / "libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar"
 ALLOWLIST = ROOT / "scripts/upstream_omissions.json"
 
+KNOWN_DORMANT_OPTIONS: dict[str, str] = {
+    "Compat.firstAidCompat": "Optional compatibility path not yet restored on 1.21.11.",
+    "Compat.lsoCompat": "No verified 1.21.11 Fabric target is wired yet.",
+    "Compat.mtsFix": "No verified 1.21.11 Fabric target is wired yet.",
+    "Compat.vsCollisionCompat": "No verified 1.21.11 Fabric target is wired yet.",
+    "Compat.vsExplosionCompat": "No verified 1.21.11 Fabric target is wired yet.",
+    "Crawl.visualTweak": "First/third-person crawl rendering parity is still pending.",
+    "Gun.thirdPersonGunRenderingFix": "Need confirmation whether TaCZ 1.21.11 R2 already contains the fix before deleting the option.",
+    "Tweaks.betterMonoConversion": "Mono conversion parity is still pending client implementation.",
+}
+
 INJECTOR_ANNOTATIONS = (
     "Inject|ModifyArg|ModifyArgs|ModifyVariable|Redirect|ModifyConstant|"
     "ModifyExpressionValue|ModifyReturnValue|WrapOperation|WrapMethod|WrapWithCondition"
@@ -393,6 +404,27 @@ def _string_constants(text: str) -> dict[str, str]:
     return dict(re.findall(r"\b(?:String|private\s+static\s+final\s+String)\s+(\w+)\s*=\s*\"([^\"]+)\"", text))
 
 
+def mixin_declares_remap_false(text: str) -> bool:
+    match = re.search(r"@Mixin\s*\((.*?)\)", text, re.S)
+    return bool(match and "remap = false" in match.group(1))
+
+
+def iterate_annotation_bodies(text: str, names: str) -> list[str]:
+    bodies: list[str] = []
+    for annotation in re.finditer(rf"@({names})\s*\(", text):
+        body = _annotation_body(text, text.index("(", annotation.start()))
+        if body is not None:
+            bodies.append(body)
+    return bodies
+
+
+def resolve_annotation_value(raw: str, constants: dict[str, str]) -> str | None:
+    raw = raw.strip()
+    if raw.startswith('"') and raw.endswith('"'):
+        return raw[1:-1]
+    return constants.get(raw)
+
+
 def injection_method_targets(text: str) -> set[tuple[str, str | None]]:
     targets: set[tuple[str, str | None]] = set()
     constants = _string_constants(text)
@@ -418,16 +450,42 @@ def injection_method_targets(text: str) -> set[tuple[str, str | None]]:
 def parse_at_targets(text: str) -> list[str]:
     constants = _string_constants(text)
     result: list[str] = []
-    for annotation in re.finditer(rf"@({INJECTOR_ANNOTATIONS}|At)\s*\(", text):
-        body = _annotation_body(text, text.index("(", annotation.start()))
-        if body is None:
-            continue
+    for body in iterate_annotation_bodies(text, INJECTOR_ANNOTATIONS + "|At"):
         for target_match in re.finditer(r"\btarget\s*=\s*(\"[^\"]+\"|\w+)", body):
-            value = target_match.group(1)
-            resolved = value[1:-1] if value.startswith('"') else constants.get(value)
+            resolved = resolve_annotation_value(target_match.group(1), constants)
             if resolved:
                 result.append(resolved)
     return result
+
+
+def audit_vanilla_remap_safety(source: SourceMixin) -> list[str]:
+    if not mixin_declares_remap_false(source.text):
+        return []
+    errors: list[str] = []
+    constants = _string_constants(source.text)
+
+    for body in iterate_annotation_bodies(source.text, "At"):
+        for target_match in re.finditer(r"\btarget\s*=\s*(\"[^\"]+\"|\w+)", body):
+            resolved = resolve_annotation_value(target_match.group(1), constants)
+            if resolved and "Lnet/minecraft/" in resolved and "remap = true" not in body and "remap=true" not in body:
+                errors.append(
+                    f"remap=false mixin references named vanilla member without explicit remap=true: {source.path.relative_to(ROOT)} -> {resolved}"
+                )
+
+    for body in iterate_annotation_bodies(source.text, INJECTOR_ANNOTATIONS):
+        method_match = re.search(r"\bmethod\s*=\s*(\{[^}]*\}|\"[^\"]+\"|\w+)", body, re.S)
+        if method_match is None:
+            continue
+        raw_values = re.findall(r'\"([^\"]+)\"', method_match.group(1))
+        if not raw_values:
+            resolved = resolve_annotation_value(method_match.group(1), constants)
+            raw_values = [resolved] if resolved else []
+        for raw in raw_values:
+            if "Lnet/minecraft/" in raw and "class_" not in raw:
+                errors.append(
+                    f"remap=false mixin uses named vanilla descriptor in method=: {source.path.relative_to(ROOT)} -> {raw}"
+                )
+    return errors
 
 
 def is_client_target(target: str | None) -> bool:
@@ -450,6 +508,124 @@ def exact_methods(info: ClassInfo, name: str, desc: str | None) -> list[tuple[st
         signature for signature in info.method_signatures
         if signature[0] == name and (desc is None or signature[1] == desc)
     ]
+
+
+def config_options() -> set[str]:
+    text = (SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt").read_text(encoding="utf-8")
+    options: set[str] = set()
+    for match in re.finditer(r"^    object (Gun|Crawl|Compat|Tweaks|Debug)\b[^\n]*\{", text, re.M):
+        group = match.group(1)
+        depth = 1
+        cursor = match.end()
+        while cursor < len(text) and depth:
+            if text[cursor] == "{":
+                depth += 1
+            elif text[cursor] == "}":
+                depth -= 1
+            cursor += 1
+        block = text[match.end(): cursor - 1]
+        for func in re.finditer(r"^        fun\s+(\w+)\(\):", block, re.M):
+            options.add(f"{group}.{func.group(1)}")
+    return options
+
+
+def audit_config_usage() -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    texts: list[str] = []
+    for path in SOURCE_ROOT.rglob("*"):
+        if not path.is_file() or path.suffix not in {".java", ".kt"} or path.name == "Config.kt":
+            continue
+        texts.append(path.read_text(encoding="utf-8", errors="replace"))
+    all_source = "\n".join(texts)
+    for option in sorted(config_options()):
+        group, name = option.split(".", 1)
+        patterns = (
+            rf"\bConfig\.{group}\.INSTANCE\.{name}\s*\(",
+            rf"\bConfig\.{group}\.{name}\s*\(",
+        )
+        count = sum(len(re.findall(pattern, all_source)) for pattern in patterns)
+        if count:
+            continue
+        reason = KNOWN_DORMANT_OPTIONS.get(option)
+        if reason:
+            warnings.append(f"dormant config option {option}: {reason}")
+        else:
+            errors.append(f"config option has no behaviour reader outside Config.kt: {option}")
+    return errors, warnings
+
+
+def audit_languages() -> list[str]:
+    errors: list[str] = []
+    lang_dir = SOURCE_ROOT / "resources/assets/tacztweaks/lang"
+    languages = {path.stem: json.loads(path.read_text(encoding="utf-8")) for path in lang_dir.glob("*.json")}
+    if "en_us" not in languages:
+        return ["missing canonical en_us language file"]
+    canonical = set(languages["en_us"])
+    for name, values in sorted(languages.items()):
+        missing = canonical - set(values)
+        extra = set(values) - canonical
+        if missing:
+            errors.append(f"{name} is missing {len(missing)} keys: {', '.join(sorted(missing))}")
+        if extra:
+            errors.append(f"{name} has {len(extra)} extra keys absent from en_us: {', '.join(sorted(extra))}")
+    return errors
+
+
+def audit_test_and_fixture_guards() -> list[str]:
+    errors: list[str] = []
+    required_tests = {
+        "src/test/kotlin/me/muksc/tacztweaks/core/SafeMathTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/core/StackSplitterTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/core/ProjectileIndexAllocatorTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/data/CodecSmokeTest.kt",
+    }
+    for name in sorted(required_tests):
+        if not (ROOT / name).is_file():
+            errors.append(f"missing regression test: {name}")
+
+    required_fixtures = {
+        "src/test/resources/fixtures/bullet_interaction_v2.json",
+        "src/test/resources/fixtures/schema_smoke.json",
+        "src/test/resources/fixtures/airspace.json",
+        "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
+        "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
+        "THIRD_PARTY_NOTICES.md",
+    }
+    for name in sorted(required_fixtures):
+        if not (ROOT / name).is_file():
+            errors.append(f"missing release artifact/fixture: {name}")
+
+    pairs = (
+        (
+            ROOT / "src/test/resources/fixtures/schema_smoke.json",
+            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
+        ),
+        (
+            ROOT / "src/test/resources/fixtures/airspace.json",
+            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
+        ),
+    )
+    for left, right in pairs:
+        if left.is_file() and right.is_file() and left.read_bytes() != right.read_bytes():
+            errors.append(f"fixture drift between {left.relative_to(ROOT)} and {right.relative_to(ROOT)}")
+    return errors
+
+
+def audit_tacz_metadata(path: Path) -> list[str]:
+    if not path.is_file():
+        return []
+    errors: list[str] = []
+    try:
+        with zipfile.ZipFile(path) as archive:
+            metadata = json.loads(archive.read("fabric.mod.json").decode("utf-8"))
+    except Exception as exc:
+        return [f"failed to read TaCZ jar metadata from {path}: {exc}"]
+    if metadata.get("id") != "tacz":
+        errors.append(f"TaCZ jar has unexpected mod id: {metadata.get('id')!r}")
+    if metadata.get("version") != "1.1.8+fabric.1.21.11.R2":
+        errors.append(f"TaCZ jar has unexpected version: {metadata.get('version')!r}")
+    return errors
 
 
 def audit_versions(config: dict) -> tuple[list[str], list[str]]:
@@ -502,6 +678,7 @@ def audit_mixins(
     for source in sources:
         if "require = 0" in source.text or "require=0" in source.text:
             errors.append(f"require=0 is forbidden: {source.path.relative_to(ROOT)}")
+        errors.extend(audit_vanilla_remap_safety(source))
         if source.section == "mixins" and is_client_target(source.target):
             errors.append(f"client-only target is listed in common mixins: {source.fqcn} -> {source.target}")
         if source.target is None:
@@ -627,6 +804,18 @@ def compare_upstream(path: Path) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def discover_refmap() -> Path | None:
+    candidates = [
+        ROOT / "build/resources/main/tacztweaks.refmap.json",
+        ROOT / "build/classes/java/main/tacztweaks.refmap.json",
+        ROOT / "build/classes/kotlin/main/tacztweaks.refmap.json",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def load_refmap(path: Path | None) -> dict | None:
     if path is None or not path.is_file():
         return None
@@ -647,12 +836,19 @@ def main() -> int:
     args = parser.parse_args()
 
     config = json.loads(MIXIN_JSON.read_text(encoding="utf-8"))
-    refmap = load_refmap(args.refmap)
+    refmap_path = args.refmap if args.refmap is not None else discover_refmap()
+    refmap = load_refmap(refmap_path)
     errors: list[str] = []
     warnings: list[str] = []
 
     if not args.tacz_jar.is_file():
         errors.append(f"missing TaCZ jar: {args.tacz_jar}")
+    if args.strict and args.minecraft_named_jar is None:
+        errors.append("strict audit requires --minecraft-named-jar for vanilla named target verification")
+    if args.strict and args.minecraft_intermediary_jar is None:
+        errors.append("strict audit requires --minecraft-intermediary-jar for obfuscated runtime verification")
+    if args.strict and refmap_path is None:
+        errors.append("strict audit requires a generated tacztweaks.refmap.json (pass --refmap or build first)")
 
     named = JarIndex([args.minecraft_named_jar] if args.minecraft_named_jar else [])
     intermediary = JarIndex([args.minecraft_intermediary_jar] if args.minecraft_intermediary_jar else [])
@@ -665,6 +861,14 @@ def main() -> int:
         tacz.close()
     errors.extend(mixin_errors)
     warnings.extend(mixin_warnings)
+
+    config_errors, config_warnings = audit_config_usage()
+    errors.extend(config_errors)
+    warnings.extend(config_warnings)
+
+    errors.extend(audit_languages())
+    errors.extend(audit_test_and_fixture_guards())
+    errors.extend(audit_tacz_metadata(args.tacz_jar))
 
     version_errors, version_warnings = audit_versions(config)
     errors.extend(version_errors)

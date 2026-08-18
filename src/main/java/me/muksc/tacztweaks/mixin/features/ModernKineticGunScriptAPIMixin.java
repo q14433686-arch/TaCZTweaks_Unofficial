@@ -47,7 +47,8 @@ public abstract class ModernKineticGunScriptAPIMixin {
         method = "spawnProjectiles",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z"
+            target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z",
+            remap = true
         ),
         index = 0
     )
