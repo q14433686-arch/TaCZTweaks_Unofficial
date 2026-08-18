@@ -40,7 +40,7 @@ dependencies {
 
     // YACL 3.9.6+26.1-fabric (Modrinth version svTkvBec) supports 26.1.2.
     // Resolve it from Maven instead of requiring every source checkout to supply libs/yacl-fabric.jar.
-    modImplementation("maven.modrinth:1eAoo2KR:svTkvBec")
+    implementation("maven.modrinth:1eAoo2KR:svTkvBec")
 
     // The TaCZ refabricated port we integrate with (compile only in production; tests
     // exercise its codecs and therefore need it on their runtime classpath as well).

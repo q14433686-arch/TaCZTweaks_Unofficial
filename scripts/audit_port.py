@@ -781,7 +781,7 @@ def audit_release_guards() -> list[str]:
     build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
     if "examplePackZip" not in build_script:
         errors.append("build does not package the example pack")
-    if 'modImplementation("maven.modrinth:1eAoo2KR:svTkvBec")' not in build_script:
+    if 'implementation("maven.modrinth:1eAoo2KR:svTkvBec")' not in build_script:
         errors.append("YACL 3.9.6+26.1-fabric is not pinned to its verified Modrinth artifact")
     if 'implementation(files("libs/yacl-fabric.jar"))' in build_script:
         errors.append("build still requires an undocumented local YACL jar")
