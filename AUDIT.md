@@ -93,6 +93,20 @@ python3 scripts/audit_port.py --strict \
 - 卸弹栈拆分循环改为明确的 `while remaining > 0`，缺 ammo index 时不再先删除弹药；
 - `Inventory.hasInfiniteAmmo` 的 `0..containerSize` 越界改为 `0 until containerSize`。
 
+## 从 TaCZ Refabricated 26.2 当前仓库吸收的维护规则
+
+2026-08-18 再次对照目标仓库 `26.2(main)` 的 `AGENTS.md`、
+`STATE_LIFECYCLE_AUDIT.md`、版本一致性脚本及当前 Fabric API 用法后，补入以下门禁：
+
+- **注释只作为线索**：能力结论必须由调用链、class descriptor 或实际发行物支撑；
+- **编译通过不代表 mixin 安全**：审计脚本同时检查目标方法和 `@At` 方法/字段 descriptor；
+- **静态状态必须有生命周期出口**：服务器停止时清理 ServerLevel/粒子/限流状态，客户端断线时
+  清理 mono 与 Sound Physics 待处理队列；
+- **优先当前 26.2 API**：实体标签使用 `BuiltInRegistries.*.wrapAsHolder`，数据 reload 使用
+  `ResourceLoader` v1，不保留仅仅“还能编译”的 deprecated 接口；
+- **版本号与文档同改**：`audit_port.py` 会要求 `gradle.properties`、README、BUILD 的 R 版本唯一一致；
+- **未实测不写成实测完成**：PR 在真实构建和游戏矩阵完成前保持 Draft。
+
 ## 仍需运行时矩阵
 
 静态/字节码审计不能替代真实 Minecraft 客户端。发布前应至少验证：

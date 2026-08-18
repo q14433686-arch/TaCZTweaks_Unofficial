@@ -13,8 +13,10 @@ import me.muksc.tacztweaks.data.manager.MeleeInteractionManager;
 import me.muksc.tacztweaks.mixin.accessor.InaccuracyTypeAccessor;
 import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder;
 import me.muksc.tacztweaks.network.NetworkHandler;
+import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound;
 import me.muksc.tacztweaks.registry.ModStatusEffects;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -61,6 +63,11 @@ public class TaCZTweaks implements ModInitializer {
             }
             BulletParticlesManager.INSTANCE.onServerTick(server);
         });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            BlockBreakingManager.INSTANCE.clear();
+            BulletParticlesManager.INSTANCE.clear();
+            ClientMessageBroadcastSound.clearAll();
+        });
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
             if (level instanceof ServerLevel serverLevel) {
                 BlockBreakingManager.INSTANCE.onBlockBreak(serverLevel, pos);
@@ -80,6 +87,8 @@ public class TaCZTweaks implements ModInitializer {
                 NetworkHandler.INSTANCE.sendS2C(handler.getPlayer(), ServerMessageSoundPhysicsRequired.INSTANCE);
             }
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+            ClientMessageBroadcastSound.clearPlayer(handler.getPlayer().getUUID()));
     }
 
     /**

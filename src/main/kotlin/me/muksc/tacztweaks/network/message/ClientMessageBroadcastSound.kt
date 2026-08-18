@@ -71,6 +71,16 @@ class ClientMessageBroadcastSound(
             }
         }
 
+        @JvmStatic
+        fun clearPlayer(player: UUID) {
+            recentSounds.remove(player)
+        }
+
+        @JvmStatic
+        fun clearAll() {
+            recentSounds.clear()
+        }
+
         private fun allowSound(player: UUID): Boolean {
             val now = System.currentTimeMillis()
             val queue = recentSounds.computeIfAbsent(player) { ArrayDeque() }

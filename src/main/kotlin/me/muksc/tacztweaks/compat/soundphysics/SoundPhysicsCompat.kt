@@ -78,6 +78,11 @@ object SoundPhysicsCompat {
         processing.remove()
     }
 
+    fun clearAll() {
+        processing.remove()
+        pending.clear()
+    }
+
     /**
      * SPR defines shared airspace as count * 64 / (ray count * bounce count). Read the
      * user's live config reflectively so this optional integration has no hard dependency.

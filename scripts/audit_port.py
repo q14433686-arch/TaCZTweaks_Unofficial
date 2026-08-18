@@ -423,6 +423,23 @@ def audit_versions(config: dict) -> list[str]:
     bundled = properties.get("mixinextras_version")
     if required and bundled and version_tuple(bundled) < version_tuple(required):
         errors.append(f"MixinExtras {bundled} is lower than mixin JSON minimum {required}")
+
+    mod_version = properties.get("mod_version")
+    if not mod_version:
+        errors.append("gradle.properties is missing mod_version")
+        return errors
+    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.26\.2\.R\d+", mod_version):
+        errors.append(f"mod_version has an unexpected 26.2 format: {mod_version}")
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    documented = set(re.findall(r"\d+\.\d+\.\d+\+fabric\.26\.2\.R\d+", readme))
+    if documented != {mod_version}:
+        errors.append(
+            f"README release versions {sorted(documented)} do not uniquely match {mod_version}"
+        )
+    build_doc = (ROOT / "BUILD.md").read_text(encoding="utf-8")
+    if mod_version not in build_doc:
+        errors.append(f"BUILD.md does not name the current artifact version {mod_version}")
     return errors
 
 

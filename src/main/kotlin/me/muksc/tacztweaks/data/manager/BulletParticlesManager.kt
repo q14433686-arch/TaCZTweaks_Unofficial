@@ -72,6 +72,10 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
         }
     }
 
+    fun clear() {
+        emitters.clear()
+    }
+
     fun handleBlockParticle(type: EBlockParticleType, level: ServerLevel, entity: EntityKineticBullet, result: BlockHitResult, state: BlockState) {
         val (id, particles) = getParticle(entity, result.location, BulletParticles.Block::blocks) {
             it.test(level, result.blockPos, state)

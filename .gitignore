@@ -1,0 +1,12 @@
+.gradle/
+build/
+out/
+run/
+.idea/
+*.iml
+__pycache__/
+*.py[cod]
+*.log
+
+# Local audit inputs and downloaded archives do not belong in Git.
+*.zip

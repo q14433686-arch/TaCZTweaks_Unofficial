@@ -50,6 +50,11 @@ object BlockBreakingManager {
         level.destroyBlockProgress(hash(level, pos), pos, -1)
     }
 
+    /** Drop strong ServerLevel references when an integrated/dedicated server stops. */
+    fun clear() {
+        blockBreakProgress.clear()
+    }
+
     class Progress {
         var delta: Float = 0.0F
         var lastUpdated: Long = 0L
