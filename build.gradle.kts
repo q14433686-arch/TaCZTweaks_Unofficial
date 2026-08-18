@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -15,8 +17,6 @@ base {
 }
 
 loom {
-    // 1.21.11 is obfuscated -> legacy mixin AP + refmap are REQUIRED so that vanilla
-    // mixin targets written in Mojang names are translated to intermediary at runtime.
     mixin {
         useLegacyMixinAp = true
         defaultRefmapName = "tacztweaks.refmap.json"
@@ -34,12 +34,27 @@ repositories {
     flatDir { dirs("libs") }
 }
 
+val compatStubClassesDir = layout.buildDirectory.dir("generated/compat-stubs/classes")
+val compileCompatStubs by tasks.registering(JavaCompile::class) {
+    source = fileTree("compat-stubs-src") { include("**/*.java") }
+    classpath = files()
+    destinationDirectory.set(compatStubClassesDir)
+    options.encoding = "UTF-8"
+    options.release.set(21)
+}
+val compatStubJar by tasks.registering(Jar::class) {
+    archiveBaseName.set("tacztweaks-compat-stubs")
+    archiveClassifier.set("compileonly")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/compat-stubs"))
+    from(compatStubClassesDir)
+    dependsOn(compileCompatStubs)
+}
+
 dependencies {
     minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
-
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
 
     modImplementation(files("libs/yacl-fabric.jar"))
@@ -48,8 +63,7 @@ dependencies {
     modCompileOnly(taczJar)
     testRuntimeOnly(taczJar)
 
-    val compatStubJar = tasks.named("compatStubJar")
-    compileOnly(files(compatStubJar))
+    compileOnly(files(compatStubJar.flatMap { it.archiveFile }))
 
     val mixinExtrasVersion = project.property("mixinextras_version") as String
     implementation("io.github.llamalad7:mixinextras-fabric:$mixinExtrasVersion")
@@ -57,7 +71,6 @@ dependencies {
     include("io.github.llamalad7:mixinextras-fabric:$mixinExtrasVersion")
 
     modCompileOnly("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
-
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
     compileOnly("org.apache.commons:commons-math3:3.6.1")
 
@@ -65,30 +78,10 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
 }
 
-val compatStubClassesDir = layout.buildDirectory.dir("generated/compat-stubs/classes")
-val compatStubJar by tasks.registering(Jar::class) {
-    archiveBaseName.set("tacztweaks-compat-stubs")
-    archiveClassifier.set("compileonly")
-    destinationDirectory.set(layout.buildDirectory.dir("generated/compat-stubs"))
-    from(compatStubClassesDir)
-}
-
-val compileCompatStubs by tasks.registering(JavaCompile::class) {
-    source = fileTree("compat-stubs-src") { include("**/*.java") }
-    classpath = sourceSets.main.get().compileClasspath
-    destinationDirectory.set(compatStubClassesDir)
-    options.encoding = "UTF-8"
-    options.release.set(21)
-}
-compatStubJar.configure { dependsOn(compileCompatStubs) }
-
 tasks.withType<JavaCompile>().configureEach {
     if (name != "compileCompatStubs") dependsOn(compatStubJar)
     options.encoding = "UTF-8"
     options.release.set(21)
-    // Optional compat mixins target classes from mods which are intentionally NOT hard compile
-    // dependencies of this branch. Their runtime safety is enforced by scripts/audit_port.py and
-    // the mixin config plugin instead of the annotation processor's target validator.
     options.compilerArgs.add("-AdisableTargetValidator=true")
 }
 
