@@ -738,7 +738,7 @@ def audit_versions(config: dict) -> list[str]:
     if not mod_version:
         errors.append("gradle.properties is missing mod_version")
         return errors
-    version_pattern = r"\d+\.\d+\.\d+\+fabric\.26\.2\.(?:R\d+|BETA-\d+)"
+    version_pattern = r"\d+\.\d+\.\d+\+fabric\.26\.2\.(?:R\d+|Beta-\d+)"
     if not re.fullmatch(version_pattern, mod_version):
         errors.append(f"mod_version has an unexpected 26.2 format: {mod_version}")
 
@@ -754,10 +754,6 @@ def audit_versions(config: dict) -> list[str]:
     build_doc = (ROOT / "BUILD.md").read_text(encoding="utf-8")
     if mod_version not in build_doc:
         errors.append(f"BUILD.md does not name the current artifact version {mod_version}")
-    if ".BETA-" in mod_version:
-        human_label = "BETA_" + mod_version.rsplit(".BETA-", 1)[1]
-        if human_label not in readme or human_label not in build_doc:
-            errors.append(f"README and BUILD must both expose the human release label {human_label}")
     return errors
 
 

@@ -2,8 +2,8 @@
 
 本模组是 **TaCZ Tweaks 的 Fabric 26.2 移植版**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-当前测试版本为 **BETA_1**，机器可解析版本号是
-`2.14.2+fabric.26.2.BETA-1`（SemVer 标识符不允许下划线）。
+当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
+`2.14.2+fabric.26.2.Beta-1`。
 
 ---
 
@@ -99,8 +99,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.BETA-1.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.BETA-1.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁
