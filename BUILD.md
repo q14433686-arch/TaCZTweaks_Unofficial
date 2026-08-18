@@ -101,6 +101,18 @@ build/libs/tacztweaks-2.14.2+fabric.26.2.R3.jar   ← 模组，放入 .minecraft
 build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.R3.zip  ← 可重载示例包
 ```
 
+### 专用服务器 smoke test 门禁
+
+Loom 在 Minecraft 子进程启动失败时可能仍让 Gradle 任务返回 0，不能只看 `BUILD SUCCESSFUL`。
+对专服的 `latest.log`（或捕获的 stdout）再运行：
+
+```powershell
+python scripts/check_server_log.py run/logs/latest.log
+```
+
+只有日志出现 `Done (...)!`，且不含 `MixinApplyError`、`InvalidInjectionException` 或
+`Failed to start the minecraft server` 时才通过。
+
 ---
 
 ## 5. 常见问题

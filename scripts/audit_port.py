@@ -6,6 +6,7 @@ Gradle in CI.  It catches the easy-to-miss failures that compilation alone does 
 
 * mixin classes omitted from (or misspelled in) the mixin JSON;
 * mixins aimed at methods absent from the bundled TaCZ/LRTactical jar;
+* common mixins aimed at @Environment(CLIENT) methods stripped on dedicated servers;
 * config switches which are persisted/synchronised but never read by behaviour code;
 * language-file drift;
 * a bundled MixinExtras version lower than the mixin config's declared minimum.
@@ -41,6 +42,30 @@ CONFIG = SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt"
 # current port keeps none: unavailable compat switches were removed rather than no-op'd.
 KNOWN_DORMANT_OPTIONS: dict[str, str] = {}
 
+# R2 marks these methods @Environment(CLIENT); Fabric strips them before dedicated-server
+# mixins apply. Keeping the expectations explicit also tests our class-annotation parser.
+CLIENT_ONLY_DIAGRAM_MIXINS = {
+    "modifiers.AdsModifierDiagramMixin",
+    "modifiers.AmmoSpeedModifierDiagramMixin",
+    "modifiers.ArmorIgnoreModifierDiagramMixin",
+    "modifiers.DamageModifierDiagramMixin",
+    "modifiers.HeadshotModifierDiagramMixin",
+    "modifiers.RPMModifierDiagramMixin",
+    "modifiers.RecoilModifierDiagramMixin",
+    "modifiers.InaccuracyModifierDiagramMixin",
+}
+
+DEDICATED_SERVER_STRIPPED_METHODS: dict[str, set[str]] = {
+    "com.tacz.guns.resource.modifier.custom.AdsModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.AmmoSpeedModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.ArmorIgnoreModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.DamageModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.HeadShotModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.RpmModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.RecoilModifier": {"getPropertyDiagramsData"},
+    "com.tacz.guns.resource.modifier.custom.InaccuracyModifier": {"getPropertyDiagramsData"},
+}
+
 
 @dataclass(frozen=True)
 class ClassInfo:
@@ -49,6 +74,8 @@ class ClassInfo:
     method_signatures: frozenset[tuple[str, str]]
     field_signatures: frozenset[tuple[str, str]]
     method_references: dict[tuple[str, str], frozenset[tuple[str, str, str]]]
+    client_only_methods: frozenset[tuple[str, str]]
+    client_only_class: bool
     super_name: str | None
     interfaces: tuple[str, ...]
 
@@ -110,6 +137,55 @@ def read_class_info(raw: bytes) -> ClassInfo:
             raise ValueError(f"unknown constant-pool tag {tag}")
         index += 1
 
+    def has_client_environment_annotation(raw_annotations: memoryview) -> bool:
+        """Read Runtime[In]VisibleAnnotations and find @Environment(CLIENT)."""
+        cursor = 0
+
+        def read_u2() -> int:
+            nonlocal cursor
+            value = struct.unpack_from(">H", raw_annotations, cursor)[0]
+            cursor += 2
+            return value
+
+        def read_element_value() -> list[tuple[str, str]]:
+            nonlocal cursor
+            tag = chr(raw_annotations[cursor])
+            cursor += 1
+            if tag in "BCDFIJSZsc":
+                cursor += 2
+                return []
+            if tag == "e":
+                enum_type = utf8.get(read_u2(), "")
+                enum_value = utf8.get(read_u2(), "")
+                return [(enum_type, enum_value)]
+            if tag == "@":
+                return read_annotation()[1]
+            if tag == "[":
+                values: list[tuple[str, str]] = []
+                for _ in range(read_u2()):
+                    values.extend(read_element_value())
+                return values
+            raise ValueError(f"unknown annotation element tag {tag!r}")
+
+        def read_annotation() -> tuple[str, list[tuple[str, str]]]:
+            annotation_type = utf8.get(read_u2(), "")
+            values: list[tuple[str, str]] = []
+            for _ in range(read_u2()):
+                read_u2()  # element_name_index
+                values.extend(read_element_value())
+            return annotation_type, values
+
+        try:
+            for _ in range(read_u2()):
+                annotation_type, values = read_annotation()
+                if annotation_type != "Lnet/fabricmc/api/Environment;":
+                    continue
+                if ("Lnet/fabricmc/api/EnvType;", "CLIENT") in values:
+                    return True
+        except (IndexError, struct.error, ValueError):
+            return False
+        return False
+
     off += 2  # access_flags
     _this_class, off = _u2(data, off)
     super_class, off = _u2(data, off)
@@ -138,6 +214,7 @@ def read_class_info(raw: bytes) -> ClassInfo:
         return (owner, name, descriptor) if owner and name and descriptor else None
 
     method_references: dict[tuple[str, str], frozenset[tuple[str, str, str]]] = {}
+    client_only_methods: set[tuple[str, str]] = set()
 
     def members(offset: int, collect_code: bool = False) -> tuple[list[tuple[str, str]], int]:
         count, offset = _u2(data, offset)
@@ -169,6 +246,12 @@ def read_class_info(raw: bytes) -> ClassInfo:
                         resolved = resolve_member_ref(cp_index)
                         if resolved is not None:
                             refs.add(resolved)
+                if collect_code and utf8.get(attribute_name_index) in {
+                    "RuntimeVisibleAnnotations", "RuntimeInvisibleAnnotations"
+                }:
+                    annotations = data[offset : offset + length]
+                    if has_client_environment_annotation(annotations):
+                        client_only_methods.add(signature)
                 offset += length
             if collect_code:
                 method_references[signature] = frozenset(refs)
@@ -176,12 +259,26 @@ def read_class_info(raw: bytes) -> ClassInfo:
 
     fields, off = members(off)
     methods, off = members(off, collect_code=True)
+
+    client_only_class = False
+    class_attribute_count, off = _u2(data, off)
+    for _ in range(class_attribute_count):
+        attribute_name_index, off = _u2(data, off)
+        length, off = _u4(data, off)
+        if utf8.get(attribute_name_index) in {
+            "RuntimeVisibleAnnotations", "RuntimeInvisibleAnnotations"
+        } and has_client_environment_annotation(data[off : off + length]):
+            client_only_class = True
+        off += length
+
     return ClassInfo(
         frozenset(name for name, _ in methods),
         frozenset(name for name, _ in fields),
         frozenset(methods),
         frozenset(fields),
         method_references,
+        frozenset(client_only_methods),
+        client_only_class,
         super_name,
         tuple(interface_names),
     )
@@ -325,8 +422,8 @@ def _string_constants(text: str) -> dict[str, str]:
     return dict(re.findall(r"\bString\s+(\w+)\s*=\s*\"([^\"]+)\"", text))
 
 
-def injection_method_names(text: str) -> set[str]:
-    names: set[str] = set()
+def injection_method_targets(text: str) -> set[tuple[str, str | None]]:
+    targets: set[tuple[str, str | None]] = set()
     constants = _string_constants(text)
     for annotation in re.finditer(rf"@({INJECTOR_ANNOTATIONS})\s*\(", text):
         body = _annotation_body(text, text.index("(", annotation.start()))
@@ -341,9 +438,14 @@ def injection_method_names(text: str) -> set[str]:
             raw_values = [constants[value]]
         for raw in raw_values:
             name = raw.split("(", 1)[0]
+            descriptor = "(" + raw.split("(", 1)[1] if "(" in raw else None
             if name and not name.startswith("@"):
-                names.add(name)
-    return names
+                targets.add((name, descriptor))
+    return targets
+
+
+def injection_method_names(text: str) -> set[str]:
+    return {name for name, _ in injection_method_targets(text)}
 
 
 def audit_injection_references(
@@ -416,10 +518,25 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
     sources = source_mixin_classes()
     mixin_package = config["package"]
     common_mixins = {f"{mixin_package}.{name}" for name in config.get("mixins", [])}
+    client_mixin_entries = set(config.get("client", []))
+    for name in sorted(CLIENT_ONLY_DIAGRAM_MIXINS - client_mixin_entries):
+        errors.append(f"client-only diagram mixin is not registered under client: {name}")
     for name in sorted(listed - sources):
         errors.append(f"mixin JSON lists a source class that does not exist: {name}")
     for name in sorted(sources - listed):
         errors.append(f"mixin source is not registered in tacztweaks.mixins.json: {name}")
+
+    for target, expected_methods in DEDICATED_SERVER_STRIPPED_METHODS.items():
+        info = jars.class_info(target)
+        if info is None:
+            continue
+        detected = {name for name, _ in info.client_only_methods}
+        missing_environment = expected_methods - detected
+        if missing_environment:
+            errors.append(
+                f"failed to detect @Environment(CLIENT) on {target}: "
+                f"{', '.join(sorted(missing_environment))}"
+            )
 
     for path in sorted(MIXIN_ROOT.rglob("*.java")):
         text = path.read_text(encoding="utf-8")
@@ -454,6 +571,25 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
                 continue
             (errors if strict else warnings).append(message)
             continue
+        if source_name in common_mixins:
+            if info.client_only_class:
+                errors.append(
+                    f"common mixin targets an @Environment(CLIENT) class: {source_name} -> {target}"
+                )
+            for method_name, method_descriptor in sorted(
+                injection_method_targets(text), key=lambda value: (value[0], value[1] or "")
+            ):
+                client_matches = {
+                    signature for signature in info.client_only_methods
+                    if signature[0] == method_name
+                    and (method_descriptor is None or signature[1] == method_descriptor)
+                }
+                if client_matches:
+                    rendered = ", ".join(name + descriptor for name, descriptor in sorted(client_matches))
+                    errors.append(
+                        f"common mixin injects @Environment(CLIENT) target method(s) {target}#"
+                        f"{rendered} ({path.relative_to(ROOT)})"
+                    )
         for method in sorted(injection_method_names(text) - info.methods):
             message = f"target method {target}#{method} is absent ({path.relative_to(ROOT)})"
             (errors if strict else warnings).append(message)
@@ -679,6 +815,8 @@ def audit_release_guards() -> list[str]:
     for example, test_fixture in fixture_pairs:
         if example.read_bytes() != test_fixture.read_bytes():
             errors.append(f"test fixture has drifted from example pack: {test_fixture.relative_to(ROOT)}")
+    if not (ROOT / "scripts/check_server_log.py").is_file():
+        errors.append("missing dedicated-server log gate")
     if not (ROOT / "THIRD_PARTY_NOTICES.md").is_file():
         errors.append("missing THIRD_PARTY_NOTICES.md for embedded/modified dependencies")
 

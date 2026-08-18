@@ -528,6 +528,17 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 CI workflow 仍需要仓库维护者以具备 workflow 权限的身份写入；当前 Agent GitHub App 无此权限，
 所以不能把“本地有验证入口”误写成“GitHub 已有 check run”。
 
+## 7.20 dedicated-server environment stripping（2026-08-18）
+
+`AdsModifier` 等目标类本身是 common，但 `getPropertyDiagramsData` 标有
+`@Environment(EnvType.CLIENT)`。Fabric 专服会在 Mixin 应用前剥离该方法；把 cache/gameplay 和
+property diagram 注入放在同一个 common mixin，会造成 `InvalidInjectionException` 并阻断启动。
+
+修复不是 `require=0`：八组 modifier 均拆为 common `initCache` mixin 与登记在 JSON `client`
+数组中的 `*DiagramMixin`。`audit_port.py` 现在解析 class 的 RuntimeVisible/InvisibleAnnotations，
+任何 common mixin 注入 `@Environment(CLIENT)` 方法都会失败。另增 `check_server_log.py`，要求专服
+日志真实出现 `Done (...)!` 且不含 fatal mixin/startup marker，避免 Loom 子进程失败但 Gradle 返回 0。
+
 ## 8. 当前待办
 
 ### 8.1 已完成

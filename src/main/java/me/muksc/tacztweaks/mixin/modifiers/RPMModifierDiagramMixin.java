@@ -6,11 +6,11 @@ import me.muksc.tacztweaks.config.Config;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Common cache hook; client-only property diagrams live in RPMModifierDiagramMixin. */
+/** Client-only baseline adjustment for the refit-screen RPM diagram. */
 @Mixin(value = RpmModifier.class, remap = false)
-public abstract class RPMModifierMixin {
-    @ModifyExpressionValue(method = "initCache", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/GunData;getRoundsPerMinute(Lcom/tacz/guns/api/item/gun/FireMode;)I"))
-    private int tacztweaks$initCache$rpmModifier(int original) {
+public abstract class RPMModifierDiagramMixin {
+    @ModifyExpressionValue(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/GunData;getRoundsPerMinute(Lcom/tacz/guns/api/item/gun/FireMode;)I"))
+    private int tacztweaks$getPropertyDiagramsData$rpmModifier(int original) {
         return (int) Config.Modifiers.RPM.INSTANCE.eval(original);
     }
 }

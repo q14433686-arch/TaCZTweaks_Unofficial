@@ -76,7 +76,9 @@ python3 scripts/audit_port.py --strict \
   ThreadLocal scope，只屏蔽该来源的 `cancelReload`；
 - 匍匐俯仰限制不再只依赖鼠标事件：鼠标 TAIL 保证即时限制，客户端 END tick 覆盖手柄/外部输入和
   “进入匍匐但没有移动鼠标”的情况；进入控制状态与实际 clamp 都有节流日志可验证；
-- 所有本轮已确认的 hook 都设为 required，不用 `require=0` 隐藏失效。
+- 所有本轮已确认的 hook 都设为 required，不用 `require=0` 隐藏失效；
+- modifier 的 common cache/gameplay hook 与 `@Environment(CLIENT)` property-diagram hook 已拆成
+  独立 mixin；审计脚本解析目标 class 的环境注解，禁止 common mixin 指向专服会剥离的方法。
 
 ### 数据驱动行为
 
