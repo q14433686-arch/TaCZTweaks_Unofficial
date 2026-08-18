@@ -3,8 +3,7 @@ package me.muksc.tacztweaks.data.manager
 import com.mojang.logging.LogUtils
 import com.mojang.serialization.Codec
 import me.muksc.tacztweaks.TaCZTweaks
-import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader
 import net.minecraft.resources.FileToIdConverter
 import net.minecraft.resources.Identifier
 import net.minecraft.server.packs.PackType
@@ -21,14 +20,14 @@ import kotlin.reflect.KClass
  *
  * 26.2 note: the vanilla [SimpleJsonResourceReloadListener] now takes a [Codec] and a
  * [FileToIdConverter] (the Gson-based ctor is gone), so [parseElement] and the old-format
- * fallback of the Forge version are dropped. Registration is done via Fabric's
- * [ResourceManagerHelper] instead of Forge's `AddReloadListenerEvent`.
+ * fallback of the Forge version are dropped. Registration uses Fabric's current
+ * [ResourceLoader] v1 API instead of Forge's `AddReloadListenerEvent`.
  */
 abstract class BaseDataManager<E : Any>(
     private val directory: String,
     private val codec: Codec<E>,
     private val elementComparator: Comparator<E>
-) : SimpleJsonResourceReloadListener<E>(codec, FileToIdConverter.json(directory)), IdentifiableResourceReloadListener {
+) : SimpleJsonResourceReloadListener<E>(codec, FileToIdConverter.json(directory)) {
     protected val logger: Logger = LogUtils.getLogger()
     protected var map: Map<KClass<*>, Map<Identifier, E>> = emptyMap()
 
@@ -40,11 +39,11 @@ abstract class BaseDataManager<E : Any>(
 
     /** Registers this loader for the server data-pack reload. Call from mod init. */
     fun register() {
-        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(this)
+        ResourceLoader.get(PackType.SERVER_DATA).registerReloadListener(
+            Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "data/" + directory),
+            this
+        )
     }
-
-    override fun getFabricId(): Identifier =
-        Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "data/" + directory)
 
     @Suppress("UNCHECKED_CAST")
     protected inline fun <reified T : E> byType(): Map<Identifier, T> =

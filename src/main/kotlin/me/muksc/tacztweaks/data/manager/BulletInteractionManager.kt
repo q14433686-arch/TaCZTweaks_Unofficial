@@ -41,8 +41,6 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
 object BulletInteractionManager : BaseDataManager<BulletInteraction>(
     "bullet_interactions", BulletInteraction.CODEC, COMPARATOR
 ) {
-    init { BulletInteraction }
-
     override fun debugEnabled(): Boolean = Config.Debug.bulletInteractions()
 
     /** Whether a data rule can pierce entities without requiring the gun's native pierce. */

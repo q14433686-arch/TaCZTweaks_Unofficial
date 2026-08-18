@@ -80,7 +80,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
         for (particle in type.getParticle(particles)) {
             if (!particle.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(result.location)) }) continue
             if (!particle.blocks.anyOrEmpty { it.test(level, result.blockPos, state) }) continue
-            particle.summon(level, entity, BuiltInRegistries.BLOCK.getKey(state.block)?.toString())
+            particle.summon(level, entity, BuiltInRegistries.BLOCK.getKey(state.block).toString())
         }
     }
 

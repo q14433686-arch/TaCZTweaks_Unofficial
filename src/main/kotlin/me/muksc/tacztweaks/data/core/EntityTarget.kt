@@ -84,7 +84,8 @@ sealed class EntityTarget(
     }
 
     class EntityTag(val values: List<TagKey<EntityType<*>>>) : EntityTarget(EEntityTargetType.ENTITY_TAG) {
-        override fun test(entity: net.minecraft.world.entity.Entity): Boolean = values.any { entity.type.builtInRegistryHolder().`is`(it) }
+        override fun test(entity: net.minecraft.world.entity.Entity): Boolean =
+            values.any { BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(entity.type).`is`(it) }
 
         companion object {
             val CODEC: Codec<EntityTag> = RecordCodecBuilder.create<EntityTag> { it.group(

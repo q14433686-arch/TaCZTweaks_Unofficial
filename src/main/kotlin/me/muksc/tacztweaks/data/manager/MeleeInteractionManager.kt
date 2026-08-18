@@ -11,11 +11,9 @@ import me.muksc.tacztweaks.data.manager.BulletInteractionManager.calcBlockBreaki
 import me.muksc.tacztweaks.thenPrioritizeBy
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.resources.Identifier
-import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.block.Block
-import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 
 private val COMPARATOR = compareBy<MeleeInteraction> { it.priority }
@@ -44,7 +42,7 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
     }?.toPair()
 
     fun handleBlockInteraction(player: ServerPlayer, reach: Double, damage: Float) {
-        val level = player.level() as? ServerLevel ?: return
+        val level = player.level()
         val stack = player.mainHandItem
         val weaponId = Context.Gun(stack).id ?: LRTacticalCompat.getWeaponId(stack) ?: return
         val eye = player.eyePosition
@@ -56,7 +54,6 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
             player
         ))
         if (result.type == HitResult.Type.MISS) return
-        if (result !is BlockHitResult) return
 
         val blockPos = result.blockPos
         val state = level.getBlockState(blockPos)

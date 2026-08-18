@@ -2,6 +2,7 @@ package me.muksc.tacztweaks.compat;
 
 import me.muksc.tacztweaks.TaCZTweaks;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.Vex;
@@ -20,8 +21,9 @@ public final class PillagersGunCompat {
 
     public static boolean shouldIgnore(Entity target, Entity owner) {
         if (!LOADED || owner == null || friendlyFireEnabled()) return false;
-        return owner.getType().is(EntityTypeTags.RAIDERS)
-            && (target.getType().is(EntityTypeTags.RAIDERS) || target instanceof Vex);
+        return BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(owner.getType()).is(EntityTypeTags.RAIDERS)
+            && (BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(target.getType()).is(EntityTypeTags.RAIDERS)
+                || target instanceof Vex);
     }
 
     private static boolean friendlyFireEnabled() {
