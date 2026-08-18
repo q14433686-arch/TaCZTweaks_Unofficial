@@ -2,6 +2,7 @@ package me.muksc.tacztweaks.mixin.compat.soundphysics;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.sonicether.soundphysics.SoundPhysics;
 import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
@@ -14,7 +15,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Optional hooks for Sound Physics Remastered 1.5.1 on 1.21.11. */
-@Mixin(targets = "com.sonicether.soundphysics.SoundPhysics", remap = false)
+@Pseudo
+@Mixin(value = SoundPhysics.class, remap = false)
 public abstract class SoundPhysicsMixin {
     @Unique
     private static final String EVALUATE = "evaluateEnvironment";
