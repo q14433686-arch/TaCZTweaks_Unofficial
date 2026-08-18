@@ -1,0 +1,19 @@
+package me.muksc.tacztweaks.mixin.gun.movement;
+
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.tacz.guns.entity.shooter.LivingEntityShoot;
+import me.muksc.tacztweaks.config.Config;
+import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+
+@Mixin(value = LivingEntityShoot.class, remap = false)
+public abstract class LivingEntityShootMixin {
+    // NOTE: upstream targeted the 5-arg `shoot`; the 26.2 refabricated port split it into
+    // `shoot` + `shootInternal`, where the sprint check now lives.
+    @ModifyExpressionValue(method = "shootInternal", at = @At(value = "FIELD", opcode = Opcodes.GETFIELD, target = "Lcom/tacz/guns/entity/shooter/ShooterDataHolder;sprintTimeS:F"))
+    private float tacztweaks$shoot$shootWhileSprinting(float original) {
+        if (!Config.Gun.INSTANCE.shootWhileSprinting()) return original;
+        return 0.0F;
+    }
+}
