@@ -1,0 +1,19 @@
+{
+  "type": "block",
+  "target": {
+    "type": "ammo",
+    "values": [
+      "tacz:40mm"
+    ]
+  },
+  "blocks": [
+    "#c:glass_blocks",
+    "#c:glass_panes"
+  ],
+  "block_break": {
+    "type": "dynamic_damage"
+  },
+  "pierce": {
+    "type": "damage"
+  }
+}
