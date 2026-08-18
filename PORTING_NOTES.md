@@ -353,7 +353,7 @@ helper。
 | 挖掘等级 | `TierSortingRegistry` | Fabric 无，需砍掉 `tier` 类型 |
 | 方块破坏事件 | Forge `BlockEvent.BreakEvent` | 改 Fabric `PlayerBlockBreakEvents` / 直接 `destroyBlock` |
 | 盾牌格挡事件 | Forge `ShieldBlockEvent` | 需 mixin `LivingEntity.hurtServer` 自行检测 |
-| 假玩家 | Forge `FakePlayer` | 需砍掉或自实现 |
+| 假玩家 | Forge `FakePlayer` | 当时误判需砍；Fabric API 26.2 实际提供 `net.fabricmc.fabric.api.entity.FakePlayer`，本移植最终选择可测试的纯数学路径 |
 | TaCZ 内部 | `EntityKineticBulletAccessor(onHitEntity)`、`BlockRayTrace.rayTraceBlocks` 的 `lambda$rayTraceBlocks$1/2`、`onBulletTick`、`BulletHoleOption`、`TacHitResult` | 需逐一对 26.2 字节码考古（lambda 名几乎肯定变了） |
 
 ### 移植计划（分两轮）
@@ -433,8 +433,9 @@ helper。
 
 ### 砍掉 / 简化的部分
 
-- **FakePlayer + DestroySpeedModifierHolder + BlockBehaviourMixin**：Fabric 无 FakePlayer，
-  `calcBlockBreakingDelta` 改为解析式 `digSpeed/hardness*30`（语义等价，数值略不同）。
+- **FakePlayer + DestroySpeedModifierHolder + BlockBehaviourMixin**：此处“Fabric 无 FakePlayer”是早期误判；
+  Fabric API 26.2 实际提供 FakePlayer。本移植选择独立 `SafeMath.blockBreakingDelta`，直接计算
+  `(1 + damage) / (effectiveHardness * 30)`，并对零硬度、非有限值和 armor-ignore 边界做测试。
 - **melee 行为层**：`melee_interactions` 的 mixin 依赖 `Suppliers.memoize`/@Share sugar 且示例包无
   数据，manager 保留加载、行为砍掉。
 - **airspace 行为**（Sound Physics Remastered 相关）：数据保留解析，播放砍掉。
@@ -485,7 +486,7 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 
 本轮不再按 1.20 类名判断能力，而是核对 26.2 class 调用链和实际 Fabric 发行物：
 
-- `Identifier` record 只阻止加实例字段；mono 标记改为资源路径旁表，并在 `SoundBuffer` 构造前 downmix；
+- `Identifier` 实际是普通 final class，并非 record；共享资源标识也不应承载每次播放状态。mono 改为请求上下文和 mono/stereo 独立缓存，并在 `SoundBuffer` 构造前 downmix；
 - 数据驱动附魔删除了 `ProtectionEnchantment` 类，但 `EnchantmentHelper#getDamageProtection` 仍是汇总点；
 - predicate 移到 `net.minecraft.advancements.predicates`，并未删除；MinMaxBounds 同样只是换包；
 - tier 语义由 `ToolMaterial.incorrectBlocksForDrops` 承担；
@@ -504,8 +505,28 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 
 所有仍不同路径/缺失的原版源码记录在 `scripts/upstream_omissions.json`；提供上游 checkout 运行
 `audit_port.py --upstream-root` 时，新增未解释缺失和已经失效的豁免都会失败。当前允许缺失仅包括：
-26.2 原生替代、已合并到新 hook 的行为、record/数据驱动 API 的重设计，以及确实没有 Fabric 26.2
+26.2 原生替代、已合并到新 hook 的行为、共享对象/数据驱动 API 的重设计，以及确实没有 Fabric 26.2
 目标的 LSO/MTS/VS 系列。
+
+## 7.19 外部差距报告复核与 R3 加固（2026-08-18）
+
+外部审计基于旧提交 `69bc17a`，但其中多数边界指控在当前代码上仍可复现，因此没有因提交过旧而忽略：
+
+- 无 shield 规则时明确返回 null，保留 `BlocksAttacks` 的 vanilla blocked damage/durability；
+- tilt C2S 改为短时输入请求：服务端每次使用都复核 alive、主手枪和 `GunData.canSlide`，40 tick 超时；
+- 共享第一人称枪声要求 alive + 主手持枪 + 当前枪包/TaCZ namespace，并收紧为 96 格、16 次/秒；
+- `SafeMath.blockBreakingDelta` 让 armor ignore 降低有效硬度，处理零硬度/负值/NaN/Infinity；
+- bullet/melee 共用 `ProtectedBlockBreaking`，执行 `mayInteract` 和 BEFORE/CANCELED/AFTER 完整链；
+- 每颗子弹记录已播放 whizz 的 UUID，实体 PIERCE sound/particle 分支恢复，并完整排序候选；
+- 粒子只替换 `%s`、限制 finite/range/1024 emitters；constant interval codec 强制为正；
+- physical/dummy/FUEL/inventory/chamber 卸弹分支拆开，畸形计数和 stack size 直接拒绝；
+- `ValueRange.DEFAULT` 改为 `-Double.MAX_VALUE..Double.MAX_VALUE` 并验证 finite/min<=max；
+- airspace payload 限 64 candidates × 32 sounds；mono/stereo 按请求使用独立缓存；
+- 示例包修正 `#minecraft:chains`，恢复缺失 ogg，并加入 predicate/tier/burst/pellet/airspace smoke data；
+- 版本提升到 R3，补单测、wrapper checksum、example zip task 和第三方 notices。
+
+CI workflow 仍需要仓库维护者以具备 workflow 权限的身份写入；当前 Agent GitHub App 无此权限，
+所以不能把“本地有验证入口”误写成“GitHub 已有 check run”。
 
 ## 8. 当前待办
 

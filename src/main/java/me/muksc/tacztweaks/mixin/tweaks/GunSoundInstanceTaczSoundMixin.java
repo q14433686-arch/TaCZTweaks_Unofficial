@@ -9,8 +9,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * When TaCZ builds a mono {@code TaczSound}, remember its path so
- * {@link SoundBufferLibraryMixin} can downmix the stereo ogg.
+ * Associates the next buffer request with this concrete TaCZ sound instance so mono and
+ * stereo uses of the same resource path cannot poison each other's cache entry.
  */
 @Mixin(targets = "com.tacz.guns.client.sound.GunSoundInstance$TaczSound", remap = false)
 public abstract class GunSoundInstanceTaczSoundMixin implements MonoTaczSound {
@@ -29,7 +29,7 @@ public abstract class GunSoundInstanceTaczSoundMixin implements MonoTaczSound {
 
     @ModifyReturnValue(method = "getPath", at = @At("RETURN"), remap = true)
     private Identifier tacztweaks$getPath$markMono(Identifier original) {
-        if (tacztweaks$mono && original != null) MonoConversion.INSTANCE.mark(original);
+        if (original != null) MonoConversion.INSTANCE.request(original, tacztweaks$mono);
         return original;
     }
 }

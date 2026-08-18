@@ -1,6 +1,6 @@
 package me.muksc.tacztweaks.compat.soundphysics.network.message
 
-import com.google.common.collect.Lists
+import io.netty.handler.codec.DecoderException
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat
 import net.minecraft.client.Minecraft
@@ -12,25 +12,51 @@ import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.level.Level
 
-/**
- * Airspace candidates, encoded without {@code ClientboundSoundPacket}
- * (26.2 packet write API is not the 1.20 {@code write(FriendlyByteBuf)}).
- */
+private const val MAX_CANDIDATES = 64
+private const val MAX_SOUNDS_PER_CANDIDATE = 32
+
+private fun <T> readBoundedList(
+    buf: FriendlyByteBuf,
+    maxSize: Int,
+    decoder: (FriendlyByteBuf) -> T
+): List<T> {
+    val size = buf.readVarInt()
+    if (size !in 0..maxSize) throw DecoderException("Collection size $size exceeds limit $maxSize")
+    return List(size) { decoder(buf) }
+}
+
+private fun <T> writeBoundedList(
+    buf: FriendlyByteBuf,
+    values: List<T>,
+    maxSize: Int,
+    encoder: (FriendlyByteBuf, T) -> Unit
+) {
+    val bounded = values.take(maxSize)
+    buf.writeVarInt(bounded.size)
+    bounded.forEach { encoder(buf, it) }
+}
+
+/** Bounded airspace candidates encoded independently of ClientboundSoundPacket. */
 class ServerMessageAirspaceSounds(
     val sounds: List<AirspaceSound>,
     val x: Double,
     val y: Double,
     val z: Double
 ) : CustomPacketPayload {
+    init {
+        require(sounds.size <= MAX_CANDIDATES) { "Too many airspace candidates" }
+        require(x.isFinite() && y.isFinite() && z.isFinite()) { "Airspace position must be finite" }
+    }
+
     constructor(buf: FriendlyByteBuf) : this(
-        buf.readCollection(Lists::newArrayListWithCapacity, AirspaceSound::read),
+        readBoundedList(buf, MAX_CANDIDATES, AirspaceSound::read),
         buf.readDouble(),
         buf.readDouble(),
         buf.readDouble()
     )
 
     fun write(out: FriendlyByteBuf) {
-        out.writeCollection(sounds) { buf, element -> element.write(buf) }
+        writeBoundedList(out, sounds, MAX_CANDIDATES) { buf, element -> element.write(buf) }
         out.writeDouble(x)
         out.writeDouble(y)
         out.writeDouble(z)
@@ -62,8 +88,15 @@ class ServerMessageAirspaceSounds(
         val minReflectivity: Float,
         val maxReflectivity: Float
     ) {
+        init {
+            require(sounds.size <= MAX_SOUNDS_PER_CANDIDATE) { "Too many airspace sounds" }
+            require(validRange(minAirspace, maxAirspace)) { "Invalid airspace range" }
+            require(validRange(minOcclusion, maxOcclusion)) { "Invalid occlusion range" }
+            require(validRange(minReflectivity, maxReflectivity)) { "Invalid reflectivity range" }
+        }
+
         fun write(out: FriendlyByteBuf) {
-            out.writeCollection(sounds) { buf, spec -> spec.write(buf) }
+            writeBoundedList(out, sounds, MAX_SOUNDS_PER_CANDIDATE) { buf, spec -> spec.write(buf) }
             out.writeFloat(minAirspace)
             out.writeFloat(maxAirspace)
             out.writeFloat(minOcclusion)
@@ -72,13 +105,16 @@ class ServerMessageAirspaceSounds(
             out.writeFloat(maxReflectivity)
         }
 
-        fun canPlayAtAirspace(airspace: Float): Boolean = airspace in minAirspace..maxAirspace
-        fun canPlayAtOcclusion(occlusion: Double): Boolean = occlusion in minOcclusion.toDouble()..maxOcclusion.toDouble()
-        fun canPlayAtReflectivity(reflectivity: Float): Boolean = reflectivity in minReflectivity..maxReflectivity
+        fun canPlayAtAirspace(airspace: Float): Boolean = airspace.isFinite() && airspace in minAirspace..maxAirspace
+        fun canPlayAtOcclusion(occlusion: Double): Boolean = occlusion.isFinite() && occlusion in minOcclusion.toDouble()..maxOcclusion.toDouble()
+        fun canPlayAtReflectivity(reflectivity: Float): Boolean = reflectivity.isFinite() && reflectivity in minReflectivity..maxReflectivity
 
         companion object {
+            private fun validRange(min: Float, max: Float): Boolean =
+                min.isFinite() && max.isFinite() && min <= max
+
             fun read(buf: FriendlyByteBuf): AirspaceSound = AirspaceSound(
-                buf.readCollection(Lists::newArrayListWithCapacity, SoundSpec::read),
+                readBoundedList(buf, MAX_SOUNDS_PER_CANDIDATE, SoundSpec::read),
                 buf.readFloat(),
                 buf.readFloat(),
                 buf.readFloat(),
@@ -95,6 +131,12 @@ class ServerMessageAirspaceSounds(
         val pitch: Float,
         val range: Float?
     ) {
+        init {
+            require(volume.isFinite() && volume in 0.0F..4.0F) { "Invalid sound volume" }
+            require(pitch.isFinite() && pitch in 0.01F..4.0F) { "Invalid sound pitch" }
+            require(range == null || range.isFinite() && range in 0.01F..256.0F) { "Invalid sound range" }
+        }
+
         fun write(out: FriendlyByteBuf) {
             out.writeIdentifier(sound)
             out.writeFloat(volume)

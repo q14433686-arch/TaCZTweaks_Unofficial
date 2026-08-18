@@ -14,8 +14,10 @@ import me.muksc.tacztweaks.mixin.accessor.InaccuracyTypeAccessor;
 import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder;
 import me.muksc.tacztweaks.network.NetworkHandler;
 import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound;
+import me.muksc.tacztweaks.network.message.ClientMessagePlayerShouldSlide;
 import me.muksc.tacztweaks.registry.ModStatusEffects;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -24,6 +26,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 
@@ -33,6 +36,7 @@ import java.util.Map;
 
 public class TaCZTweaks implements ModInitializer {
     public static final String MOD_ID = "tacztweaks";
+    public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.2.R2";
     public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
     public static Identifier id(String path) {
@@ -45,6 +49,16 @@ public class TaCZTweaks implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        String taczVersion = FabricLoader.getInstance().getModContainer("tacz")
+            .orElseThrow(() -> new IllegalStateException("TaCZ is required"))
+            .getMetadata().getVersion().getFriendlyString();
+        // SemVer ignores build metadata during comparison, but R2 is exactly where the
+        // named hooks used by this port were introduced. Enforce the full friendly string.
+        if (!SUPPORTED_TACZ_VERSION.equals(taczVersion)) {
+            throw new IllegalStateException(
+                "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION + ", found " + taczVersion
+            );
+        }
         Config.INSTANCE.initialize();
         NetworkHandler.INSTANCE.registerServer();
         // Force initialization of the ModStatusEffects object so the effect registers at startup.
@@ -60,6 +74,9 @@ public class TaCZTweaks implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerLevel level : server.getAllLevels()) {
                 BlockBreakingManager.INSTANCE.onLevelTick(level);
+            }
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                ClientMessagePlayerShouldSlide.validateServerState(player);
             }
             BulletParticlesManager.INSTANCE.onServerTick(server);
         });
@@ -113,6 +130,19 @@ public class TaCZTweaks implements ModInitializer {
     }
 
     /**
+     * Returns whether tilt may affect spread. Client state is only prediction/visuals;
+     * server gameplay requires a recent request and re-validates the held gun each use.
+     */
+    public static boolean isSpreadReducingTilt(LivingEntity entity) {
+        if (!Config.Tweaks.INSTANCE.betterGunTilt()) return false;
+        SlideDataHolder holder = (SlideDataHolder) entity;
+        if (entity.level().isClientSide()) return holder.tacztweaks$getShouldSlide();
+        if (!(entity instanceof ServerPlayer player)) return false;
+        ClientMessagePlayerShouldSlide.validateServerState(player);
+        return holder.tacztweaks$getShouldSlide();
+    }
+
+    /**
      * The "better inaccuracy" calculation: combines the inaccuracy map multiplicatively
      * (or additively when the base is <= 0) across all active states.
      */
@@ -125,13 +155,13 @@ public class TaCZTweaks implements ModInitializer {
             if (inaccuracyTypes.contains(InaccuracyType.SNEAK)) inaccuracy *= map.get(InaccuracyType.SNEAK) / base;
             if (inaccuracyTypes.contains(InaccuracyType.LIE)) inaccuracy *= map.get(InaccuracyType.LIE) / base;
             if (inaccuracyTypes.contains(InaccuracyType.AIM)) inaccuracy *= map.get(InaccuracyType.AIM) / base;
-            if (Config.Tweaks.INSTANCE.betterGunTilt() && ((SlideDataHolder) entity).tacztweaks$getShouldSlide()) inaccuracy *= map.get(InaccuracyType.SNEAK) / base;
+            if (isSpreadReducingTilt(entity)) inaccuracy *= map.get(InaccuracyType.SNEAK) / base;
         } else {
             if (inaccuracyTypes.contains(InaccuracyType.MOVE)) inaccuracy += map.get(InaccuracyType.MOVE);
             if (inaccuracyTypes.contains(InaccuracyType.SNEAK)) inaccuracy += map.get(InaccuracyType.SNEAK);
             if (inaccuracyTypes.contains(InaccuracyType.LIE)) inaccuracy += map.get(InaccuracyType.LIE);
             if (inaccuracyTypes.contains(InaccuracyType.AIM)) inaccuracy += map.get(InaccuracyType.AIM);
-            if (Config.Tweaks.INSTANCE.betterGunTilt() && ((SlideDataHolder) entity).tacztweaks$getShouldSlide()) inaccuracy += map.get(InaccuracyType.SNEAK);
+            if (isSpreadReducingTilt(entity)) inaccuracy += map.get(InaccuracyType.SNEAK);
         }
         return inaccuracy;
     }

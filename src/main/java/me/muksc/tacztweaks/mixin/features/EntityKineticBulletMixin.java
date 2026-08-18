@@ -29,8 +29,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Injects the state and hooks needed by the data-driven bullet interaction system into
@@ -67,6 +71,9 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
 
     @Unique
     private final List<ServerPlayer> tacztweaks$hitPlayers = new ArrayList<>();
+
+    @Unique
+    private final Set<UUID> tacztweaks$whizzedPlayers = new HashSet<>();
 
     @Unique
     private int tacztweaks$burstIndex;
@@ -181,6 +188,21 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
             : original;
     }
 
+    @ModifyExpressionValue(
+        method = "onBulletTick",
+        at = @At(
+            value = "INVOKE",
+            target = "Lcom/tacz/guns/util/EntityUtil;findEntitiesOnPath(Lnet/minecraft/world/entity/projectile/Projectile;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)Ljava/util/List;"
+        )
+    )
+    private List<EntityKineticBullet.EntityResult> tacztweaks$onBulletTick$sortAllEntityHits(
+        List<EntityKineticBullet.EntityResult> original
+    ) {
+        Vec3 start = ((EntityKineticBullet) (Object) this).position();
+        original.sort(Comparator.comparingDouble(result -> result.getHitPos().distanceToSqr(start)));
+        return original;
+    }
+
     @ModifyExpressionValue(method = "getDamage", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/ExtraDamage$DistanceDamagePair;getDamage()F"))
     private float tacztweaks$getDamage$applyDamageModifiers(float original) {
         float damage = original;
@@ -221,13 +243,21 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         }
 
         if (self.level() instanceof ServerLevel level) {
+            BulletSoundsManager.EEntitySoundType soundType = dead
+                ? BulletSoundsManager.EEntitySoundType.KILL
+                : interactionResult.getPierce()
+                    ? BulletSoundsManager.EEntitySoundType.PIERCE
+                    : BulletSoundsManager.EEntitySoundType.HIT;
+            BulletParticlesManager.EEntityParticleType particleType = dead
+                ? BulletParticlesManager.EEntityParticleType.KILL
+                : interactionResult.getPierce()
+                    ? BulletParticlesManager.EEntityParticleType.PIERCE
+                    : BulletParticlesManager.EEntityParticleType.HIT;
             BulletSoundsManager.INSTANCE.handleEntitySound(
-                dead ? BulletSoundsManager.EEntitySoundType.KILL : BulletSoundsManager.EEntitySoundType.HIT,
-                level, self, result.getLocation(), entity
+                soundType, level, self, result.getLocation(), entity
             );
             BulletParticlesManager.INSTANCE.handleEntityParticle(
-                dead ? BulletParticlesManager.EEntityParticleType.KILL : BulletParticlesManager.EEntityParticleType.HIT,
-                level, self, result.getLocation(), entity
+                particleType, level, self, result.getLocation(), entity
             );
         }
     }
@@ -245,6 +275,8 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
             tacztweaks$position = self.position().add(self.getDeltaMovement());
         }
         BulletSoundsManager.INSTANCE.handleConstant(level, self);
-        BulletSoundsManager.INSTANCE.handleSoundWhizz(level, self, tacztweaks$hitPlayers);
+        BulletSoundsManager.INSTANCE.handleSoundWhizz(
+            level, self, tacztweaks$hitPlayers, tacztweaks$whizzedPlayers
+        );
     }
 }

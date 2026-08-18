@@ -2,7 +2,7 @@ package me.muksc.tacztweaks.mixininterface.tweaks;
 
 /**
  * Extra state on {@code GunSoundInstance$TaczSound} so we can remember that TaCZ asked
- * for a mono buffer without writing a field onto the 26.2 {@code Identifier} record.
+ * for a mono buffer without attaching per-playback mutable state to a shared {@code Identifier}.
  */
 public interface MonoTaczSound {
     boolean tacztweaks$getMono();

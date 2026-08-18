@@ -29,6 +29,7 @@ private val COMPARATOR = compareBy<BulletParticles> { it.priority }
 object BulletParticlesManager : BaseDataManager<BulletParticles>(
     "bullet_particles", BulletParticles.CODEC, COMPARATOR
 ) {
+    private const val MAX_EMITTERS = 1_024
     private val emitters: MutableList<ParticleEmitter> = mutableListOf()
 
     override fun debugEnabled(): Boolean = Config.Debug.bulletParticles()
@@ -101,9 +102,19 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
     }
 
     private fun BulletParticles.Particle.summon(level: ServerLevel, entity: EntityKineticBullet, context: String? = null) {
+        if (emitters.size >= MAX_EMITTERS) {
+            logDebug { "Dropping bullet particle emitter because the cap ($MAX_EMITTERS) was reached" }
+            return
+        }
+        if (!speed.isFinite() || speed !in 0.0..64.0 || count !in 0..4096 || duration !in 1..1200) return
+        if (!position.hasFiniteComponents() || !delta.hasFiniteComponents()) return
+
         val ext = entity as EntityKineticBulletExtension
         val base = ext.`tacztweaks$getPosition`()
-        val particleString = if (context != null) particle.format(context) else particle
+        if (!base.hasFiniteComponents()) return
+        // Only %s is a supported context token. String.format accepted arbitrary format
+        // directives and could throw outside the parser's exception boundary.
+        val particleString = if (context != null) particle.replace("%s", context) else particle
         val reader = StringReader(particleString)
         val particleOptions: ParticleOptions = try {
             ParticleArgument.readParticle(reader, entity.registryAccess())
@@ -141,6 +152,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
         // Delta is a vector, so relative/local values are resolved around zero rather than
         // accidentally adding the world-space hit position.
         val deltaCoordinates = resolve(delta, null)
+        if (!coordinates.hasFiniteComponents() || !deltaCoordinates.hasFiniteComponents()) return
 
         emitters.add(ParticleEmitter(
             this,
@@ -151,6 +163,12 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
             duration.coerceIn(1, 1200)
         ))
     }
+
+    private fun BulletParticles.Particle.Coordinates.hasFiniteComponents(): Boolean =
+        x.isFinite() && y.isFinite() && z.isFinite()
+
+    private fun Vec3.hasFiniteComponents(): Boolean =
+        x.isFinite() && y.isFinite() && z.isFinite()
 
     enum class EBlockParticleType(val getParticle: (BulletParticles.Block) -> List<BulletParticles.Block.BlockParticle>) {
         HIT(BulletParticles.Block::hit),

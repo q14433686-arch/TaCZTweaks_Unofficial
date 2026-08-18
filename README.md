@@ -24,7 +24,7 @@
 
 | 功能 | 26.2 实现 |
 |---|---|
-| `betterMonoConversion` | 不向 record `Identifier` 塞字段；用音效路径旁表，在 `SoundBuffer` 构造前混合左右声道 |
+| `betterMonoConversion` | 不向共享 `Identifier` 挂每次播放的可变状态；按具体音效请求区分 mono/stereo 缓存，在 `SoundBuffer` 构造前混合左右声道 |
 | `bulletProtection` | 在 `EnchantmentHelper#getDamageProtection` 按每件护甲恢复原版弹射物保护公式，并排除虚空弹 |
 | 匍匐 `visualTweak` | 精确挂到 `AvatarRenderer.setupRotations(AvatarRenderState, …)`，不使用脆弱局部变量序号 |
 | melee 方块交互 | 枪托/刺刀及目标端内置 LRTactical `IMeleeWeapon#performAttack` 均接入 |
@@ -47,7 +47,7 @@
 - 支持 gun/category/ammo/regex/predicate/damage/speed/silenced/burst/pellet/random 及逻辑组合；
 - 示例包：`tacz-tweaks-example-pack/`。
 
-方块破坏会调用 Fabric `PlayerBlockBreakEvents`，不会绕过领地/保护模组；粒子只发送到产生它的维度。
+玩家拥有的方块破坏会先检查 `Level.mayInteract`，并调用 Fabric `PlayerBlockBreakEvents` 的 BEFORE/CANCELED/AFTER 完整链；具体领地模组仍需在发布矩阵中逐个验证。粒子只发送到产生它的维度。
 
 ## 当前确实没有目标的兼容项
 
@@ -68,14 +68,14 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 | 类型 | 依赖 | 版本 |
 |---|---|---|
 | 必需 | Minecraft | 26.2 |
-| 必需 | Fabric Loader | >=0.19.3 |
-| 必需 | Fabric API | 26.2 对应版 |
-| 必需 | [UNOFFICIAL] TaCZ Refabricated | >=1.1.8（mod id `tacz`） |
-| 必需 | Fabric Language Kotlin | >=1.13.0 |
+| 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
+| 必需 | Fabric API | >=0.155.2+26.2、<0.157.0 |
+| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.2.R2**（精确验证完整版本字符串） |
+| 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
 | 必需 | YetAnotherConfigLib | 3.9.6+26.2-fabric |
 | 可选 | Sound Physics Remastered | 1.5.1+26.2 Fabric |
-| 可选 | First Aid New | 1.3.x Fabric 26.2 |
-| 可选 | Pillager’s Gun (Unofficial Port) | 3.3.5 Fabric 26.2 |
+| 可选 | First Aid New | >=1.3.0、<1.4.0 Fabric 26.2（shader 覆盖仅验证此范围） |
+| 可选 | Pillager’s Gun (Unofficial Port) | >=3.3.5、<3.4.0 Fabric 26.2 |
 | 运行环境 | Java | >=25 |
 
 ## 构建与审计
@@ -84,7 +84,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 # 需要 JDK 25
 python3 scripts/audit_port.py --strict
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.2.R2.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.2.R3.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性和
@@ -95,3 +95,4 @@ MixinExtras 最低版本。可再传 `--minecraft-jar <loom生成的26.2.jar>` �
 
 - 代码：GPL-3.0（继承原项目 MUKSC/TaCZTweaks）
 - 原作者：MUKSC
+- 嵌入依赖和修改后的 First Aid shader 来源/许可证：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)

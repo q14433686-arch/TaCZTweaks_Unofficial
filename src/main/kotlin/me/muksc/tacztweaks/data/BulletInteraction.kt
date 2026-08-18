@@ -98,7 +98,7 @@ sealed class BulletInteraction(
         ) : Pierce(EPierceType.COUNT, conditional, damageFalloff, damageMultiplier, renderBulletHole) {
             companion object {
                 val CODEC: Codec<Count> = RecordCodecBuilder.create<Count> { it.group(
-                    Codec.INT.fieldOf("count").forGetter(Count::count),
+                    Codec.intRange(1, 32_768).fieldOf("count").forGetter(Count::count),
                     Codec.BOOL.strictOptionalFieldOf("conditional", false).forGetter(Count::conditional),
                     Codec.FLOAT.strictOptionalFieldOf("damage_falloff", 0.0F).forGetter(Count::damageFalloff),
                     Codec.FLOAT.strictOptionalFieldOf("damage_multiplier", 1.0F).forGetter(Count::damageMultiplier),
@@ -201,7 +201,7 @@ sealed class BulletInteraction(
             ) : BlockBreak(EBlockBreakType.COUNT, replaceWith, hardness, tier.getOrNull(), drop) {
                 companion object {
                     val CODEC: Codec<Count> = RecordCodecBuilder.create<Count> { instance -> instance.group(
-                        Codec.INT.fieldOf("count").forGetter(Count::count),
+                        Codec.intRange(1, 32_768).fieldOf("count").forGetter(Count::count),
                         BlockInputCodec.strictOptionalFieldOf("replace_with", Blocks.AIR.defaultBlockState().blockInput()).forGetter(Count::replaceWith),
                         ValueRange.CODEC.strictOptionalFieldOf("hardness", ValueRange.DEFAULT).forGetter(Count::hardness),
                         BlockTarget.TierDefinition.CODEC.strictOptionalFieldOf("tier").forGetter { Optional.ofNullable(it.tier) },

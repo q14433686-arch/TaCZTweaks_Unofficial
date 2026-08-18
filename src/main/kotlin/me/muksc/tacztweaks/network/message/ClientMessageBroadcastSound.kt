@@ -1,5 +1,6 @@
 package me.muksc.tacztweaks.network.message
 
+import com.tacz.guns.api.item.IGun
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.network.NetworkHandler
@@ -45,13 +46,24 @@ class ClientMessageBroadcastSound(
             { buf -> ClientMessageBroadcastSound(buf) }
         )
 
-        private const val MAX_DISTANCE = 256
-        private const val MAX_SOUNDS_PER_SECOND = 64
+        private const val MAX_DISTANCE = 96
+        private const val MAX_SOUNDS_PER_SECOND = 16
         private val recentSounds = ConcurrentHashMap<UUID, ArrayDeque<Long>>()
 
         fun handle(msg: ClientMessageBroadcastSound, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
             server.execute {
                 if (player == null || !Config.Tweaks.audibleFirstPersonGunSounds()) return@execute
+                if (!player.isAlive || player.isRemoved || !IGun.mainHandHoldGun(player)) return@execute
+                val gun = IGun.getIGunOrNull(player.mainHandItem) ?: return@execute
+                val gunId = gun.getGunId(player.mainHandItem)
+                val displayId = gun.getGunDisplayId(player.mainHandItem)
+                val allowedNamespaces = setOf(
+                    "tacz",
+                    TaCZTweaks.MOD_ID,
+                    gunId.namespace,
+                    displayId.namespace
+                )
+                if (msg.soundName.namespace !in allowedNamespaces) return@execute
                 if (msg.distance !in 1..MAX_DISTANCE || !msg.volume.isFinite() || msg.volume !in 0.0F..4.0F ||
                     !msg.pitch.isFinite() || msg.pitch !in 0.01F..4.0F || !allowSound(player.uuid)) return@execute
 

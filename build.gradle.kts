@@ -6,7 +6,8 @@ plugins {
     id("maven-publish")
 }
 
-version = project.property("mod_version") as String
+val modVersion = providers.gradleProperty("mod_version").get()
+version = modVersion
 group = project.property("maven_group") as String
 
 base {
@@ -40,8 +41,11 @@ dependencies {
     // YACL (YetAnotherConfigLib) — Fabric 26.2 build, provided as a hard dependency
     implementation(files("libs/yacl-fabric.jar"))
 
-    // The TaCZ refabricated port we integrate with (compile only)
-    compileOnly(files("libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar"))
+    // The TaCZ refabricated port we integrate with (compile only in production; tests
+    // exercise its codecs and therefore need it on their runtime classpath as well).
+    val taczJar = files("libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar")
+    compileOnly(taczJar)
+    testRuntimeOnly(taczJar)
 
     // MixinExtras (runtime bundled into our jar; AP used for compile-time validation)
     val mixinExtrasVersion = project.property("mixinextras_version") as String
@@ -53,6 +57,9 @@ dependencies {
     compileOnly("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
 
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
 
     // commons-math3 is bundled inside the TaCZ jar; we only need it at compile time
     compileOnly("org.apache.commons:commons-math3:3.6.1")
@@ -70,12 +77,30 @@ kotlin {
 }
 
 tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
-    inputs.property("version", project.version)
+    inputs.property("version", modVersion)
     filteringCharset = "UTF-8"
 
     filesMatching("fabric.mod.json") {
-        expand("version" to project.version)
+        expand("version" to modVersion)
     }
+}
+
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    useJUnitPlatform()
+}
+
+val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
+    group = "distribution"
+    description = "Packages the reloadable TaCZ Tweaks example gun pack."
+    from(layout.projectDirectory.dir("tacz-tweaks-example-pack")) {
+        into("tacz-tweaks-example-pack")
+    }
+    archiveFileName.set("tacz-tweaks-example-pack-$modVersion.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+}
+
+tasks.named("assemble") {
+    dependsOn(examplePackZip)
 }
 
 java {

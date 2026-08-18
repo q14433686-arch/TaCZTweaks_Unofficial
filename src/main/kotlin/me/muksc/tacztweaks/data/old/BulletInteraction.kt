@@ -48,7 +48,7 @@ class BulletInteraction(
 
             companion object {
                 val CODEC: Codec<Count> = RecordCodecBuilder.create<Count> { instance -> instance.group(
-                    Codec.INT.fieldOf("count").forGetter { it.count }
+                    Codec.intRange(1, 32_768).fieldOf("count").forGetter { it.count }
                 ).apply(instance, ::Count) }
             }
         }
@@ -125,7 +125,7 @@ class BulletInteraction(
             companion object {
                 val CODEC: Codec<Count> = RecordCodecBuilder.create<Count> { instance -> instance.group(
                     ECondition.CODEC.fieldOf("condition").forGetter { it.condition },
-                    Codec.INT.fieldOf("count").forGetter { it.count },
+                    Codec.intRange(1, 32_768).fieldOf("count").forGetter { it.count },
                     Codec.FLOAT.optionalFieldOf("damage_falloff", 0.0F).forGetter { it.damageFalloff },
                     Codec.FLOAT.optionalFieldOf("damage_multiplier", 1.0F).forGetter { it.damageMultiplier },
                     Codec.BOOL.optionalFieldOf("require_gun_pierce", false).forGetter { it.requireGunPierce }

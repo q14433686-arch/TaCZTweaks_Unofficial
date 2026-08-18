@@ -26,17 +26,27 @@
     "tacztweaks.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.19.3",
-    "fabric-api": "*",
-    "minecraft": "26.2",
+    "fabricloader": ">=0.19.3 <0.20.0",
+    "fabric-api": ">=0.155.2+26.2 <0.157.0",
+    "minecraft": "=26.2",
     "java": ">=25",
-    "tacz": ">=1.1.8",
-    "fabric-language-kotlin": ">=1.13.0",
-    "yet_another_config_lib_v3": "*"
+    "tacz": "=1.1.8+fabric.26.2.R2",
+    "fabric-language-kotlin": ">=1.13.13 <1.14.0",
+    "yet_another_config_lib_v3": "=3.9.6+26.2-fabric"
   },
   "suggests": {
-    "sound_physics_remastered": "*",
-    "firstaid": "*",
-    "pillagers_gun": "*"
+    "sound_physics_remastered": ">=1.5.1 <1.6.0",
+    "firstaid": ">=1.3.0 <1.4.0",
+    "pillagers_gun": ">=3.3.5 <3.4.0"
+  },
+  "breaks": {
+    "sound_physics_remastered": [
+      "<1.5.1",
+      ">=1.6.0"
+    ],
+    "firstaid": [
+      "<1.3.0",
+      ">=1.4.0"
+    ]
   }
 }

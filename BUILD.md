@@ -97,7 +97,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.R2.jar   ← 这就是模组，扔进 .minecraft/mods/ 即可
+build/libs/tacztweaks-2.14.2+fabric.26.2.R3.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.R3.zip  ← 可重载示例包
 ```
 
 ---
@@ -111,7 +112,7 @@ build/libs/tacztweaks-2.14.2+fabric.26.2.R2.jar   ← 这就是模组，扔进 .
 | `java.lang.UnsupportedClassVersionError` / `invalid source release 25` | 用了旧 JDK，换成 JDK 25 并设好 `JAVA_HOME` |
 | 下载依赖超时 | 重跑一次；国内网络可给 Gradle 配镜像仓库 |
 | `Daemon` 内存不足 | 编辑 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` 调大（如 `-Xmx4G`） |
-| 想跳过测试 | 加参数：`gradlew.bat build -x test`（本项目无测试，通常没差别） |
+| 想临时跳过测试 | 加参数：`gradlew.bat build -x test`（发布构建不得跳过；SafeMath、卸弹拆栈、PCM、codec 和 burst/pellet 均有测试） |
 
 ---
 

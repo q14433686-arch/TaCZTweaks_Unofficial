@@ -227,7 +227,7 @@ sealed class Target(
 
         companion object {
             val CODEC: Codec<RandomChance> = RecordCodecBuilder.create<RandomChance> { it.group(
-                Codec.FLOAT.fieldOf("chance").forGetter(RandomChance::chance)
+                Codec.floatRange(0.0F, 1.0F).fieldOf("chance").forGetter(RandomChance::chance)
             ).apply(it, ::RandomChance) }
         }
     }

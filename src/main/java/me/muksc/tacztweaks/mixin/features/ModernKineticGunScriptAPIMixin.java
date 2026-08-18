@@ -5,6 +5,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.item.ModernKineticGunScriptAPI;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
+import me.muksc.tacztweaks.core.ProjectileIndexAllocator;
 import me.muksc.tacztweaks.data.manager.BulletSoundsManager;
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension;
 import net.minecraft.server.level.ServerLevel;
@@ -24,14 +25,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = ModernKineticGunScriptAPI.class, remap = false)
 public abstract class ModernKineticGunScriptAPIMixin {
     @Unique
-    private int tacztweaks$burstIndex;
-
-    @Unique
-    private int tacztweaks$pelletIndex;
+    private final ProjectileIndexAllocator tacztweaks$indices = new ProjectileIndexAllocator();
 
     @Inject(method = "shootOnce", at = @At("HEAD"))
     private void tacztweaks$shootOnce$resetBurst(boolean consumeAmmo, CallbackInfo ci) {
-        tacztweaks$burstIndex = 0;
+        tacztweaks$indices.resetShot();
     }
 
     @Inject(method = "spawnProjectiles", at = @At("HEAD"))
@@ -47,7 +45,7 @@ public abstract class ModernKineticGunScriptAPIMixin {
         float yaw,
         CallbackInfo ci
     ) {
-        tacztweaks$pelletIndex = 0;
+        tacztweaks$indices.beginCycle();
     }
 
     @ModifyArg(
@@ -61,9 +59,10 @@ public abstract class ModernKineticGunScriptAPIMixin {
     private Entity tacztweaks$spawnProjectiles$tag(Entity entity) {
         if (!(entity instanceof EntityKineticBullet bullet)) return entity;
         EntityKineticBulletExtension extension = (EntityKineticBulletExtension) bullet;
-        extension.tacztweaks$setBurstIndex(tacztweaks$burstIndex);
-        extension.tacztweaks$setPelletIndex(tacztweaks$pelletIndex);
-        if (tacztweaks$pelletIndex++ == 0 && bullet.level() instanceof ServerLevel level) {
+        int pelletIndex = tacztweaks$indices.takePelletIndex();
+        extension.tacztweaks$setBurstIndex(tacztweaks$indices.getBurstIndex());
+        extension.tacztweaks$setPelletIndex(pelletIndex);
+        if (pelletIndex == 0 && bullet.level() instanceof ServerLevel level) {
             BulletSoundsManager.INSTANCE.handleAirspace(level, bullet);
         }
         return entity;
@@ -83,6 +82,6 @@ public abstract class ModernKineticGunScriptAPIMixin {
         int bulletAmount,
         CallbackInfoReturnable<Boolean> cir
     ) {
-        if (cir.getReturnValueZ()) tacztweaks$burstIndex++;
+        tacztweaks$indices.completeCycle(cir.getReturnValueZ());
     }
 }

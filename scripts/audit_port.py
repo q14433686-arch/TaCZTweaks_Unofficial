@@ -606,7 +606,10 @@ def audit_versions(config: dict) -> list[str]:
         errors.append(f"mod_version has an unexpected 26.2 format: {mod_version}")
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    documented = set(re.findall(r"\d+\.\d+\.\d+\+fabric\.26\.2\.R\d+", readme))
+    documented = {
+        value for value in re.findall(r"\d+\.\d+\.\d+\+fabric\.26\.2\.R\d+", readme)
+        if value.startswith(mod_version.split("+", 1)[0] + "+")
+    }
     if documented != {mod_version}:
         errors.append(
             f"README release versions {sorted(documented)} do not uniquely match {mod_version}"
@@ -614,6 +617,89 @@ def audit_versions(config: dict) -> list[str]:
     build_doc = (ROOT / "BUILD.md").read_text(encoding="utf-8")
     if mod_version not in build_doc:
         errors.append(f"BUILD.md does not name the current artifact version {mod_version}")
+    return errors
+
+
+def audit_release_guards() -> list[str]:
+    errors: list[str] = []
+    metadata = json.loads((SOURCE_ROOT / "resources/fabric.mod.json").read_text(encoding="utf-8"))
+    dependencies = metadata.get("depends", {})
+    if dependencies.get("tacz") != "=1.1.8+fabric.26.2.R2":
+        errors.append("fabric.mod.json must require the exact TaCZ R2 hook surface")
+    if metadata.get("suggests", {}).get("firstaid") != ">=1.3.0 <1.4.0":
+        errors.append("First Aid shader override is not constrained to the verified 1.3.x range")
+    firstaid_breaks = set(metadata.get("breaks", {}).get("firstaid", []))
+    if firstaid_breaks != {"<1.3.0", ">=1.4.0"}:
+        errors.append("unsupported First Aid versions are not blocked from shader override")
+
+    wrapper = (ROOT / "gradle/wrapper/gradle-wrapper.properties").read_text(encoding="utf-8")
+    expected_gradle_sum = "bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f"
+    if f"distributionSha256Sum={expected_gradle_sum}" not in wrapper:
+        errors.append("Gradle 9.5.1 distribution checksum is missing or incorrect")
+
+    required_tests = {
+        "src/test/kotlin/me/muksc/tacztweaks/core/SafeMathTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/core/StackSplitterTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/core/ProjectileIndexAllocatorTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/client/sound/MonoConversionTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/data/CodecSmokeTest.kt",
+    }
+    for name in sorted(required_tests):
+        if not (ROOT / name).is_file():
+            errors.append(f"missing release regression test: {name}")
+
+    required_fixtures = {
+        "tacz-tweaks-example-pack/assets/tacztweaks/sounds.json",
+        "tacz-tweaks-example-pack/assets/tacztweaks/sounds/hit/metal1.ogg",
+        "tacz-tweaks-example-pack/assets/tacztweaks/sounds/whizz/near1.ogg",
+        "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
+        "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
+    }
+    for name in sorted(required_fixtures):
+        if not (ROOT / name).is_file():
+            errors.append(f"missing restored-schema smoke fixture: {name}")
+
+    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+    if "examplePackZip" not in build_script:
+        errors.append("build does not package the example pack")
+    if not (ROOT / "THIRD_PARTY_NOTICES.md").is_file():
+        errors.append("missing THIRD_PARTY_NOTICES.md for embedded/modified dependencies")
+
+    source_checks = {
+        "src/main/kotlin/me/muksc/tacztweaks/data/core/ValueRange.kt": (
+            ("ValueRange(Double.MIN_VALUE", "ValueRange default again uses the smallest positive value"),
+        ),
+        "src/main/kotlin/me/muksc/tacztweaks/data/manager/BulletParticlesManager.kt": (
+            ("particle.format(", "particle context again accepts arbitrary format directives"),
+        ),
+    }
+    for name, forbidden in source_checks.items():
+        text = (ROOT / name).read_text(encoding="utf-8")
+        for needle, message in forbidden:
+            if needle in text:
+                errors.append(message)
+
+    metal_tag = json.loads((
+        ROOT / "tacz-tweaks-example-pack/data/tacztweaks/tags/block/metal.json"
+    ).read_text(encoding="utf-8"))
+    if "#minecraft:chains" not in metal_tag.get("values", []) or "minecraft:chain" in metal_tag.get("values", []):
+        errors.append("example metal tag does not use the 26.2 #minecraft:chains tag")
+
+    shield_source = (
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/data/manager/BulletInteractionManager.kt"
+    ).read_text(encoding="utf-8")
+    if "?: return null" not in shield_source or "Shield.DEFAULT" in shield_source:
+        errors.append("shield fallback no longer clearly preserves vanilla blocking")
+    mono_source = (
+        SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin/tweaks/SoundBufferLibraryMixin.java"
+    ).read_text(encoding="utf-8")
+    if "tacztweaks$monoCache" not in mono_source:
+        errors.append("mono and stereo complete buffers no longer have separate caches")
+
+    for name in ("README.md", "AUDIT.md", "AGENTS.md"):
+        text = (ROOT / name).read_text(encoding="utf-8")
+        if "`Identifier` 是 record" in text or "record `Identifier`" in text:
+            errors.append(f"{name} incorrectly describes Identifier as a record")
     return errors
 
 
@@ -688,6 +774,7 @@ def main() -> int:
     errors.extend(audit_languages())
     errors.extend(audit_firstaid_shader_overrides())
     errors.extend(audit_versions(config))
+    errors.extend(audit_release_guards())
 
     if args.upstream_root:
         errors.extend(compare_upstream(args.upstream_root))

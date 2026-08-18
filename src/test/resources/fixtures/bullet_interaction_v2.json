@@ -1,0 +1,20 @@
+{
+  "blocks": [
+    "minecraft:glass"
+  ],
+  "guns": [
+    "tacz:ak47"
+  ],
+  "block_break": {
+    "type": "count",
+    "count": 2
+  },
+  "pierce": {
+    "type": "count",
+    "condition": "on_break",
+    "count": 2,
+    "damage_falloff": 1.0,
+    "require_gun_pierce": true
+  },
+  "drop": true
+}

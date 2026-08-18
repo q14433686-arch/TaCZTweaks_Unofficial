@@ -20,7 +20,7 @@ python3 scripts/audit_port.py --strict \
 ## 总结
 
 用户的判断基本正确：旧文档把“原注入点/原 Forge 类型不存在”误写成了“功能不能做”。
-`Identifier` 是 record、`ProtectionEnchantment` 被删除、Forge 事件不存在，都只意味着需要换挂点。
+`Identifier` 不适合承载每次播放的可变状态、`ProtectionEnchantment` 被删除、Forge 事件不存在，都只意味着需要换挂点。26.2 的 `Identifier` 实际是普通 final class，并非 record。
 
 本轮也没有直接照收此前两个未验证 PR：逐条对字节码后发现其中存在会静默失效或逻辑不完整的实现，
 例如 `AvatarRenderer` 字段 owner 写错且 `require=0`、完成后的 `SoundBuffer` 字节数未同步、弹射物保护只取
@@ -31,7 +31,7 @@ python3 scripts/audit_port.py --strict \
 
 | 项目 | 旧结论 | 查证结果 | 本轮处理 |
 |---|---|---|---|
-| Stereo→mono | record 无法加字段，所以不能做 | 只有“给 Identifier 加字段”不能做 | 路径旁表 + `SoundBuffer` 构造前 downmix；补回 1P 枪声 mono 判定和资源重载 |
+| Stereo→mono | 误称 Identifier 为 record，进而断言不能做 | 不应把每次播放状态写入共享资源标识 | 请求级 mono 标记 + mono/stereo 独立缓存 + `SoundBuffer` 构造前 downmix；补回资源重载清理 |
 | Bullet Protection | 类被删除 | JSON 附魔仍从 `EnchantmentHelper` 汇总 `damage_protection` | 按每件护甲累计 `2 × level`，并保持 `bypasses_invulnerability=false` 条件 |
 | Crawl visual | PlayerRenderer 消失 | 26.2 对应 `AvatarRenderer.setupRotations` | 使用准确 descriptor、字段 owner 和 `AvatarRenderState.swimAmount`，不再 `require=0` |
 | melee | Forge/FakePlayer/Share 难迁 | 枪械 `doMelee` 仍在，LRTactical 已内置稳定 `performAttack` | 两条近战链均接入方块规则和 Fabric 破坏事件 |
@@ -80,7 +80,7 @@ python3 scripts/audit_port.py --strict \
 
 ### 数据驱动行为
 
-- 方块子弹/近战破坏原先绕过 Fabric 破坏事件：现在调用 BEFORE/AFTER，并只在实际销毁后替换方块；
+- 方块子弹/近战破坏统一经过 `Level.mayInteract` 和 Fabric BEFORE/CANCELED/AFTER，并只在实际销毁后替换方块；
 - 破坏裂纹原用 wall clock，且 stage 0 不清除、空 level map 泄漏：改回存在的 `getGameTime()`、完整清理；
 - 粒子原来发到所有维度，`local` 坐标直接退化为原点：存产生维度并按子弹 forward/left/up 变换；
 - 实体命中没有更新粒子基点、无方块命中的 whizz 终点为 `Vec3.ZERO`：每 tick 跟踪真实终点/命中点；
@@ -91,9 +91,10 @@ python3 scripts/audit_port.py --strict \
 - 配置 payload 可声明任意/负长度，且复用 payload 时 `writeBytes(buf)` 会消耗 reader index：限制 1 MiB、
   使用绝对索引复制、失败回滚并释放 ByteBuf；同时恢复客户端 `syncedWithServer=true`，并用同步到
   `LocalPlayer` 的 26.2 PermissionSet 判断 OP（旧实现强转 ServerPlayer，导致所有客户端都无权保存）；
-- 滑铲 C2S 原来在网络线程直接改实体且强转 nullable player：调度到 server thread 并安全检查；
-- 枪声 C2S 原来即使服务端关闭开关也可伪造，距离平方还能 int overflow，并会跨维度发送：
-  增加服务端开关、finite/range 检查、64 次/秒限流、double 平方和维度过滤；
+- 倾斜 C2S 只作为 40 tick 的输入租约：调度到 server thread，且服务端每次用于扩散前重新验证
+  alive/removed、主手持枪和 `GunData.canSlide()`；客户端不能永久写入 gameplay 状态；
+- 枪声 C2S 要求 alive + 主手持枪，namespace 只能是 TaCZ/TaCZTweaks/当前枪包；同时增加
+  服务端开关、finite/range 检查、16 次/秒限流、96 格上限、double 平方和维度过滤；
 - 卸弹栈拆分循环改为明确的 `while remaining > 0`，缺 ammo index 时不再先删除弹药；
 - `Inventory.hasInfiniteAmmo` 的 `0..containerSize` 越界改为 `0 until containerSize`。
 

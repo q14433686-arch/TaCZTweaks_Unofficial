@@ -75,6 +75,7 @@ public abstract class LivingEntityMixin {
 
         BulletInteractionManager.ShieldInteractionResult result =
             BulletInteractionManager.INSTANCE.handleShieldInteraction(bullet, bullet.position(), shield, amount);
+        if (result == null) return vanillaBlocked;
         tacztweaks$shieldDurability = result.getDurabilityDamage();
         tacztweaks$shieldDisableTicks = Math.max(0, result.getDisableDuration());
         return Math.clamp(result.getBlockedDamage(), 0.0F, amount);

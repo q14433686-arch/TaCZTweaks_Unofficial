@@ -5,11 +5,11 @@ import me.muksc.tacztweaks.compat.lrtactical.LRTacticalCompat
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.BlockBreakingManager
 import me.muksc.tacztweaks.core.Context
+import me.muksc.tacztweaks.core.ProtectedBlockBreaking
 import me.muksc.tacztweaks.data.BulletInteraction
 import me.muksc.tacztweaks.data.MeleeInteraction
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager.calcBlockBreakingDelta
 import me.muksc.tacztweaks.thenPrioritizeBy
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.ClipContext
@@ -64,7 +64,7 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
 
         val breakBlock = run {
             val hardness = state.getDestroySpeed(level, blockPos)
-            if (hardness !in interaction.blockBreak.hardness) return@run false
+            if (hardness < 0.0F || hardness !in interaction.blockBreak.hardness) return@run false
             val tier = interaction.blockBreak.tier
             if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops())) return@run false
 
@@ -88,15 +88,15 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
                 }
             }
         }
-        if (breakBlock) run {
-            val blockEntity = level.getBlockEntity(blockPos)
-            val allowed = PlayerBlockBreakEvents.BEFORE.invoker()
-                .beforeBlockBreak(level, player, blockPos, state, blockEntity)
-            if (!allowed) return@run
-            if (level.destroyBlock(blockPos, interaction.blockBreak.drop, player, Block.UPDATE_ALL)) {
-                PlayerBlockBreakEvents.AFTER.invoker()
-                    .afterBlockBreak(level, player, blockPos, state, blockEntity)
-            }
+        if (breakBlock) {
+            ProtectedBlockBreaking.destroy(
+                level,
+                blockPos,
+                state,
+                player,
+                interaction.blockBreak.drop,
+                Block.UPDATE_ALL
+            )
         }
     }
 }

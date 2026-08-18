@@ -18,6 +18,7 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
+import java.util.UUID
 
 private val COMPARATOR = compareBy<BulletSounds> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
@@ -32,6 +33,9 @@ private val COMPARATOR = compareBy<BulletSounds> { it.priority }
 object BulletSoundsManager : BaseDataManager<BulletSounds>(
     "bullet_sounds", BulletSounds.CODEC, COMPARATOR
 ) {
+    private const val MAX_AIRSPACE_CANDIDATES = 64
+    private const val MAX_AIRSPACE_SOUNDS = 32
+
     override fun debugEnabled(): Boolean = Config.Debug.bulletSounds()
 
     private inline fun <reified T : BulletSounds> getSounds(
@@ -66,6 +70,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
         for (sound in type.getSound(sounds)) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(result.location)) }) continue
             if (!sound.blocks.anyOrEmpty { it.test(level, result.blockPos, state) }) continue
+            if (!sound.isSafe()) continue
             sound.play(level, result.location, entity)
         }
     }
@@ -78,6 +83,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
         for (sound in type.getSound(sounds)) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }) continue
             if (!sound.entities.anyOrEmpty { it.test(target) }) continue
+            if (!sound.isSafe()) continue
             sound.play(level, location, entity)
         }
     }
@@ -86,18 +92,25 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
         val location = entity.position()
         val (id, sounds) = getSound<BulletSounds.Constant>(entity, location) ?: return
         logDebug { "Using constant bullet sounds: $id" }
-        if (entity.tickCount % sounds.interval != 0) return
+        if (sounds.interval <= 0 || entity.tickCount % sounds.interval != 0) return
         for (sound in sounds.sounds) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }) continue
+            if (!sound.isSafe()) continue
             sound.play(level, location, entity)
         }
     }
 
-    fun handleSoundWhizz(level: ServerLevel, entity: EntityKineticBullet, ignores: List<ServerPlayer>) {
+    fun handleSoundWhizz(
+        level: ServerLevel,
+        entity: EntityKineticBullet,
+        ignores: Collection<ServerPlayer>,
+        whizzedPlayers: MutableSet<UUID>
+    ) {
         for (player in level.server.playerList.players) {
-            if (entity.getOwner() == player || player in ignores) continue
+            if (entity.getOwner() == player || player in ignores || player.uuid in whizzedPlayers) continue
             if (player.level().dimension() != level.dimension()) continue
-            handleSoundWhizz(player, entity)
+            // A player is remembered only after at least one sound packet was emitted.
+            if (handleSoundWhizz(player, entity)) whizzedPlayers.add(player.uuid)
         }
     }
 
@@ -108,57 +121,85 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
     }
 
     fun handleAirspace(level: ServerLevel, entity: EntityKineticBullet) {
-        val soundsList = getSounds<BulletSounds.AirSpace>(entity, entity.position()).takeIf { it.isNotEmpty() } ?: return
+        val position = entity.position()
+        if (!position.x.isFinite() || !position.y.isFinite() || !position.z.isFinite()) return
+        val soundsList = getSounds<BulletSounds.AirSpace>(entity, position)
+            .take(MAX_AIRSPACE_CANDIDATES)
+            .takeIf { it.isNotEmpty() } ?: return
         for (player in level.server.playerList.players) {
             if (player.level().dimension() != level.dimension()) continue
-            val distance = player.position().distanceTo(entity.position())
+            val distance = player.position().distanceTo(position)
+            if (!distance.isFinite()) continue
             val candidates = soundsList.mapNotNull { (id, sounds) ->
-                val sound = sounds.sounds.firstOrNull { distance <= it.threshold } ?: return@mapNotNull null
+                val distanceSound = sounds.sounds.firstOrNull {
+                    it.threshold.isFinite() && it.threshold >= 0.0 && distance <= it.threshold
+                } ?: return@mapNotNull null
+                val specs = distanceSound.sound.asSequence()
+                    .filter { spec ->
+                        spec.isSafe() && spec.target.anyOrEmpty {
+                            it.test(entity, entity.getGunId(), entity.getDamage(position))
+                        }
+                    }
+                    .take(MAX_AIRSPACE_SOUNDS)
+                    .map { ServerMessageAirspaceSounds.SoundSpec(it.sound, it.volume, it.pitch, it.range) }
+                    .toList()
+                if (specs.isEmpty()) return@mapNotNull null
                 logDebug { "Using airspace bullet sounds '$id' for player '$player'" }
-                sounds to sound
+                ServerMessageAirspaceSounds.AirspaceSound(
+                    specs,
+                    sounds.airspace.min.toNetworkFloat(),
+                    sounds.airspace.max.toNetworkFloat(),
+                    sounds.occlusion.min.toNetworkFloat(),
+                    sounds.occlusion.max.toNetworkFloat(),
+                    sounds.reflectivity.min.toNetworkFloat(),
+                    sounds.reflectivity.max.toNetworkFloat()
+                )
             }
             if (candidates.isEmpty()) continue
             NetworkHandler.sendS2C(player, ServerMessageAirspaceSounds(
-                candidates.map { (sounds, airspace) ->
-                    ServerMessageAirspaceSounds.AirspaceSound(
-                        airspace.sound.filter { spec ->
-                            spec.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(entity.position())) }
-                        }.map { ServerMessageAirspaceSounds.SoundSpec(it.sound, it.volume, it.pitch, it.range) },
-                        sounds.airspace.min.toFloat(),
-                        sounds.airspace.max.toFloat(),
-                        sounds.occlusion.min.toFloat(),
-                        sounds.occlusion.max.toFloat(),
-                        sounds.reflectivity.min.toFloat(),
-                        sounds.reflectivity.max.toFloat()
-                    )
-                },
-                entity.position().x, entity.position().y, entity.position().z
+                candidates,
+                position.x,
+                position.y,
+                position.z
             ))
         }
     }
 
-    fun handleSoundWhizz(player: ServerPlayer, entity: EntityKineticBullet) {
+    fun handleSoundWhizz(player: ServerPlayer, entity: EntityKineticBullet): Boolean {
         val ext = entity as EntityKineticBulletExtension
         val destination = ext.`tacztweaks$getPosition`()
-        val (id, sounds) = getSound<BulletSounds.Whizz>(entity, destination) ?: return
+        val (id, sounds) = getSound<BulletSounds.Whizz>(entity, destination) ?: return false
         logDebug { "Using whizz bullet sounds '$id' for player '$player'" }
 
         val currentPosition = entity.position()
         val playerPosition = player.eyePosition
         val trajectory = destination.subtract(currentPosition)
         val lengthSqr = trajectory.lengthSqr()
-        if (lengthSqr <= 0) return
+        if (!lengthSqr.isFinite() || lengthSqr <= 0) return false
         val length = playerPosition.subtract(currentPosition).dot(trajectory) / lengthSqr
-        if (length !in 0.0..1.0) return
+        if (!length.isFinite() || length !in 0.0..1.0) return false
 
         val position = currentPosition.add(trajectory.scale(length))
         val distance = playerPosition.distanceTo(position)
-        val whizz = sounds.sounds.firstOrNull { distance <= it.threshold } ?: return
+        val whizz = sounds.sounds.firstOrNull { it.threshold.isFinite() && it.threshold >= 0.0 && distance <= it.threshold }
+            ?: return false
+        var played = false
         for (sound in whizz.sound) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(destination)) }) continue
+            if (!sound.isSafe()) continue
             sound.play(player, position, entity)
+            played = true
         }
+        return played
     }
+
+    private fun BulletSounds.Sound.isSafe(): Boolean =
+        volume.isFinite() && volume in 0.0F..4.0F &&
+            pitch.isFinite() && pitch in 0.01F..4.0F &&
+            (range == null || range.isFinite() && range in 0.01F..256.0F)
+
+    private fun Double.toNetworkFloat(): Float =
+        coerceIn(-Float.MAX_VALUE.toDouble(), Float.MAX_VALUE.toDouble()).toFloat()
 
     @Suppress("DEPRECATION")
     private fun BulletSounds.Sound.play(player: ServerPlayer, position: Vec3, entity: EntityKineticBullet) {

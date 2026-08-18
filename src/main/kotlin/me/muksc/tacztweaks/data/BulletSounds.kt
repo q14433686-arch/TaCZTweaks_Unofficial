@@ -34,9 +34,9 @@ sealed class BulletSounds(
             val CODEC: Codec<Sound> = RecordCodecBuilder.create<Sound> { instance -> instance.group(
                 singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(Sound::target),
                 Identifier.CODEC.fieldOf("sound").forGetter(Sound::sound),
-                Codec.FLOAT.strictOptionalFieldOf("volume", 1.0F).forGetter(Sound::volume),
-                Codec.FLOAT.strictOptionalFieldOf("pitch", 1.0F).forGetter(Sound::pitch),
-                Codec.FLOAT.strictOptionalFieldOf("range").forGetter { Optional.ofNullable(it.range) }
+                Codec.floatRange(0.0F, 4.0F).strictOptionalFieldOf("volume", 1.0F).forGetter(Sound::volume),
+                Codec.floatRange(0.01F, 4.0F).strictOptionalFieldOf("pitch", 1.0F).forGetter(Sound::pitch),
+                Codec.floatRange(0.01F, 256.0F).strictOptionalFieldOf("range").forGetter { Optional.ofNullable(it.range) }
             ).apply(instance, ::Sound) }
         }
     }
@@ -47,7 +47,7 @@ sealed class BulletSounds(
     ) {
         companion object {
             val CODEC: Codec<DistanceSound> = RecordCodecBuilder.create<DistanceSound> { it.group(
-                Codec.DOUBLE.fieldOf("threshold").forGetter(DistanceSound::threshold),
+                Codec.doubleRange(0.0, 4096.0).fieldOf("threshold").forGetter(DistanceSound::threshold),
                 singleOrListCodec(Sound.CODEC).strictOptionalFieldOf("sound", emptyList()).forGetter(DistanceSound::sound)
             ).apply(it, ::DistanceSound) }
         }
@@ -92,9 +92,9 @@ sealed class BulletSounds(
                     singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(BlockSound::target),
                     Codec.list(BlockTestable.CODEC).strictOptionalFieldOf("blocks", emptyList()).forGetter(BlockSound::blocks),
                     Identifier.CODEC.fieldOf("sound").forGetter(BlockSound::sound),
-                    Codec.FLOAT.strictOptionalFieldOf("volume", 1.0F).forGetter(BlockSound::volume),
-                    Codec.FLOAT.strictOptionalFieldOf("pitch", 1.0F).forGetter(BlockSound::pitch),
-                    Codec.FLOAT.strictOptionalFieldOf("range").forGetter { Optional.ofNullable(it.range) }
+                    Codec.floatRange(0.0F, 4.0F).strictOptionalFieldOf("volume", 1.0F).forGetter(BlockSound::volume),
+                    Codec.floatRange(0.01F, 4.0F).strictOptionalFieldOf("pitch", 1.0F).forGetter(BlockSound::pitch),
+                    Codec.floatRange(0.01F, 256.0F).strictOptionalFieldOf("range").forGetter { Optional.ofNullable(it.range) }
                 ).apply(instance, ::BlockSound) }
             }
         }
@@ -134,9 +134,9 @@ sealed class BulletSounds(
                     singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(EntitySound::target),
                     Codec.list(EntityTestable.CODEC).strictOptionalFieldOf("entities", emptyList()).forGetter(EntitySound::entities),
                     Identifier.CODEC.fieldOf("sound").forGetter(EntitySound::sound),
-                    Codec.FLOAT.strictOptionalFieldOf("volume", 1.0F).forGetter(EntitySound::volume),
-                    Codec.FLOAT.strictOptionalFieldOf("pitch", 1.0F).forGetter(EntitySound::pitch),
-                    Codec.FLOAT.strictOptionalFieldOf("range").forGetter { Optional.ofNullable(it.range) }
+                    Codec.floatRange(0.0F, 4.0F).strictOptionalFieldOf("volume", 1.0F).forGetter(EntitySound::volume),
+                    Codec.floatRange(0.01F, 4.0F).strictOptionalFieldOf("pitch", 1.0F).forGetter(EntitySound::pitch),
+                    Codec.floatRange(0.01F, 256.0F).strictOptionalFieldOf("range").forGetter { Optional.ofNullable(it.range) }
                 ).apply(instance, ::EntitySound) }
             }
         }
@@ -162,7 +162,7 @@ sealed class BulletSounds(
         companion object {
             val CODEC: Codec<Constant> = RecordCodecBuilder.create<Constant> { it.group(
                 singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(Constant::target),
-                Codec.INT.fieldOf("interval").forGetter(Constant::interval),
+                Codec.intRange(1, 72_000).fieldOf("interval").forGetter(Constant::interval),
                 singleOrListCodec(Sound.CODEC).strictOptionalFieldOf("sounds", emptyList()).forGetter(Constant::sounds),
                 Codec.INT.strictOptionalFieldOf("priority", 0).forGetter(Constant::priority)
             ).apply(it, ::Constant) }

@@ -9,6 +9,7 @@ import com.tacz.guns.resource.pojo.data.gun.FeedType
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.Context.hasInfiniteAmmo
+import me.muksc.tacztweaks.core.StackSplitter
 import net.fabricmc.fabric.api.networking.v1.PacketSender
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
@@ -16,7 +17,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
-import kotlin.math.min
 
 /** Empty C2S action payload; StreamCodec.unit avoids a fake no-op writer/temporary buffer. */
 object ClientMessagePlayerUnload : CustomPacketPayload {
@@ -31,7 +31,7 @@ object ClientMessagePlayerUnload : CustomPacketPayload {
     fun handle(msg: ClientMessagePlayerUnload, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
         if (!Config.Gun.allowUnload()) return
         server.execute {
-            if (player == null) return@execute
+            if (player == null || !player.isAlive || player.isRemoved) return@execute
             val gunStack = player.mainHandItem
             if (player.inventory.hasInfiniteAmmo(gunStack)) return@execute
 
@@ -39,42 +39,50 @@ object ClientMessagePlayerUnload : CustomPacketPayload {
             val gunId = gun.getGunId(gunStack)
             val index = TimelessAPI.getCommonGunIndex(gunId).orElse(null) ?: return@execute
             val gunData = index.getGunData()
-
-            // 弹匣内弹药（背包直读枪不处理，虚拟备弹走原 dropAllAmmo 逻辑）
             val ammoCount = gun.getCurrentAmmoCount(gunStack)
-            if (ammoCount > 0 && !gun.useInventoryAmmo(gunStack)) {
-                if (gun.useDummyAmmo(gunStack)) {
-                    gun.dropAllAmmo(player, gunStack)
-                } else {
-                    val ammoId = gunData.getAmmoId()
-                    if (gunData.getReloadData().getType() != FeedType.FUEL) {
-                        val ammoIndex = TimelessAPI.getCommonAmmoIndex(ammoId).orElse(null) ?: return@execute
-                        val stackSize = ammoIndex.getStackSize().coerceAtLeast(1)
-                        var remaining = ammoCount
-                        while (remaining > 0) {
-                            val count = min(remaining, stackSize)
-                            val ammoItem = AmmoItemBuilder.create().setId(ammoId).setCount(count).build()
-                            ItemHandlerHelper.giveItemToPlayer(player, ammoItem)
-                            remaining -= count
-                        }
-                    }
-                    gun.setCurrentAmmoCount(gunStack, 0)
-                }
+            if (ammoCount !in 0..StackSplitter.MAX_UNLOAD_AMMO) return@execute
+
+            val unloadChamber = Config.Gun.unloadBulletInBarrel() &&
+                gunData.getBolt() != Bolt.OPEN_BOLT && gun.hasBulletInBarrel(gunStack)
+            val inventoryFeed = gun.useInventoryAmmo(gunStack)
+            val dummyAmmo = gun.useDummyAmmo(gunStack)
+            val fuelFeed = gunData.getReloadData().getType() == FeedType.FUEL
+
+            // Fuel represents a consumed container/charge, not recoverable cartridges.
+            if (fuelFeed) {
+                if (!inventoryFeed && ammoCount > 0) gun.setCurrentAmmoCount(gunStack, 0)
+                if (unloadChamber) gun.setBulletInBarrel(gunStack, false)
+                return@execute
             }
 
-            // 枪膛内子弹
-            if (Config.Gun.unloadBulletInBarrel()) {
-                val boltType = gunData.getBolt()
-                val hasInBarrel = gun.hasBulletInBarrel(gunStack) && boltType != Bolt.OPEN_BOLT
-                if (hasInBarrel) {
-                    val ammoId = gunData.getAmmoId()
-                    if (TimelessAPI.getCommonAmmoIndex(ammoId).isPresent) {
-                        val ammoItem = AmmoItemBuilder.create().setId(ammoId).setCount(1).build()
-                        ItemHandlerHelper.giveItemToPlayer(player, ammoItem)
-                        gun.setBulletInBarrel(gunStack, false)
-                    }
+            // Dummy ammo must be returned to its virtual reserve, including the chamber.
+            if (dummyAmmo) {
+                val magazineRounds = if (inventoryFeed) 0 else ammoCount
+                val returned = magazineRounds + if (unloadChamber) 1 else 0
+                if (returned > 0) {
+                    gun.addDummyAmmoAmount(gunStack, returned)
+                    if (magazineRounds > 0) gun.setCurrentAmmoCount(gunStack, 0)
+                    if (unloadChamber) gun.setBulletInBarrel(gunStack, false)
                 }
+                return@execute
             }
+
+            // Inventory-feed guns do not own a magazine count, but a closed-bolt chambered
+            // cartridge is still physical and can be returned.
+            val physicalRounds = (if (inventoryFeed) 0 else ammoCount) + if (unloadChamber) 1 else 0
+            if (physicalRounds <= 0) return@execute
+            val ammoId = gunData.getAmmoId()
+            val ammoIndex = TimelessAPI.getCommonAmmoIndex(ammoId).orElse(null) ?: return@execute
+            val chunks = StackSplitter.split(physicalRounds, ammoIndex.getStackSize()) ?: return@execute
+
+            // Construct every stack before mutating gun state. A malformed ammo definition
+            // therefore cannot clear rounds that were never returned.
+            val returnedStacks = chunks.map { count ->
+                AmmoItemBuilder.create().setId(ammoId).setCount(count).build()
+            }
+            returnedStacks.forEach { ItemHandlerHelper.giveItemToPlayer(player, it) }
+            if (!inventoryFeed && ammoCount > 0) gun.setCurrentAmmoCount(gunStack, 0)
+            if (unloadChamber) gun.setBulletInBarrel(gunStack, false)
         }
     }
 }

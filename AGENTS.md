@@ -64,4 +64,4 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 - 权限：`player.permissions().hasPermission(...)`；
 - 空 payload：`StreamCodec.unit(singleton)`；
 - 有字段的 payload：`StreamCodec.ofMember(Message::write, Message::new)`；
-- `Identifier` 是 record，不向其注入实例字段；需要附加状态时使用有生命周期的旁表。
+- `Identifier` 是共享的 final class（不是 record）；不要向共享资源标识挂每次播放的可变状态，使用有生命周期的请求上下文/独立缓存。
