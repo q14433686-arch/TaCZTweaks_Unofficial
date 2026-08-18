@@ -1,6 +1,7 @@
 package me.muksc.tacztweaks.data
 
 import com.google.gson.JsonParser
+import com.mojang.serialization.Codec
 import com.mojang.serialization.JsonOps
 import me.muksc.tacztweaks.data.core.ValueRange
 import me.muksc.tacztweaks.data.manager.BULLET_INTERACTION_CODEC
@@ -10,30 +11,32 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.nio.file.Files
-import java.nio.file.Path
+import org.junit.jupiter.api.TestInstance
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CodecSmokeTest {
+    @BeforeAll
+    fun bootstrapMinecraft() {
+        SharedConstants.tryDetectVersion()
+        Bootstrap.bootStrap()
+    }
+
     @Test
     fun `restored predicate tier burst and pellet fixture decodes`() {
-        assertFixtureDecodes(
-            "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
-            BulletInteraction.CODEC
-        )
+        assertFixtureDecodes("/fixtures/schema_smoke.json", BulletInteraction.CODEC)
     }
 
     @Test
     fun `airspace fixture decodes`() {
-        assertFixtureDecodes(
-            "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
-            BulletSounds.CODEC
-        )
+        assertFixtureDecodes("/fixtures/airspace.json", BulletSounds.CODEC)
     }
 
     @Test
     fun `legacy v2 bullet interaction decodes and converts`() {
-        val text = checkNotNull(javaClass.getResource("/fixtures/bullet_interaction_v2.json")).readText()
-        val decoded = BULLET_INTERACTION_CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(text))
+        val decoded = BULLET_INTERACTION_CODEC.parse(
+            JsonOps.INSTANCE,
+            JsonParser.parseString(readFixture("/fixtures/bullet_interaction_v2.json"))
+        )
         assertTrue(decoded.result().isPresent)
         assertTrue(decoded.result().orElseThrow() is BulletInteraction.Block)
     }
@@ -45,18 +48,11 @@ class CodecSmokeTest {
         assertFalse(ValueRange.CODEC.parse(JsonOps.INSTANCE, reversed).result().isPresent)
     }
 
-    private fun <T> assertFixtureDecodes(path: String, codec: com.mojang.serialization.Codec<T>) {
-        val json = JsonParser.parseString(Files.readString(Path.of(path)))
-        val decoded = codec.parse(JsonOps.INSTANCE, json)
+    private fun <T> assertFixtureDecodes(resourcePath: String, codec: Codec<T>) {
+        val decoded = codec.parse(JsonOps.INSTANCE, JsonParser.parseString(readFixture(resourcePath)))
         assertTrue(decoded.result().isPresent)
     }
 
-    companion object {
-        @JvmStatic
-        @BeforeAll
-        fun bootstrapMinecraft() {
-            SharedConstants.tryDetectVersion()
-            Bootstrap.bootStrap()
-        }
-    }
+    private fun readFixture(resourcePath: String): String =
+        checkNotNull(javaClass.getResource(resourcePath)) { "Missing test fixture $resourcePath" }.readText()
 }

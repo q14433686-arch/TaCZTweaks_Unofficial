@@ -85,17 +85,39 @@ tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") 
     }
 }
 
+val mainSourceSet = sourceSets.named("main")
 val testSourceSet = sourceSets.named("test")
+// Gradle's Windows test-worker args file corrupts classpath entries when a project path
+// contains characters not representable in the worker's native encoding (Gradle #30391).
+// Stage every runtime entry under ASCII-only GRADLE_USER_HOME before forking the worker.
+val testRuntimeKey = rootDir.absolutePath.hashCode().toUInt().toString(16)
+val stagedTestRuntimeDir = gradle.gradleUserHomeDir.resolve(
+    "caches/tacztweaks-test-runtime/$testRuntimeKey"
+)
+val stageTestRuntime by tasks.registering(org.gradle.api.tasks.Sync::class) {
+    dependsOn("classes", "testClasses")
+    into(stagedTestRuntimeDir)
+    from(mainSourceSet.map { it.output }) { into("main") }
+    from(testSourceSet.map { it.output }) { into("test") }
+    from(configurations.named("testRuntimeClasspath")) { into("lib") }
+}
+
 tasks.named<org.gradle.api.tasks.testing.Test>("test") {
+    dependsOn(stageTestRuntime)
     useJUnitPlatform()
 
-    // Gradle 9's test worker did not inherit Kotlin's compiled test output through the
-    // Loom-managed runtime classpath: discovery saw the .class files, but the worker then
-    // failed to load every test class. Configure both inputs explicitly and retain all
-    // Loom/Minecraft dependencies from the source set runtime classpath.
-    val sourceSet = testSourceSet.get()
-    testClassesDirs = sourceSet.output.classesDirs
-    classpath = sourceSet.runtimeClasspath + sourceSet.output.classesDirs
+    val stagedMain = stagedTestRuntimeDir.resolve("main")
+    val stagedTest = stagedTestRuntimeDir.resolve("test")
+    val stagedLibraries = stagedTestRuntimeDir.resolve("lib")
+    val stagedWorkingDirectory = stagedTestRuntimeDir.resolve("work")
+    testClassesDirs = files(stagedTest)
+    classpath = files(stagedTest, stagedMain) + fileTree(stagedLibraries) {
+        include("*.jar")
+    }
+    workingDir(stagedWorkingDirectory)
+    doFirst {
+        stagedWorkingDirectory.mkdirs()
+    }
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {

@@ -654,6 +654,8 @@ def audit_release_guards() -> list[str]:
         "tacz-tweaks-example-pack/assets/tacztweaks/sounds/whizz/near1.ogg",
         "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
         "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
+        "src/test/resources/fixtures/schema_smoke.json",
+        "src/test/resources/fixtures/airspace.json",
     }
     for name in sorted(required_fixtures):
         if not (ROOT / name).is_file():
@@ -662,8 +664,21 @@ def audit_release_guards() -> list[str]:
     build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
     if "examplePackZip" not in build_script:
         errors.append("build does not package the example pack")
-    if "classpath = sourceSet.runtimeClasspath + sourceSet.output.classesDirs" not in build_script:
-        errors.append("Gradle test worker classpath does not explicitly include Kotlin test output")
+    if "stagedTestRuntimeDir" not in build_script or "gradle.gradleUserHomeDir" not in build_script:
+        errors.append("Gradle test worker runtime is not staged away from non-ASCII project paths")
+    fixture_pairs = (
+        (
+            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
+            ROOT / "src/test/resources/fixtures/schema_smoke.json",
+        ),
+        (
+            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
+            ROOT / "src/test/resources/fixtures/airspace.json",
+        ),
+    )
+    for example, test_fixture in fixture_pairs:
+        if example.read_bytes() != test_fixture.read_bytes():
+            errors.append(f"test fixture has drifted from example pack: {test_fixture.relative_to(ROOT)}")
     if not (ROOT / "THIRD_PARTY_NOTICES.md").is_file():
         errors.append("missing THIRD_PARTY_NOTICES.md for embedded/modified dependencies")
 
