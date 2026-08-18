@@ -44,13 +44,12 @@
 
 ---
 
-## 3. 放两个「编译期依赖」到 libs/ 目录
+## 3. 放 TaCZ 编译期依赖到 libs/ 目录
 
-这两个大 jar 是通过 `flatDir` 引用的，**必须手动下载**（其余依赖会自动从 Maven 拉）。
+TaCZ 本体通过本地文件引用，必须手动下载到项目根目录的 `libs/` 文件夹，且文件名必须完全一致。
+YACL 3.9.6+26.1-fabric 已由 Gradle 从 Modrinth Maven 自动解析，不需要手动下载。
 
-进入项目根目录下的 `libs/` 文件夹，放入这两个文件（**文件名要完全一致**）：
-
-### ① TaCZ 本体（compileOnly，提供 mixin 目标类）
+### TaCZ 本体（compileOnly，提供 mixin 目标类）
 
 从 TaCZ 的 Release 页下载：
 ```
@@ -58,21 +57,15 @@ https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.1
 ```
 下载文件：`TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar`（约 58MB）
 
-### ② YACL 配置库（implementation，配置 GUI）
-
-从 Modrinth 下载 YACL 3.9.6 for 26.1.2-fabric：
-```
-https://cdn.modrinth.com/data/1eAoo2KR/versions/svTkvBec/yet_another_config_lib_v3-3.9.6%2B26.1-fabric.jar
-```
-保存为：`yacl-fabric.jar`（约 1MB）
-
 放好之后 `libs/` 里应该是：
 ```
 libs/
 ├── README.txt
-├── TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar
-└── yacl-fabric.jar
+└── TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar
 ```
+
+构建日志不应再出现 `Specified Dependency Does Not Exist ... libs/yacl-fabric.jar`；YACL 将以
+`maven.modrinth:1eAoo2KR:svTkvBec` 自动下载。
 
 ---
 
@@ -120,7 +113,7 @@ python scripts/check_server_log.py run/logs/latest.log
 | 现象 | 解决 |
 |---|---|
 | `Could not resolve ... TACZ-Refabricated ...` | `libs/` 里的 TaCZ jar 缺失或文件名不对，按第 3 步重新放 |
-| `Could not resolve ... yacl ...` | `libs/yacl-fabric.jar` 缺失，按第 3 步重新下载 |
+| `Could not resolve maven.modrinth:1eAoo2KR:svTkvBec` | 检查网络能否访问 `https://api.modrinth.com/maven`，然后重试构建 |
 | `java.lang.UnsupportedClassVersionError` / `invalid source release 25` | 用了旧 JDK，换成 JDK 25 并设好 `JAVA_HOME` |
 | 下载依赖超时 | 重跑一次；国内网络可给 Gradle 配镜像仓库 |
 | `Daemon` 内存不足 | 编辑 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` 调大（如 `-Xmx4G`） |
