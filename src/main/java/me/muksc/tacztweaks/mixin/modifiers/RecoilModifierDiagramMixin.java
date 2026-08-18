@@ -1,0 +1,20 @@
+package me.muksc.tacztweaks.mixin.modifiers;
+
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.tacz.guns.resource.modifier.custom.RecoilModifier;
+import me.muksc.tacztweaks.config.Config;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+
+@Mixin(value = RecoilModifier.class, remap = false)
+public abstract class RecoilModifierDiagramMixin {
+    @ModifyExpressionValue(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/custom/RecoilModifier;getMaxInGunRecoilKeyFrame([Lcom/tacz/guns/resource/pojo/data/gun/GunRecoilKeyFrame;)F", ordinal = 0))
+    private float tacztweaks$getPropertyDiagramsData$verticalRecoilModifier(float original) {
+        return (float) Config.Modifiers.VerticalRecoil.INSTANCE.eval(original);
+    }
+
+    @ModifyExpressionValue(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/custom/RecoilModifier;getMaxInGunRecoilKeyFrame([Lcom/tacz/guns/resource/pojo/data/gun/GunRecoilKeyFrame;)F", ordinal = 1))
+    private float tacztweaks$getPropertyDiagramsData$horizontalRecoilModifier(float original) {
+        return (float) Config.Modifiers.HorizontalRecoil.INSTANCE.eval(original);
+    }
+}
