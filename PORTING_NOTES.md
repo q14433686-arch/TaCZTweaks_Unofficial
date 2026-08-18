@@ -480,10 +480,25 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 
 ## 8. 已知待办
 
-- [ ] 匍匐动态俯仰角（基于方块碰撞；需 MixinSquared 或改 TaCZ 常量）
-- [ ] betterInaccuracy / betterGunTilt / betterMonoConversion / bulletProtection /
-      endermenEvadeBullets / disableRefitOnAdventure / alwaysFilterByHand / rps /
-      audibleFirstPersonGunSounds / forceFirstPersonShootingSound
-- [ ] 卸弹的创造模式 / 枪膛内子弹支持（针对新 `dropAllAmmo` 重写）
-- [ ] 示例包、数据驱动的子弹交互系统
+> **2026-08-18：** 下面旧清单里打了勾的项其实早已落地，当时没回写。
+> 「不能做」条目的推翻过程见仓库根目录 [`AUDIT.md`](AUDIT.md)。
+
+### 8.1 已完成（勿再当待办）
+
+- [x] 匍匐动态俯仰角（`gun.MouseHandlerMixin`，不依赖 MixinSquared）
+- [x] betterInaccuracy / betterGunTilt / endermenEvadeBullets / disableRefitOnAdventure /
+      alwaysFilterByHand / rps / audibleFirstPersonGunSounds / forceFirstPersonShootingSound
+- [x] 卸弹：创造模式 + 枪膛内子弹（自实现，不 mixin `dropAllAmmo`）
+- [x] 示例包 + 数据驱动子弹交互（data 层 + 行为层；melee / airspace / shield 行为仍缺）
+
+### 8.2 真正还没做（审计结论：除缺目标模组外都能做）
+
+- [x] `betterMonoConversion`（`GunSoundInstance` + `TaczSound` 旁表，不 mixin `Identifier` record）
+- [x] `bulletProtection`（`EnchantmentHelper.getDamageProtection` 补 `2 * projectile_protection` 等级）
+- [x] 匍匐 `visualTweak`（`AvatarRenderer.setupRotations`，多签名 `require=0`）
+- [x] melee 行为层 + 内置 LRTactical `IMeleeWeapon.performAttack`（`doMelee` 签名仍在）
+- [x] 从 GUI 拿掉 FirstAid / LSO / MTS / VS 空开关和第三人称空开关
+- [ ] shield 交互（mixin `LivingEntity.hurtServer` / `isDamageSourceBlocked`）
+- [ ] airspace + Sound Physics Remastered 1.5.1+26.2 Fabric（optional mixin）
+- [ ] `EntityPredicate` / `BlockTarget.TIER` / `burst_index` / `pellet_index` 数据包兼容
 - [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译验证）

@@ -31,6 +31,9 @@
     "modifiers.AttachmentDataUtilsMixin",
     "modifiers.EntityKineticBulletMixin",
     "modifiers.GunRecoilMixin",
+    "compat.lrtactical.IMeleeWeaponMixin",
+    "features.melee_interactions.ModernKineticGunItemMixin",
+    "tweaks.EnchantmentHelperMixin",
     "tweaks.EnderManMixin",
     "tweaks.EntityKineticBulletMixin",
     "tweaks.InaccuracyTypeMixin",
@@ -39,6 +42,7 @@
   ],
   "client": [
     "accessor.LocalPlayerShootAccessor",
+    "crawl.AvatarRendererMixin",
     "gun.EntityBulletRendererMixin",
     "gun.GunAnimationStateContextMixin",
     "gun.LocalPlayerBoltMixin",
@@ -55,9 +59,13 @@
     "gun.movement.TickAnimationEventMixin",
     "modifiers.CameraSetupEventMixin",
     "tweaks.GunPackListMixin",
+    "tweaks.GunSoundInstanceMixin",
+    "tweaks.GunSoundInstanceTaczSoundMixin",
     "tweaks.RefitKeyMixin",
     "tweaks.RPMModifierMixin",
     "tweaks.RenderCrosshairEventMixin",
+    "tweaks.SoundBufferLibraryMixin",
+    "tweaks.SoundBufferMixin",
     "tweaks.SoundPlayManagerMixin"
   ],
   "injectors": {
