@@ -1,0 +1,16 @@
+{
+  "type": "block",
+  "target": {
+    "type": "ammo",
+    "values": [
+      "tacz:50bmg"
+    ]
+  },
+  "block_break": {
+    "type": "dynamic_damage"
+  },
+  "pierce": {
+    "type": "count",
+    "count": 4
+  }
+}
