@@ -40,7 +40,6 @@ KNOWN_DORMANT_OPTIONS: dict[str, str] = {
     "Compat.vsCollisionCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsExplosionCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Crawl.visualTweak": "First/third-person crawl rendering parity is still pending.",
-    "Gun.thirdPersonGunRenderingFix": "Need confirmation whether TaCZ 1.21.11 R2 already contains the fix before deleting the option.",
     "Tweaks.betterMonoConversion": "Mono conversion parity is still pending client implementation.",
 }
 

@@ -21,7 +21,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - 示例资源包 `tacz-tweaks-example-pack/`；
 - 面向 1.21.11 混淆环境的 mixin/refmap 工程骨架。
 
-本轮修复已补上若干**高优先级安全与发布缺口**：
+本轮修复已补上若干**高优先级安全、功能与发布缺口**：
 
 - MixinExtras 升级到 **0.5.4**，与 mixin JSON 的最低版本声明一致；
 - `crawl.LocalPlayerCrawlMixin` 改回 `client` 分组；
@@ -30,6 +30,10 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - 配置同步 payload 增加 **1 MiB** 上限、绝对拷贝与失败回滚；
 - 卸弹逻辑改为 physical / dummy / FUEL / inventory / closed-bolt 分支；
 - `SafeMath.blockBreakingDelta`、`ValueRange`、粒子维度/格式/上限与 whizz 去重补强；
+- 恢复 old v2 bullet interaction converter、burst/pellet selector、shield 数据结构、entity pierce prepare/finish、projectile explosion `playerDamage`；
+- 恢复 gun melee / LRTactical melee block interaction 与 protected block breaking helper；
+- 恢复 client-only modifier diagram mixins 与 gunsmith safety 守卫；
+- 确认第三人称枪械渲染修复已由 TaCZ 1.21.11 R2 自带 `ItemInHandLayerMixin` 原生提供，因此本模组不再单独暴露对应开关；
 - 增加 dedicated-server 日志门禁脚本、混淆端口审计脚本、JUnit 基础测试脚手架与 ASCII `GRADLE_USER_HOME` test staging；
 - 版本号统一提升到 **R4**，并修正文档中遗留的 R2/R3 与 YACL 版本错误。
 
