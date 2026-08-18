@@ -85,8 +85,17 @@ tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") 
     }
 }
 
-tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+val testSourceSet = sourceSets.named("test")
+tasks.named<org.gradle.api.tasks.testing.Test>("test") {
     useJUnitPlatform()
+
+    // Gradle 9's test worker did not inherit Kotlin's compiled test output through the
+    // Loom-managed runtime classpath: discovery saw the .class files, but the worker then
+    // failed to load every test class. Configure both inputs explicitly and retain all
+    // Loom/Minecraft dependencies from the source set runtime classpath.
+    val sourceSet = testSourceSet.get()
+    testClassesDirs = sourceSet.output.classesDirs
+    classpath = sourceSet.runtimeClasspath + sourceSet.output.classesDirs
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {

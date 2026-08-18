@@ -662,6 +662,8 @@ def audit_release_guards() -> list[str]:
     build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
     if "examplePackZip" not in build_script:
         errors.append("build does not package the example pack")
+    if "classpath = sourceSet.runtimeClasspath + sourceSet.output.classesDirs" not in build_script:
+        errors.append("Gradle test worker classpath does not explicitly include Kotlin test output")
     if not (ROOT / "THIRD_PARTY_NOTICES.md").is_file():
         errors.append("missing THIRD_PARTY_NOTICES.md for embedded/modified dependencies")
 
