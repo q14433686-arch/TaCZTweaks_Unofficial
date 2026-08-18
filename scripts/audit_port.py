@@ -38,6 +38,7 @@ KNOWN_DORMANT_OPTIONS: dict[str, str] = {
     "Compat.mtsFix": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsCollisionCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsExplosionCompat": "No verified 1.21.11 Fabric target is wired yet.",
+    "Tweaks.betterMonoConversion": "Mono conversion helper/test code is present, but runtime hook selection still awaits final 1.21.11 target verification.",
 }
 
 INJECTOR_ANNOTATIONS = (

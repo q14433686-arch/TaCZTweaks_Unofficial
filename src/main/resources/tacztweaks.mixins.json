@@ -75,13 +75,10 @@
     "modifiers.RecoilModifierDiagramMixin",
     "tweaks.GunPackListMixin",
     "tweaks.GunSmithTableScreenMixin",
-    "tweaks.GunSoundInstanceMixin",
-    "tweaks.GunSoundInstanceTaczSoundMixin",
     "tweaks.ObjectAnimationSoundChannelMixin",
     "tweaks.RefitKeyMixin",
     "tweaks.RPMModifierMixin",
     "tweaks.RenderCrosshairEventMixin",
-    "tweaks.SoundBufferLibraryMixin",
     "tweaks.SoundPlayManagerMixin"
   ],
   "injectors": {
