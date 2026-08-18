@@ -48,6 +48,9 @@ dependencies {
     modCompileOnly(taczJar)
     testRuntimeOnly(taczJar)
 
+    val compatStubJar = tasks.named("compatStubJar")
+    compileOnly(files(compatStubJar))
+
     val mixinExtrasVersion = project.property("mixinextras_version") as String
     implementation("io.github.llamalad7:mixinextras-fabric:$mixinExtrasVersion")
     annotationProcessor("io.github.llamalad7:mixinextras-common:$mixinExtrasVersion")
@@ -62,7 +65,25 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
 }
 
+val compatStubClassesDir = layout.buildDirectory.dir("generated/compat-stubs/classes")
+val compatStubJar by tasks.registering(Jar::class) {
+    archiveBaseName.set("tacztweaks-compat-stubs")
+    archiveClassifier.set("compileonly")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/compat-stubs"))
+    from(compatStubClassesDir)
+}
+
+val compileCompatStubs by tasks.registering(JavaCompile::class) {
+    source = fileTree("compat-stubs-src") { include("**/*.java") }
+    classpath = sourceSets.main.get().compileClasspath
+    destinationDirectory.set(compatStubClassesDir)
+    options.encoding = "UTF-8"
+    options.release.set(21)
+}
+compatStubJar.configure { dependsOn(compileCompatStubs) }
+
 tasks.withType<JavaCompile>().configureEach {
+    if (name != "compileCompatStubs") dependsOn(compatStubJar)
     options.encoding = "UTF-8"
     options.release.set(21)
     // Optional compat mixins target classes from mods which are intentionally NOT hard compile
