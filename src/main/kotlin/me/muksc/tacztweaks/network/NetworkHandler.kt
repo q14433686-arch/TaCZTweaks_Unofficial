@@ -1,5 +1,7 @@
 package me.muksc.tacztweaks.network
 
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageAirspaceSounds
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired
 import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound
 import me.muksc.tacztweaks.network.message.ClientMessagePlayerShouldSlide
 import me.muksc.tacztweaks.network.message.ClientMessagePlayerUnload
@@ -21,6 +23,8 @@ object NetworkHandler {
         PayloadTypeRegistry.playC2S().register(ClientMessagePlayerShouldSlide.TYPE, ClientMessagePlayerShouldSlide.CODEC)
         PayloadTypeRegistry.playS2C().register(ServerMessageSyncConfig.TYPE, ServerMessageSyncConfig.CODEC)
         PayloadTypeRegistry.playS2C().register(ServerMessageBroadcastSound.TYPE, ServerMessageBroadcastSound.CODEC)
+        PayloadTypeRegistry.playS2C().register(ServerMessageAirspaceSounds.TYPE, ServerMessageAirspaceSounds.CODEC)
+        PayloadTypeRegistry.playS2C().register(ServerMessageSoundPhysicsRequired.TYPE, ServerMessageSoundPhysicsRequired.CODEC)
     }
 
     fun registerServer() {
@@ -45,6 +49,12 @@ object NetworkHandler {
         }
         ClientPlayNetworking.registerGlobalReceiver(ServerMessageBroadcastSound.TYPE) { msg, ctx ->
             ServerMessageBroadcastSound.handle(msg, ctx.client())
+        }
+        ClientPlayNetworking.registerGlobalReceiver(ServerMessageAirspaceSounds.TYPE) { msg, ctx ->
+            ServerMessageAirspaceSounds.handle(msg, ctx.client())
+        }
+        ClientPlayNetworking.registerGlobalReceiver(ServerMessageSoundPhysicsRequired.TYPE) { msg, ctx ->
+            ServerMessageSoundPhysicsRequired.handle(msg, ctx.client())
         }
     }
 

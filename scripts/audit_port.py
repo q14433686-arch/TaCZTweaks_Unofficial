@@ -34,13 +34,10 @@ DEFAULT_TACZ_JAR = ROOT / "libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R
 ALLOWLIST = ROOT / "scripts/upstream_omissions.json"
 
 KNOWN_DORMANT_OPTIONS: dict[str, str] = {
-    "Compat.firstAidCompat": "Optional compatibility path not yet restored on 1.21.11.",
     "Compat.lsoCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.mtsFix": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsCollisionCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsExplosionCompat": "No verified 1.21.11 Fabric target is wired yet.",
-    "Crawl.visualTweak": "First/third-person crawl rendering parity is still pending.",
-    "Tweaks.betterMonoConversion": "Mono conversion parity is still pending client implementation.",
 }
 
 INJECTOR_ANNOTATIONS = (

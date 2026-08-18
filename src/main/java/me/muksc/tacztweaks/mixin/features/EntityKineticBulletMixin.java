@@ -198,6 +198,7 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
 
     @WrapOperation(method = "onBulletTick", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onHitEntity(Lcom/tacz/guns/util/TacHitResult;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)V", remap = true))
     private void tacztweaks$onBulletTick$onHitEntity(EntityKineticBullet self, TacHitResult result, Vec3 from, Vec3 to, Operation<Void> original) {
+        FirstAidCompat.recordProjectileHit(self, result);
         tacztweaks$setPosition(result.getLocation());
         Entity entity = result.getEntity();
         if (entity instanceof ServerPlayer player) tacztweaks$hitPlayers.add(player);

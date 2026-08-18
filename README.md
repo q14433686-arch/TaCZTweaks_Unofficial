@@ -17,9 +17,13 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 - 配置系统（YACL v3）、JSON 持久化、客户端/服务端同步、ModMenu 入口；
 - 基础枪械/移动 tweak、基础卸弹、基础滑铲同步、共享枪声；
-- 全局 modifier、基础 bullet interaction / sound / particle data 与行为；
+- 全局 modifier、bullet interaction / sound / particle / melee data 与行为；
+- old v2 bullet interaction converter、burst/pellet selector、shield 交互、projectile explosion `playerDamage`；
+- crawl 第一人称 pitch controller 与 AvatarRenderer 第三人称平滑过渡代码；
+- First Aid / Pillager’s Gun / Sound Physics Remastered 的 1.21.11 可选兼容代码路径；
+- client-only modifier diagrams、gunsmith safety 守卫；
 - 示例资源包 `tacz-tweaks-example-pack/`；
-- 面向 1.21.11 混淆环境的 mixin/refmap 工程骨架。
+- 面向 1.21.11 混淆环境的 mixin/refmap 工程骨架与静态审计脚本。
 
 本轮修复已补上若干**高优先级安全、功能与发布缺口**：
 
@@ -34,6 +38,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - 恢复 gun melee / LRTactical melee block interaction 与 protected block breaking helper；
 - 恢复 client-only modifier diagram mixins 与 gunsmith safety 守卫；
 - 确认第三人称枪械渲染修复已由 TaCZ 1.21.11 R2 自带 `ItemInHandLayerMixin` 原生提供，因此本模组不再单独暴露对应开关；
+- 恢复 First Aid / Pillager’s Gun / Sound Physics Remastered 可选兼容代码路径；
 - 增加 dedicated-server 日志门禁脚本、混淆端口审计脚本、JUnit 基础测试脚手架与 ASCII `GRADLE_USER_HOME` test staging；
 - 版本号统一提升到 **R4**，并修正文档中遗留的 R2/R3 与 YACL 版本错误。
 
@@ -43,14 +48,12 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 以下内容 **不能视为已完成**：
 
-- crawl 第一/三人称视觉过渡的实际运行验证；
-- `betterMonoConversion`；
-- First Aid / Sound Physics / Pillager’s Gun 等 optional compat；
-- airspace payload / SPR 全链路；
+- First Aid / Sound Physics / Pillager’s Gun 的 **1.21.11 实机运行矩阵**；
+- `betterMonoConversion` 的 **混淆目标实测与最终运行验证**；
 - 多人/专服/客户端完整实机矩阵；
 - 依赖真实 TaCZ / Minecraft jars 的最终 strict audit 与整仓 `./gradlew clean build` 验证。
 
-这表示“**尚未移植完成或尚未实测**”，不是“Fabric/1.21.11 做不到”。
+这表示“**尚未完成实测验收**”，不是“Fabric/1.21.11 做不到”。
 
 ---
 
@@ -65,6 +68,9 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 | Fabric Language Kotlin | `1.13.13+kotlin.2.4.10` |
 | YetAnotherConfigLib (YACL) | **3.8.2+1.21.11-fabric** |
 | Java | >=21 |
+| 可选 | Sound Physics Remastered | `>=1.5.1 <1.6.0` |
+| 可选 | First Aid New | `>=1.2.5 <1.3.0`（1.21.11 legacy Fabric 线） |
+| 可选 | Pillager’s Gun (Unofficial Port) | `>=3.2.2 <3.3.0` |
 
 ---
 
@@ -83,7 +89,8 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 python3 scripts/audit_port.py --strict \
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar \
   --minecraft-named-jar <1.21.11 named jar> \
-  --minecraft-intermediary-jar <1.21.11 intermediary jar>
+  --minecraft-intermediary-jar <1.21.11 intermediary jar> \
+  --refmap <generated-tacztweaks.refmap.json>
 python3 scripts/check_server_log.py <dedicated-server-latest.log>
 ```
 

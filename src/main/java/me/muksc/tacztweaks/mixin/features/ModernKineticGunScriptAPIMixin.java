@@ -55,8 +55,12 @@ public abstract class ModernKineticGunScriptAPIMixin {
     private Entity tacztweaks$spawnProjectiles$tag(Entity entity) {
         if (!(entity instanceof EntityKineticBullet bullet)) return entity;
         EntityKineticBulletExtension extension = (EntityKineticBulletExtension) bullet;
+        int pelletIndex = tacztweaks$indices.takePelletIndex();
         extension.tacztweaks$setBurstIndex(tacztweaks$indices.getBurstIndex());
-        extension.tacztweaks$setPelletIndex(tacztweaks$indices.takePelletIndex());
+        extension.tacztweaks$setPelletIndex(pelletIndex);
+        if (pelletIndex == 0 && bullet.level() instanceof ServerLevel level) {
+            BulletSoundsManager.INSTANCE.handleAirspace(level, bullet);
+        }
         return entity;
     }
 

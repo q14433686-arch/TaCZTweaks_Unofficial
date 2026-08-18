@@ -3,6 +3,7 @@ package me.muksc.tacztweaks;
 import com.tacz.guns.api.event.common.GunShootEvent;
 import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.resource.pojo.data.gun.InaccuracyType;
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.core.BlockBreakingManager;
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager;
@@ -80,6 +81,12 @@ public class TaCZTweaks implements ModInitializer {
             BulletParticlesManager.INSTANCE.clear();
             ClientMessageBroadcastSound.clearAll();
         });
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
+            if (!success || !BulletSoundsManager.INSTANCE.hasAirspaceSounds()) return;
+            for (var player : server.getPlayerList().getPlayers()) {
+                NetworkHandler.INSTANCE.sendS2C(player, ServerMessageSoundPhysicsRequired.INSTANCE);
+            }
+        });
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
             if (level instanceof ServerLevel serverLevel) {
                 BlockBreakingManager.INSTANCE.onBlockBreak(serverLevel, pos);
@@ -93,6 +100,9 @@ public class TaCZTweaks implements ModInitializer {
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             NetworkHandler.INSTANCE.sendSyncConfig(handler.getPlayer());
+            if (BulletSoundsManager.INSTANCE.hasAirspaceSounds()) {
+                NetworkHandler.INSTANCE.sendS2C(handler.getPlayer(), ServerMessageSoundPhysicsRequired.INSTANCE);
+            }
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
             ClientMessageBroadcastSound.clearPlayer(handler.getPlayer().getUUID()));
@@ -108,10 +118,6 @@ public class TaCZTweaks implements ModInitializer {
         return list;
     }
 
-    /**
-     * Returns whether tilt may affect spread. Client state is only prediction/visuals;
-     * server gameplay requires a recent request and re-validates the held gun each use.
-     */
     public static boolean isSpreadReducingTilt(LivingEntity entity) {
         if (!Config.Tweaks.INSTANCE.betterGunTilt()) return false;
         SlideDataHolder holder = (SlideDataHolder) entity;
