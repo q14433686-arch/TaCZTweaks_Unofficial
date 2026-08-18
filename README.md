@@ -32,7 +32,7 @@
 | airspace 混响条件音 | 可选兼容 Sound Physics Remastered 1.5.1+26.2 Fabric，使用真实 ray-count 缩放 |
 | predicate / tier | 使用 26.2 新包名的 advancement predicate 与 `ToolMaterial` 错误挖掘标签 |
 | burst/pellet 选择器 | 挂到目标端 R2 的 `spawnProjectiles` / `runShootCycle` 稳定 hook |
-| First Aid | 兼容 First Aid New 1.3.0 Fabric 26.2：记录命中位置并把 TaCZ 子弹按投射物分配部位伤害 |
+| First Aid | 兼容 First Aid New 1.3.x Fabric 26.2：记录命中位置、按投射物分配部位伤害，并覆盖其会导致 pain post chain 重载失败的多余 DynamicTransforms import |
 | Pillager’s Gun | 兼容 3.3.5 Fabric 26.2 的袭击者友伤规则，并读取其 `friendlyFire` 配置 |
 
 `thirdPersonGunRenderingFix` 没有重复实现：TaCZ Refabricated R2 已在
@@ -74,7 +74,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 | 必需 | Fabric Language Kotlin | >=1.13.0 |
 | 必需 | YetAnotherConfigLib | 3.9.6+26.2-fabric |
 | 可选 | Sound Physics Remastered | 1.5.1+26.2 Fabric |
-| 可选 | First Aid New | 1.3.0 Fabric 26.2 |
+| 可选 | First Aid New | 1.3.x Fabric 26.2 |
 | 可选 | Pillager’s Gun (Unofficial Port) | 3.3.5 Fabric 26.2 |
 | 运行环境 | Java | >=25 |
 

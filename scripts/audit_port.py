@@ -540,6 +540,26 @@ def audit_config_usage() -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def audit_firstaid_shader_overrides() -> list[str]:
+    errors: list[str] = []
+    shader_dir = SOURCE_ROOT / "resources/assets/firstaid/shaders/post"
+    expected = {
+        "pain_pulse_blur.fsh": "BlurSettings",
+        "saturation_boost.fsh": "SaturationSettings",
+    }
+    for name, required_block in expected.items():
+        path = shader_dir / name
+        if not path.is_file():
+            errors.append(f"missing First Aid 26.2 shader compatibility override: {name}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "dynamictransforms.glsl" in text or "DynamicTransforms" in text:
+            errors.append(f"{name} reintroduces the unsupported DynamicTransforms block")
+        if required_block not in text:
+            errors.append(f"{name} no longer defines required block {required_block}")
+    return errors
+
+
 def audit_languages() -> list[str]:
     errors: list[str] = []
     lang_dir = SOURCE_ROOT / "resources/assets/tacztweaks/lang"
@@ -631,6 +651,7 @@ def main() -> int:
     errors.extend(config_errors)
     warnings.extend(config_warnings)
     errors.extend(audit_languages())
+    errors.extend(audit_firstaid_shader_overrides())
     errors.extend(audit_versions(config))
 
     if args.upstream_root:

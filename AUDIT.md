@@ -52,9 +52,11 @@ python3 scripts/audit_port.py --strict \
   `1.5.1+26.2` Fabric，2026-06-18；源码 `henkelmax/sound-physics-remastered` 当前
   `minecraft_version=26.2`。
 - First Aid New：<https://modrinth.com/project/yNbhkSj2> /
-  <https://www.curseforge.com/minecraft/mc-mods/first-aid-new>，列出
-  `firstaid-1.3.0+fabric26.2`；源码 `maoruiQa/FIrst-Aid-New/fabric26.2` 的
-  `EventHandler.recordProjectileHit` 与 `handleCustomPlayerDamage` 已核对。
+  <https://www.curseforge.com/minecraft/mc-mods/first-aid-new>；源码
+  `maoruiQa/FIrst-Aid-New/fabric26.2` 的 `EventHandler.recordProjectileHit` 与
+  `handleCustomPlayerDamage` 已核对。1.3.1 实测另发现 pain/morphine fragment shader 导入未使用的
+  `minecraft:dynamictransforms.glsl`，但 post chain 未提供该 uniform block，受伤时资源重载失败；
+  本兼容层按同路径覆盖两个 shader，只删除该无用 import，保留痛感与吗啡画面效果。
 - Pillager’s Gun (Unofficial Port)：<https://modrinth.com/project/OU2Rfx0G> /
   <https://www.curseforge.com/minecraft/mc-mods/pillagers-gun-unofficial-port/files/all>，
   `3.3.5 26.2 Fabric`，2026-06-25。
