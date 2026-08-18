@@ -9,6 +9,7 @@ import me.muksc.tacztweaks.anyOrEmpty
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.BlockBreakingManager
 import me.muksc.tacztweaks.core.Context
+import me.muksc.tacztweaks.core.ProtectedBlockBreaking
 import me.muksc.tacztweaks.core.SafeMath
 import me.muksc.tacztweaks.data.BulletInteraction
 import me.muksc.tacztweaks.data.old.convert
@@ -70,6 +71,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         } ?: (DEFAULT to BulletInteraction.Block.DEFAULT)
         logDebug { "Using block bullet interaction: $id" }
 
+        var blockBroken = false
         val breakBlock = run {
             val hardness = state.getDestroySpeed(level, blockPos)
             if (hardness !in interaction.blockBreak.hardness) return@run false
@@ -101,19 +103,27 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
                 }
             }
         }
-        if (breakBlock) run {
-            val owner = ammo.owner
-            level.destroyBlock(blockPos, interaction.blockBreak.drop, owner)
-            val replaceWith = interaction.blockBreak.replaceWith
-            if (!replaceWith.state.isAir && replaceWith.place(level, blockPos, Block.UPDATE_CLIENTS)) {
-                level.sendBlockUpdated(blockPos, replaceWith.state, replaceWith.state, Block.UPDATE_CLIENTS)
+        if (breakBlock) {
+            blockBroken = ProtectedBlockBreaking.destroy(
+                level,
+                blockPos,
+                state,
+                ammo.owner,
+                interaction.blockBreak.drop,
+                Block.UPDATE_NEIGHBORS or Block.UPDATE_CLIENTS
+            )
+            if (blockBroken) {
+                val replaceWith = interaction.blockBreak.replaceWith
+                if (!replaceWith.state.isAir && replaceWith.place(level, blockPos, Block.UPDATE_CLIENTS)) {
+                    level.sendBlockUpdated(blockPos, replaceWith.state, replaceWith.state, Block.UPDATE_CLIENTS)
+                }
             }
         }
         val pierce = shouldPierce(
-            ammo, result, interaction.pierce, breakBlock,
+            ammo, result, interaction.pierce, blockBroken,
             ext::`tacztweaks$incrementBlockPierce`, ext::`tacztweaks$getBlockPierce`
         )
-        if (pierce && !breakBlock && interaction.pierce.renderBulletHole) {
+        if (pierce && !blockBroken && interaction.pierce.renderBulletHole) {
             val bulletHoleOption = BulletHoleOption(
                 result.direction,
                 blockPos,
@@ -123,7 +133,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
             )
             level.sendParticles(bulletHoleOption, result.location.x, result.location.y, result.location.z, 1, 0.0, 0.0, 0.0, 0.0)
         }
-        return InteractionResult(pierce, breakBlock).also { logDebug { it.toString() } }
+        return InteractionResult(pierce, blockBroken).also { logDebug { it.toString() } }
     }
 
     fun getEntityDamage(ammo: EntityKineticBullet, location: Vec3, entity: Entity): Pair<Float, Float>? {
