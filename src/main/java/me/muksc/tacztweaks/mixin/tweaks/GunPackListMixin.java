@@ -4,9 +4,9 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.tacz.guns.client.gui.components.GunPackList;
 import me.muksc.tacztweaks.config.Config;
-import net.minecraft.client.gui.components.AbstractSelectionList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 
 /**
  * Forces the "filter by held item" option of the gun smith table to stay active.
@@ -22,9 +22,11 @@ public abstract class GunPackListMixin {
             remap = true
         )
     )
-    private <E extends AbstractSelectionList.Entry<E>> boolean tacztweaks$init$hideByHandFilter(
+    // AbstractSelectionList.Entry is protected; @Coerce keeps the handler compatible
+    // with the invocation descriptor without illegally naming that nested type here.
+    private boolean tacztweaks$init$hideByHandFilter(
         GunPackList instance,
-        AbstractSelectionList.Entry<E> entry
+        @Coerce Object entry
     ) {
         return !Config.Tweaks.INSTANCE.alwaysFilterByHand();
     }
