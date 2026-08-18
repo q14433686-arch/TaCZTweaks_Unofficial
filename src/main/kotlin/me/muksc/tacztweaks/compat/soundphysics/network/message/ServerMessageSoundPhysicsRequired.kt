@@ -22,12 +22,11 @@ object ServerMessageSoundPhysicsRequired : CustomPacketPayload {
     fun handle(msg: ServerMessageSoundPhysicsRequired, client: Minecraft) {
         if (SoundPhysicsCompat.isEnabled()) return
         client.execute {
-            // 26.2: Gui#chat is no longer a public field. LocalPlayer#displayClientMessage
-            // (overlay=false) is the stable client chat hook.
-            client.player?.displayClientMessage(
+            // 26.2: Gui#chat and LocalPlayer#displayClientMessage are gone.
+            // TaCZ itself uses Player#sendSystemMessage(Component) on the client.
+            client.player?.sendSystemMessage(
                 Component.literal("[TaCZ Tweaks] ").withStyle(ChatFormatting.GOLD)
-                    .append(TaCZTweaks.translatable("bullet_sounds.sound_physics_missing").withStyle(ChatFormatting.YELLOW)),
-                false
+                    .append(TaCZTweaks.translatable("bullet_sounds.sound_physics_missing").withStyle(ChatFormatting.YELLOW))
             )
         }
     }
