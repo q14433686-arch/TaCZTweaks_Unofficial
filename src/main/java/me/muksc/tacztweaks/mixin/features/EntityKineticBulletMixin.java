@@ -7,6 +7,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.tacz.guns.util.TacHitResult;
+import me.muksc.tacztweaks.compat.FirstAidCompat;
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager;
 import me.muksc.tacztweaks.data.manager.BulletParticlesManager;
 import me.muksc.tacztweaks.data.manager.BulletSoundsManager;
