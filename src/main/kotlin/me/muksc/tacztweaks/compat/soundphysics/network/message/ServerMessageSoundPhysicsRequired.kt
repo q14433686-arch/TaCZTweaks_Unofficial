@@ -20,9 +20,10 @@ object ServerMessageSoundPhysicsRequired : CustomPacketPayload {
     fun handle(msg: ServerMessageSoundPhysicsRequired, client: Minecraft) {
         if (SoundPhysicsCompat.isEnabled()) return
         client.execute {
-            client.player?.sendSystemMessage(
+            client.player?.displayClientMessage(
                 Component.literal("[TaCZ Tweaks] ").withStyle(ChatFormatting.GOLD)
-                    .append(TaCZTweaks.translatable("bullet_sounds.sound_physics_missing").withStyle(ChatFormatting.YELLOW))
+                    .append(TaCZTweaks.translatable("bullet_sounds.sound_physics_missing").withStyle(ChatFormatting.YELLOW)),
+                false
             )
         }
     }
