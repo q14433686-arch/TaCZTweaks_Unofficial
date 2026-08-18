@@ -30,8 +30,8 @@
     "fabric-api": "*",
     "minecraft": "1.21.11",
     "java": ">=21",
-    "tacz": ">=1.1.8",
-    "fabric-language-kotlin": ">=1.13.0",
+    "tacz": "=1.1.8+fabric.1.21.11.R2",
+    "fabric-language-kotlin": ">=1.13.13",
     "yet_another_config_lib_v3": "*"
   }
 }

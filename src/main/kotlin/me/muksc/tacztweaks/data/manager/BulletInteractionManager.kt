@@ -1,5 +1,7 @@
 package me.muksc.tacztweaks.data.manager
 
+import com.mojang.datafixers.util.Either
+import com.mojang.serialization.Codec
 import com.tacz.guns.entity.EntityKineticBullet
 import com.tacz.guns.particles.BulletHoleOption
 import com.tacz.guns.util.AttachmentDataUtils
@@ -7,7 +9,9 @@ import me.muksc.tacztweaks.anyOrEmpty
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.BlockBreakingManager
 import me.muksc.tacztweaks.core.Context
+import me.muksc.tacztweaks.core.SafeMath
 import me.muksc.tacztweaks.data.BulletInteraction
+import me.muksc.tacztweaks.data.old.convert
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
 import me.muksc.tacztweaks.thenPrioritizeBy
 import net.minecraft.core.BlockPos
@@ -19,7 +23,13 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
-import kotlin.math.exp
+import me.muksc.tacztweaks.data.old.BulletInteraction as OldBulletInteraction
+
+internal val BULLET_INTERACTION_CODEC: Codec<BulletInteraction> =
+    Codec.either(BulletInteraction.CODEC, OldBulletInteraction.CODEC).xmap(
+        { value: Either<BulletInteraction, OldBulletInteraction> -> value.map({ it }, { it.convert() }) },
+        { value: BulletInteraction -> Either.left<BulletInteraction, OldBulletInteraction>(value) }
+    )
 
 private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
@@ -31,13 +41,9 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
 /**
  * Loads `bullet_interactions` JSON files (glass piercing, dripstone breaking, custom
  * entity damage, …).
- *
- * Behavior methods (`handleBlockInteraction` / `handleEntityInteraction` / shield handling)
- * are intentionally left for the behavior-layer round — they need `BlockBreakingManager`,
- * `BulletRayTracer` and the bullet mixin accessors, none of which exist yet.
  */
 object BulletInteractionManager : BaseDataManager<BulletInteraction>(
-    "bullet_interactions", BulletInteraction.CODEC, COMPARATOR
+    "bullet_interactions", BULLET_INTERACTION_CODEC, COMPARATOR
 ) {
     init { BulletInteraction }
 
@@ -64,11 +70,6 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
                 && predicate(interaction)
     }?.toPair()
 
-    /**
-     * Handles a bullet hitting a block: applies the matching `block_break` rule (breaking
-     * or replacing the block), then decides whether the bullet should pierce through.
-     * Called from the block-raytrace mixin.
-     */
     fun handleBlockInteraction(ammo: EntityKineticBullet, result: BlockHitResult, state: BlockState): InteractionResult {
         val level = ammo.level() as ServerLevel
         val blockPos = result.blockPos
@@ -132,10 +133,6 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         return InteractionResult(pierce, breakBlock).also { logDebug { it.toString() } }
     }
 
-    /**
-     * Looks up the damage modifier for a bullet hitting an entity. Returns null when no
-     * interaction matches. The actual damage application happens in the entity mixin.
-     */
     fun getEntityDamage(ammo: EntityKineticBullet, location: Vec3, entity: Entity): Pair<Float, Float>? {
         val (id, interaction) = getBulletInteraction(ammo, location, BulletInteraction.Entity::entities) {
             it.test(entity)
@@ -167,21 +164,14 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         return true
     }
 
-    /**
-     * Maps bullet damage into a vanilla-style block-breaking progress delta.
-     * 26.2 note: there is no Forge `FakePlayer` on Fabric, so instead of the upstream
-     * fake-player + destroy-speed-multiplier approach we compute a simple equivalent:
-     * virtual dig speed = (1 + damage) scaled by armor-ignore, progress = digSpeed / (hardness * 30).
-     */
-    fun calcBlockBreakingDelta(damage: Float, armorIgnore: Double, state: BlockState, level: ServerLevel, pos: BlockPos): Float {
-        val hardness = state.getDestroySpeed(level, pos)
-        if (hardness < 0) return 0.0F
-        val digSpeed = (1.0F + damage) * remapArmorIgnore(armorIgnore)
-        return digSpeed / (hardness * 30.0F)
-    }
-
-    private fun remapArmorIgnore(armorIgnore: Double): Float =
-        exp(-2 * armorIgnore).toFloat()
+    /** Maps bullet damage into bounded vanilla-style block-breaking progress. */
+    fun calcBlockBreakingDelta(
+        damage: Float,
+        armorIgnore: Double,
+        state: BlockState,
+        level: ServerLevel,
+        pos: BlockPos
+    ): Float = SafeMath.blockBreakingDelta(damage, armorIgnore, state.getDestroySpeed(level, pos))
 
     data class InteractionResult(
         val pierce: Boolean,

@@ -1,6 +1,7 @@
 package me.muksc.tacztweaks.data
 
 import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
@@ -160,9 +161,14 @@ sealed class BulletSounds(
         priority: Int
     ) : BulletSounds(EBulletSoundsType.CONSTANT, target, priority) {
         companion object {
+            private val INTERVAL_CODEC: Codec<Int> = Codec.INT.validate { interval ->
+                if (interval > 0) DataResult.success(interval)
+                else DataResult.error { "constant sound interval must be positive" }
+            }
+
             val CODEC: Codec<Constant> = RecordCodecBuilder.create<Constant> { it.group(
                 singleOrListCodec(Target.CODEC).strictOptionalFieldOf("target", emptyList()).forGetter(Constant::target),
-                Codec.INT.fieldOf("interval").forGetter(Constant::interval),
+                INTERVAL_CODEC.fieldOf("interval").forGetter(Constant::interval),
                 singleOrListCodec(Sound.CODEC).strictOptionalFieldOf("sounds", emptyList()).forGetter(Constant::sounds),
                 Codec.INT.strictOptionalFieldOf("priority", 0).forGetter(Constant::priority)
             ).apply(it, ::Constant) }

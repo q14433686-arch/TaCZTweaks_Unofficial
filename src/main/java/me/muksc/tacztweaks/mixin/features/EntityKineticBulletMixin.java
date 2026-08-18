@@ -27,19 +27,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
-/**
- * Injects the state and hooks needed by the data-driven bullet interaction system into
- * {@code EntityKineticBullet}:
- * <ul>
- *   <li>stores the gun item stack (for armor-ignore / gun lookups);</li>
- *   <li>applies the per-hit damage modifiers ({@code pierce} damage falloff / entity damage);</li>
- *   <li>wraps {@code onHitEntity} to apply entity interactions and play hit/kill sounds & particles;</li>
- *   <li>after each tick, plays constant / whizz sounds.</li>
- * </ul>
- */
 @Mixin(value = EntityKineticBullet.class, remap = false)
 public abstract class EntityKineticBulletMixin implements EntityKineticBulletExtension {
     @Unique
@@ -59,6 +52,9 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
 
     @Unique
     private final List<ServerPlayer> tacztweaks$hitPlayers = new ArrayList<>();
+
+    @Unique
+    private final Set<UUID> tacztweaks$whizzedPlayers = new HashSet<>();
 
     @Override
     public ItemStack tacztweaks$getGunStack() {
@@ -105,7 +101,6 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         if (!tacztweaks$damageModifiers.isEmpty()) tacztweaks$damageModifiers.remove(tacztweaks$damageModifiers.size() - 1);
     }
 
-    // 1.21.11 is obfuscated -> hand-written intermediary descriptor (remap = false mixin).
     private static final String INIT = "(Lnet/minecraft/class_1299;Lnet/minecraft/class_1937;Lnet/minecraft/class_1309;Lnet/minecraft/class_1799;Lnet/minecraft/class_2960;Lnet/minecraft/class_2960;Lnet/minecraft/class_2960;ZLcom/tacz/guns/resource/pojo/data/gun/GunData;Lcom/tacz/guns/resource/pojo/data/gun/BulletData;)V";
 
     @Inject(method = "<init>" + INIT, at = @At("RETURN"))
@@ -148,14 +143,11 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         }
     }
 
-    // NOTE: `tick` is inherited from net.minecraft.world.entity.Entity, which in the obfuscated
-    // 1.21.11 runtime is named `method_5773`. This mixin is remap = false, so the name is used
-    // verbatim — it must be the intermediary name, not the Mojang one.
     @Inject(method = "method_5773", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onBulletTick()V", shift = At.Shift.AFTER))
     private void tacztweaks$tick$handleSounds(CallbackInfo ci) {
         EntityKineticBullet self = (EntityKineticBullet) (Object) this;
         if (!(self.level() instanceof ServerLevel level)) return;
         BulletSoundsManager.INSTANCE.handleConstant(level, self);
-        BulletSoundsManager.INSTANCE.handleSoundWhizz(level, self, tacztweaks$hitPlayers);
+        BulletSoundsManager.INSTANCE.handleSoundWhizz(level, self, tacztweaks$hitPlayers, tacztweaks$whizzedPlayers);
     }
 }

@@ -16,6 +16,7 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
+import java.util.UUID
 
 private val COMPARATOR = compareBy<BulletSounds> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
@@ -31,13 +32,6 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
     "bullet_sounds", BulletSounds.CODEC, COMPARATOR
 ) {
     override fun debugEnabled(): Boolean = Config.Debug.bulletSounds()
-
-    private inline fun <reified T : BulletSounds> getSounds(
-        entity: EntityKineticBullet,
-        location: Vec3
-    ): List<Pair<Identifier, T>> = byType<T>().entries.filter { (_, sounds) ->
-        sounds.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }
-    }.map { it.toPair() }
 
     private inline fun <reified T : BulletSounds> getSound(
         entity: EntityKineticBullet,
@@ -64,6 +58,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
         for (sound in type.getSound(sounds)) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(result.location)) }) continue
             if (!sound.blocks.anyOrEmpty { it.test(level, result.blockPos, state) }) continue
+            if (!sound.isSafe()) continue
             sound.play(level, result.location, entity)
         }
     }
@@ -76,6 +71,7 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
         for (sound in type.getSound(sounds)) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }) continue
             if (!sound.entities.anyOrEmpty { it.test(target) }) continue
+            if (!sound.isSafe()) continue
             sound.play(level, location, entity)
         }
     }
@@ -84,43 +80,59 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
         val location = entity.position()
         val (id, sounds) = getSound<BulletSounds.Constant>(entity, location) ?: return
         logDebug { "Using constant bullet sounds: $id" }
-        if (entity.tickCount % sounds.interval != 0) return
+        if (sounds.interval <= 0 || entity.tickCount % sounds.interval != 0) return
         for (sound in sounds.sounds) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(location)) }) continue
+            if (!sound.isSafe()) continue
             sound.play(level, location, entity)
         }
     }
 
-    fun handleSoundWhizz(level: ServerLevel, entity: EntityKineticBullet, ignores: List<ServerPlayer>) {
+    fun handleSoundWhizz(
+        level: ServerLevel,
+        entity: EntityKineticBullet,
+        ignores: Collection<ServerPlayer>,
+        whizzedPlayers: MutableSet<UUID>
+    ) {
         for (player in level.server.playerList.players) {
-            if (entity.getOwner() == player || player in ignores) continue
+            if (entity.getOwner() == player || player in ignores || player.uuid in whizzedPlayers) continue
             if (player.level().dimension() != level.dimension()) continue
-            handleSoundWhizz(player, entity)
+            if (handleSoundWhizz(player, entity)) whizzedPlayers.add(player.uuid)
         }
     }
 
-    fun handleSoundWhizz(player: ServerPlayer, entity: EntityKineticBullet) {
+    fun handleSoundWhizz(player: ServerPlayer, entity: EntityKineticBullet): Boolean {
         val ext = entity as EntityKineticBulletExtension
         val destination = ext.`tacztweaks$getPosition`()
-        val (id, sounds) = getSound<BulletSounds.Whizz>(entity, destination) ?: return
+        val (id, sounds) = getSound<BulletSounds.Whizz>(entity, destination) ?: return false
         logDebug { "Using whizz bullet sounds '$id' for player '$player'" }
 
         val currentPosition = entity.position()
         val playerPosition = player.eyePosition
         val trajectory = destination.subtract(currentPosition)
         val lengthSqr = trajectory.lengthSqr()
-        if (lengthSqr <= 0) return
+        if (!lengthSqr.isFinite() || lengthSqr <= 0) return false
         val length = playerPosition.subtract(currentPosition).dot(trajectory) / lengthSqr
-        if (length !in 0.0..1.0) return
+        if (!length.isFinite() || length !in 0.0..1.0) return false
 
         val position = currentPosition.add(trajectory.scale(length))
         val distance = playerPosition.distanceTo(position)
-        val whizz = sounds.sounds.firstOrNull { distance <= it.threshold } ?: return
+        val whizz = sounds.sounds.firstOrNull { it.threshold.isFinite() && it.threshold >= 0.0 && distance <= it.threshold }
+            ?: return false
+        var played = false
         for (sound in whizz.sound) {
             if (!sound.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(destination)) }) continue
+            if (!sound.isSafe()) continue
             sound.play(player, position, entity)
+            played = true
         }
+        return played
     }
+
+    private fun BulletSounds.Sound.isSafe(): Boolean =
+        volume.isFinite() && volume in 0.0F..4.0F &&
+            pitch.isFinite() && pitch in 0.01F..4.0F &&
+            (range == null || range.isFinite() && range in 0.01F..256.0F)
 
     @Suppress("DEPRECATION")
     private fun BulletSounds.Sound.play(player: ServerPlayer, position: Vec3, entity: EntityKineticBullet) {
