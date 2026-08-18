@@ -153,11 +153,6 @@ public abstract class SoundPlayManagerMixin {
         return tacztweaks$broadcastSound(entity, name, volume, pitch, distance, original);
     }
 
-    @WrapOperation(method = "playAnimationSound", at = @At(value = "INVOKE", target = PC5))
-    private static GunSoundInstance tacztweaks$playAnimationSound$broadcast(Entity entity, Identifier name, float volume, float pitch, int distance, Operation<GunSoundInstance> original) {
-        return tacztweaks$broadcastSound(entity, name, volume, pitch, distance, original);
-    }
-
     @Unique
     private static GunSoundInstance tacztweaks$broadcastSound(Entity entity, Identifier name, float volume, float pitch, int distance, Operation<GunSoundInstance> original) {
         if (Config.Tweaks.INSTANCE.audibleFirstPersonGunSounds() && name != null) NetworkHandler.INSTANCE.sendC2S(new ClientMessageBroadcastSound(name, volume, pitch, distance));

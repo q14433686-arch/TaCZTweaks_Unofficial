@@ -64,6 +64,7 @@
     "gun.movement.TickAnimationEventMixin",
     "modifiers.CameraSetupEventMixin",
     "tweaks.GunPackListMixin",
+    "tweaks.ObjectAnimationSoundChannelMixin",
     "tweaks.GunSoundInstanceMixin",
     "tweaks.GunSoundInstanceTaczSoundMixin",
     "tweaks.RefitKeyMixin",
