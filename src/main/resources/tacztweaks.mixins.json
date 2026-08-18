@@ -44,6 +44,7 @@
   ],
   "client": [
     "accessor.LocalPlayerShootAccessor",
+    "crawl.AvatarRendererMixin",
     "crawl.LocalPlayerCrawlMixin",
     "gun.EntityBulletRendererMixin",
     "gun.GunAnimationStateContextMixin",

@@ -29,11 +29,13 @@ public class TaCZTweaksClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             UnloadKey.onClientTick();
             TiltGunKey.onClientTick();
+            CrawlPitchController.apply(client.player);
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ConfigManager.INSTANCE.setSyncedWithServer(false);
             Config.INSTANCE.sync(ESyncDirection.RESET);
+            CrawlPitchController.reset();
         });
     }
 }

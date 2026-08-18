@@ -43,9 +43,10 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 以下内容 **不能视为已完成**：
 
-- 26.2 parity 的 crawl 第一/三人称完整视觉过渡；
-- melee / shield / bulletProtection / betterMonoConversion 的完整 1.21.11 版实现；
-- old v2 bullet interaction converter、burst/pellet allocator、airspace payload 全链路；
+- crawl 第一/三人称视觉过渡的实际运行验证；
+- `betterMonoConversion`；
+- First Aid / Sound Physics / Pillager’s Gun 等 optional compat；
+- airspace payload / SPR 全链路；
 - 多人/专服/客户端完整实机矩阵；
 - 依赖真实 TaCZ / Minecraft jars 的最终 strict audit 与整仓 `./gradlew clean build` 验证。
 
