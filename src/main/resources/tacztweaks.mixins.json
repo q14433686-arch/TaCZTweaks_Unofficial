@@ -33,12 +33,15 @@
     "modifiers.GunRecoilMixin",
     "tweaks.EnderManMixin",
     "tweaks.EntityKineticBulletMixin",
+    "tweaks.IdentifierMixin",
     "tweaks.InaccuracyTypeMixin",
     "tweaks.LivingEntityAmmoCheckMixin",
-    "tweaks.ModernKineticGunScriptAPIMixin"
+    "tweaks.ModernKineticGunScriptAPIMixin",
+    "tweaks.TagPredicateMixin"
   ],
   "client": [
     "accessor.LocalPlayerShootAccessor",
+    "accessor.SoundBufferAccessor",
     "gun.EntityBulletRendererMixin",
     "gun.GunAnimationStateContextMixin",
     "gun.LocalPlayerBoltMixin",
@@ -55,9 +58,12 @@
     "gun.movement.TickAnimationEventMixin",
     "modifiers.CameraSetupEventMixin",
     "tweaks.GunPackListMixin",
+    "tweaks.GunSoundInstanceMixin",
+    "tweaks.GunSoundInstance$TaczSoundMixin",
     "tweaks.RefitKeyMixin",
     "tweaks.RPMModifierMixin",
     "tweaks.RenderCrosshairEventMixin",
+    "tweaks.SoundBufferLibraryMixin",
     "tweaks.SoundPlayManagerMixin"
   ],
   "injectors": {

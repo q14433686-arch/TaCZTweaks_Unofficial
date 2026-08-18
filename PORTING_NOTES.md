@@ -478,12 +478,61 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
    视觉效果，解析失败记日志并跳过，**绝不**再让实体 tick 崩溃。第三方枪包的非法粒子
    语法也不会拖垮游戏。
 
+## 7.17 两个「不可移植」结论被推翻（2026-08-18）
+
+README 曾把 `betterMonoConversion` 判为「`Identifier` 是 record 无法 mixin」、把
+`bulletProtection` 判为「需重新设计」。经反编译 26.2 客户端 + TaCZ jar 字节码核实，
+**两者都能做，且已完成**。审计脚本 `scripts/audit.py` 会持续校验这些 mixin 的目标。
+
+### 7.17.1 `betterMonoConversion`
+
+**「record」论断是错的**：26.2 的 `net.minecraft.resources.Identifier` 是
+`public final class Identifier implements Comparable<Identifier>`（带 `getNamespace()`/
+`getPath()` 的普通类，与旧 `ResourceLocation` 结构一致）。`@Mixin(Identifier.class)` +
+`@Unique` 字段照搬即可。
+
+26.2 的真正变化在 `SoundBufferLibrary.getCompleteBuffer`：
+
+| 1.20.1 | 26.2 |
+|---|---|
+| `getCompleteBuffer(ResourceLocation, boolean)` | `getCompleteBuffer(Identifier)`（单参） |
+| `OggAudioStream` | `FiniteAudioStream` / `JOrbisAudioStream` |
+| 解码包进 `lambda$getCompleteBuffer$0(ResourceLocation)` | 解码搬进嵌套的 `supplyAsync(() -> …)` lambda |
+
+原版在 `lambda$getCompleteBuffer$0` 上用 `@Local(argsOnly=true)` 拿 id 的做法在 26.2 失效
+（id 是内层 lambda 的捕获变量）。改法：**在 `getCompleteBuffer` 方法级 `@ModifyReturnValue`，
+`@Local(argsOnly=true) Identifier location` 拿 id，`thenApply` 对产物 SoundBuffer 做双声道混合**。
+不依赖任何 javac lambda 名。为此补一个 `SoundBufferAccessor`（暴露私有 `data` 字段）。
+
+数据流：`GunSoundInstance.<init>(…, mono, …)` →（`GunSoundInstanceMixin` 捕获 mono）→
+`resolve()` 新建 `TaczSound`（`GunSoundInstanceMixin` 塞回 mono）→ `TaczSound#getPath()`
+（`GunSoundInstance$TaczSoundMixin` 给返回的 `Identifier` 打标）→ `getCompleteBuffer(path)`
+（`SoundBufferLibraryMixin` 读标、下混）。`Identifier` 上的标记字段走 `TaCZIdentifier` 接口。
+
+### 7.17.2 `bulletProtection`
+
+26.2 删除 `ProtectionEnchantment`，附魔完全数据驱动。弹射物保护的「伤害是弹射物吗」判定链：
+
+```
+EnchantmentHelper.getDamageProtection
+  -> Enchantment#modifyDamageProtection（applyEffects）
+     -> ConditionalEffect#matches -> DamageSourceCondition#test
+        -> DamageSourcePredicate#matches -> TagPredicate#matches(source.typeHolder())
+           -> holder.is(#minecraft:damage_type/is_projectile)
+```
+
+原版 wrap `ProtectionEnchantment#getDamageProtection` 里 `source.is(IS_PROJECTILE)` 的位置，
+26.2 对应到 `TagPredicate#matches(Holder)`。`TagPredicateMixin` 在该处把 TaCZ 四个子弹伤害
+类型（`tacz:bullet*`）视为命中 `is_projectile`，由 `Config.Tweaks.bulletProtection`（同步）门控。
+
+注意：`TagKey` 在 26.2 是带 **弱 interner** 的 record，`TagKey.codec` 与
+`DamageTypeTags.IS_PROJECTILE` 都经 `create()` intern，因此 `==` 也可比较；稳妥起见用 `equals`。
+`Holder` 是 sealed interface（只允许 `Direct`/`Reference`），**无法**伪造一个「撒谎的 Holder」，
+这是不用「包装 DamageSource」而选 `TagPredicate` 补丁的原因。
+
 ## 8. 已知待办
 
-- [ ] 匍匐动态俯仰角（基于方块碰撞；需 MixinSquared 或改 TaCZ 常量）
-- [ ] betterInaccuracy / betterGunTilt / betterMonoConversion / bulletProtection /
-      endermenEvadeBullets / disableRefitOnAdventure / alwaysFilterByHand / rps /
-      audibleFirstPersonGunSounds / forceFirstPersonShootingSound
-- [ ] 卸弹的创造模式 / 枪膛内子弹支持（针对新 `dropAllAmmo` 重写）
-- [ ] 示例包、数据驱动的子弹交互系统
-- [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译验证）
+- [ ] 匍匐动态俯仰角（基于方块碰撞；已实现，见 §7.10/7.11/7.13，待运行时实测确认）
+- [ ] compat 组（FirstAid / LSO / MTS / VS / SoundPhysics / PillagersGun）——
+      Forge 1.20.1 独占，这些 mod 在 Fabric 26.2 无对应版本，无法移植
+- [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译验证 + 字节码/源码审计）

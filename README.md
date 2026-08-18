@@ -66,16 +66,24 @@
     金属击中音、擦弹音、火箭尾音、血液/方块粒子
 - ⏳ 已知简化：melee 近战破坏、airspace 混响（依赖 Sound Physics）、shield 格挡交互未实现
   （数据层相关类型已同步砍掉，详见 PORTING_NOTES §7.15）
+- ✅ **立体声转单声道**（`betterMonoConversion`）：`IdentifierMixin`（标记）+
+  `GunSoundInstanceMixin`（捕获 mono 标志）+ `GunSoundInstance$TaczSoundMixin`（传递标志）+
+  `SoundBufferLibraryMixin`（解码后混合双声道）。26.2 的 `getCompleteBuffer` 把解码搬进了
+  嵌套异步 lambda，故改用 `@ModifyReturnValue` + `thenApply` 包装，不依赖 javac lambda 名。
+- ✅ **子弹防护**（`bulletProtection`）：`TagPredicateMixin` 让 `#minecraft:damage_type/is_projectile`
+  命中 TaCZ 子弹伤害类型。26.2 已删除 `ProtectionEnchantment`（附魔数据驱动），弹射物保护的
+  「是弹射物吗」判定改由战利品条件 `TagPredicate#matches(Holder)` 承担，在该处打补丁即可。
 
-### 已确认不可移植、已从配置界面隐藏的选项
+### 已确认不可移植的选项
 
 | 选项 | 原因 |
 |---|---|
-| `betterMonoConversion` | 26.2 里 `ResourceLocation` 改名 `Identifier` 且是 **record，无法 mixin 打标记** |
-| `bulletProtection` | 26.2 已删除 `ProtectionEnchantment` 类（附魔系统改为数据驱动），需重新设计 |
 | `thirdPersonGunRenderingFix` | **目标端已原生修复**，无需移植 |
-| compat 组（FirstAid/LSO/MTS/VS/SoundPhysics/PillagersGun） | Forge 独占，Fabric 26.2 无对应版本 |
-| 示例包 / 数据驱动子弹交互系统（debug 组） | 依赖数据加载子系统，范围过大，暂缓 |
+| compat 组（FirstAid/LSO/MTS/VS/SoundPhysics/PillagersGun） | Forge 1.20.1 独占；这些 mod 在 Fabric 26.2 没有对应版本 |
+
+> 说明：早前把 `betterMonoConversion` 判为「`Identifier` 是 record 无法 mixin」、把
+> `bulletProtection` 判为「需重新设计」——两者经字节码核实后均已实现（见上）。数据驱动
+> 子弹交互系统也已完成（§7.14 / §7.15）。
 
 详见 [`PORTING_NOTES.md`](PORTING_NOTES.md)。
 

@@ -566,6 +566,12 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
+                    name(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.name"))
+                    description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.description")))
+                    binding(Tweaks.betterMonoConversion.asBinding())
+                    controller(booleanController())
+                }.build())
+                option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.forceDefaultHitAndKillSounds.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.forceDefaultHitAndKillSounds.description")))
                     binding(Tweaks.forceDefaultHitAndKillSounds.asBinding())
@@ -770,6 +776,13 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     nameSynced(TaCZTweaks.translatable("config.tweaks.endermenEvadeBullets.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.endermenEvadeBullets.description")))
                     binding(Tweaks.endermenEvadeBullets.asSyncedBinding())
+                    controller(booleanController())
+                    available(canUpdateServerConfig)
+                }.build())
+                option(Option.createBuilder<Boolean>().apply {
+                    nameSynced(TaCZTweaks.translatable("config.tweaks.bulletProtection.name"))
+                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.bulletProtection.description")))
+                    binding(Tweaks.bulletProtection.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
