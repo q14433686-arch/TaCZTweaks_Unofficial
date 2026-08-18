@@ -47,6 +47,7 @@ class ClassInfo:
     fields: frozenset[str]
     method_signatures: frozenset[tuple[str, str]]
     field_signatures: frozenset[tuple[str, str]]
+    method_references: dict[tuple[str, str], frozenset[tuple[str, str, str]]]
     super_name: str | None
     interfaces: tuple[str, ...]
 
@@ -73,6 +74,8 @@ def read_class_info(raw: bytes) -> ClassInfo:
     cp_count, off = _u2(data, off)
     utf8: dict[int, str] = {}
     class_name_indices: dict[int, int] = {}
+    name_and_type_indices: dict[int, tuple[int, int]] = {}
+    member_ref_indices: dict[int, tuple[int, int]] = {}
     index = 1
     while index < cp_count:
         tag, off = _u1(data, off)
@@ -90,7 +93,15 @@ def read_class_info(raw: bytes) -> ClassInfo:
             class_name_indices[index] = name_index
         elif tag in (8, 16, 19, 20):
             off += 2
-        elif tag in (9, 10, 11, 12, 17, 18):
+        elif tag in (9, 10, 11):
+            class_index, off = _u2(data, off)
+            name_and_type_index, off = _u2(data, off)
+            member_ref_indices[index] = (class_index, name_and_type_index)
+        elif tag == 12:
+            name_index, off = _u2(data, off)
+            descriptor_index, off = _u2(data, off)
+            name_and_type_indices[index] = (name_index, descriptor_index)
+        elif tag in (17, 18):
             off += 4
         elif tag == 15:
             off += 3
@@ -112,31 +123,64 @@ def read_class_info(raw: bytes) -> ClassInfo:
         if name:
             interface_names.append(name)
 
-    def members(offset: int) -> tuple[list[tuple[str, str]], int]:
+    def resolve_member_ref(cp_index: int) -> tuple[str, str, str] | None:
+        pair = member_ref_indices.get(cp_index)
+        if pair is None:
+            return None
+        class_index, nat_index = pair
+        nat = name_and_type_indices.get(nat_index)
+        if nat is None:
+            return None
+        owner = utf8.get(class_name_indices.get(class_index, -1), "")
+        name = utf8.get(nat[0], "")
+        descriptor = utf8.get(nat[1], "")
+        return (owner, name, descriptor) if owner and name and descriptor else None
+
+    method_references: dict[tuple[str, str], frozenset[tuple[str, str, str]]] = {}
+
+    def members(offset: int, collect_code: bool = False) -> tuple[list[tuple[str, str]], int]:
         count, offset = _u2(data, offset)
         members_found: list[tuple[str, str]] = []
         for _ in range(count):
             offset += 2  # access flags
             name_index, offset = _u2(data, offset)
             descriptor_index, offset = _u2(data, offset)
-            members_found.append((
+            signature = (
                 utf8.get(name_index, f"<cp:{name_index}>"),
                 utf8.get(descriptor_index, f"<cp:{descriptor_index}>"),
-            ))
+            )
+            members_found.append(signature)
+            refs: set[tuple[str, str, str]] = set()
             attribute_count, offset = _u2(data, offset)
             for _ in range(attribute_count):
-                offset += 2
+                attribute_name_index, offset = _u2(data, offset)
                 length, offset = _u4(data, offset)
+                if collect_code and utf8.get(attribute_name_index) == "Code" and length >= 8:
+                    code_length = struct.unpack_from(">I", data, offset + 4)[0]
+                    code = data[offset + 8 : offset + 8 + code_length]
+                    # All field/method invocation opcodes carry a two-byte constant-pool
+                    # index. Scanning only indices which resolve to an actual Memberref
+                    # avoids needing a full bytecode interpreter while retaining no misses.
+                    for pos in range(max(0, len(code) - 2)):
+                        if code[pos] not in (0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9):
+                            continue
+                        cp_index = (code[pos + 1] << 8) | code[pos + 2]
+                        resolved = resolve_member_ref(cp_index)
+                        if resolved is not None:
+                            refs.add(resolved)
                 offset += length
+            if collect_code:
+                method_references[signature] = frozenset(refs)
         return members_found, offset
 
     fields, off = members(off)
-    methods, off = members(off)
+    methods, off = members(off, collect_code=True)
     return ClassInfo(
         frozenset(name for name, _ in methods),
         frozenset(name for name, _ in fields),
         frozenset(methods),
         frozenset(fields),
+        method_references,
         super_name,
         tuple(interface_names),
     )
@@ -245,25 +289,123 @@ def resolve_target(text: str) -> str | None:
     return f"{package_match.group(1)}.{simple}" if package_match else simple
 
 
+INJECTOR_ANNOTATIONS = (
+    "Inject|ModifyArg|ModifyArgs|ModifyVariable|Redirect|ModifyConstant|"
+    "ModifyExpressionValue|ModifyReturnValue|WrapOperation|WrapMethod|WrapWithCondition"
+)
+
+
+def _annotation_body(text: str, open_paren: int) -> str | None:
+    depth = 0
+    quoted = False
+    escaped = False
+    for index in range(open_paren, len(text)):
+        char = text[index]
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+            continue
+        if char == '"':
+            quoted = True
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return text[open_paren + 1 : index]
+    return None
+
+
+def _string_constants(text: str) -> dict[str, str]:
+    return dict(re.findall(r"\bString\s+(\w+)\s*=\s*\"([^\"]+)\"", text))
+
+
 def injection_method_names(text: str) -> set[str]:
     names: set[str] = set()
-    # Captures method="x", method={"x", "y"}, and WrapMethod equivalents. It
-    # intentionally ignores descriptors after the method name.
-    for annotation in re.finditer(
-        r"@(Inject|ModifyArg|ModifyArgs|ModifyVariable|Redirect|ModifyConstant|"
-        r"ModifyExpressionValue|ModifyReturnValue|WrapOperation|WrapMethod|WrapWithCondition)\s*\((.*?)\)\s*\n",
-        text,
-        re.S,
-    ):
-        body = annotation.group(2)
-        method_value = re.search(r"\bmethod\s*=\s*(\{.*?\}|\".*?\")", body, re.S)
-        if not method_value:
+    constants = _string_constants(text)
+    for annotation in re.finditer(rf"@({INJECTOR_ANNOTATIONS})\s*\(", text):
+        body = _annotation_body(text, text.index("(", annotation.start()))
+        if body is None:
             continue
-        for raw in re.findall(r'\"([^\"]+)\"', method_value.group(1)):
+        assignment = re.search(r"\bmethod\s*=\s*(\{[^}}]*\}|\"[^\"]+\"|\w+)", body, re.S)
+        if assignment is None:
+            continue
+        value = assignment.group(1)
+        raw_values = re.findall(r'\"([^\"]+)\"', value)
+        if not raw_values and value in constants:
+            raw_values = [constants[value]]
+        for raw in raw_values:
             name = raw.split("(", 1)[0]
             if name and not name.startswith("@"):
                 names.add(name)
     return names
+
+
+def audit_injection_references(
+    text: str,
+    target: str,
+    info: ClassInfo,
+) -> list[str]:
+    """Return injection call-sites absent from the specific target method bytecode."""
+    missing: list[str] = []
+    constants = _string_constants(text)
+    for annotation in re.finditer(rf"@({INJECTOR_ANNOTATIONS})\s*\(", text):
+        body = _annotation_body(text, text.index("(", annotation.start()))
+        if body is None:
+            continue
+        method_match = re.search(r"\bmethod\s*=\s*(\"[^\"]+\"|\w+)", body)
+        if method_match is None:
+            continue
+        method_value = method_match.group(1)
+        method_raw = (
+            method_value[1:-1]
+            if method_value.startswith('"')
+            else constants.get(method_value)
+        )
+        if not method_raw:
+            continue
+        method_name = method_raw.split("(", 1)[0]
+        method_descriptor = (
+            "(" + method_raw.split("(", 1)[1]
+            if "(" in method_raw else None
+        )
+        signatures = [
+            signature for signature in info.method_signatures
+            if signature[0] == method_name
+            and (method_descriptor is None or signature[1] == method_descriptor)
+        ]
+        if not signatures:
+            continue  # Reported separately as an absent target method.
+
+        targets: list[str] = []
+        for target_match in re.finditer(r"\btarget\s*=\s*(\"[^\"]+\"|\w+)", body):
+            target_value = target_match.group(1)
+            resolved = (
+                target_value[1:-1]
+                if target_value.startswith('"')
+                else constants.get(target_value)
+            )
+            if resolved:
+                targets.append(resolved)
+        for at_target in targets:
+            member_match = re.fullmatch(r"L([^;]+);([^(:]+)(\(.*)", at_target)
+            if member_match is None:
+                field_match = re.fullmatch(r"L([^;]+);([^:]+):(.+)", at_target)
+                if field_match is None:
+                    continue
+                reference = field_match.groups()
+            else:
+                reference = member_match.groups()
+            if any(reference in info.method_references.get(signature, frozenset()) for signature in signatures):
+                continue
+            missing.append(
+                f"{target}#{method_raw} does not contain @At reference {at_target}"
+            )
+    return missing
 
 
 def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str], list[str]]:
@@ -313,6 +455,9 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
             continue
         for method in sorted(injection_method_names(text) - info.methods):
             message = f"target method {target}#{method} is absent ({path.relative_to(ROOT)})"
+            (errors if strict else warnings).append(message)
+        for missing_reference in audit_injection_references(text, target, info):
+            message = f"{missing_reference} ({path.relative_to(ROOT)})"
             (errors if strict else warnings).append(message)
 
         # Validate exact bytecode references used by @At targets whenever the owner is in
