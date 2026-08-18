@@ -74,6 +74,8 @@ python3 scripts/audit_port.py --strict \
 - `BlockRayTraceMixin` 的静态上下文会被集成服务器的客户端线程互相覆盖：改为 ThreadLocal，并在 RETURN 清理；
 - `sprintWhileReloading` 仍会被 TaCZ 的 `LocalPlayerMixin#swapSprintStatus` 取消：在同一 sprint setter 外层建立
   ThreadLocal scope，只屏蔽该来源的 `cancelReload`；
+- 匍匐俯仰限制不再只依赖鼠标事件：鼠标 TAIL 保证即时限制，客户端 END tick 覆盖手柄/外部输入和
+  “进入匍匐但没有移动鼠标”的情况；进入控制状态与实际 clamp 都有节流日志可验证；
 - 所有本轮已确认的 hook 都设为 required，不用 `require=0` 隐藏失效。
 
 ### 数据驱动行为
