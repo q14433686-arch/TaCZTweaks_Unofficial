@@ -12,4 +12,9 @@ public abstract class RPMModifierMixin {
     private int tacztweaks$initCache$rpmModifier(int original) {
         return (int) Config.Modifiers.RPM.INSTANCE.eval(original);
     }
+
+    @ModifyExpressionValue(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/GunData;getRoundsPerMinute(Lcom/tacz/guns/api/item/gun/FireMode;)I"))
+    private int tacztweaks$getPropertyDiagramsData$rpmModifier(int original) {
+        return (int) Config.Modifiers.RPM.INSTANCE.eval(original);
+    }
 }

@@ -45,7 +45,7 @@ public class TaCZTweaks implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        Config.INSTANCE.touch();
+        Config.INSTANCE.initialize();
         NetworkHandler.INSTANCE.registerServer();
         // Force initialization of the ModStatusEffects object so the effect registers at startup.
         net.minecraft.core.Holder<?> endlessAmmo = ModStatusEffects.INSTANCE.ENDLESS_AMMO;
@@ -67,6 +67,12 @@ public class TaCZTweaks implements ModInitializer {
             BlockBreakingManager.INSTANCE.clear();
             BulletParticlesManager.INSTANCE.clear();
             ClientMessageBroadcastSound.clearAll();
+        });
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
+            if (!success || !BulletSoundsManager.INSTANCE.hasAirspaceSounds()) return;
+            for (var player : server.getPlayerList().getPlayers()) {
+                NetworkHandler.INSTANCE.sendS2C(player, ServerMessageSoundPhysicsRequired.INSTANCE);
+            }
         });
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
             if (level instanceof ServerLevel serverLevel) {

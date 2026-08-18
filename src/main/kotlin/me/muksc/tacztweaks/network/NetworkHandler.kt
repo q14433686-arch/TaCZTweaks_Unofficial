@@ -63,7 +63,7 @@ object NetworkHandler {
     }
 
     fun sendPlayerUnload() {
-        ClientPlayNetworking.send(ClientMessagePlayerUnload.create())
+        ClientPlayNetworking.send(ClientMessagePlayerUnload)
     }
 
     fun sendS2C(player: ServerPlayer, payload: CustomPacketPayload) {

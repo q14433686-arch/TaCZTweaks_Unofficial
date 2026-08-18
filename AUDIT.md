@@ -97,6 +97,27 @@ python3 scripts/audit_port.py --strict \
 - 卸弹栈拆分循环改为明确的 `while remaining > 0`，缺 ammo index 时不再先删除弹药；
 - `Inventory.hasInfiniteAmmo` 的 `0..containerSize` 越界改为 `0 until containerSize`。
 
+## 第二轮：隐藏删减 / 空实现审计
+
+在实机暴露“视觉微调其实仅为第三人称”后，审计范围从配置可见项扩大到源码级差分：
+
+- 对比原版 173 个 Java/Kotlin 文件与本端全部同路径文件；
+- 扫描 TODO/FIXME/no-op/固定返回值/空方法/注释代码；
+- 对照原版 95 个与本端 mixin 清单，并检查每个 `@At` 是否真实存在于目标方法字节码；
+- 新增 `scripts/upstream_omissions.json`：57 个同路径缺失文件必须逐项有替代实现或外部阻塞理由，
+  出现新的无解释缺失或过期规则时 `--upstream-root` 审计直接失败。
+
+本轮找到并恢复的真实隐藏删减：
+
+1. `alwaysFilterByHand` 原只强制返回 true，却没有像原版一样隐藏失效的“按手持筛选”复选框；
+2. `reloadWhileShooting` 漏了空仓/战术换弹动画的弹匣+膛内联合判定；
+3. 全局平衡值已影响实战和 tooltip，但改装台 `getPropertyDiagramsData/buildNormal/buildAim` 基线注入被整组跳过，
+   导致图表把全局规则误显示成配件差值；现恢复 damage/headshot/armor/speed/ADS/RPM/recoil/inaccuracy 图表路径；
+4. `data/old` 与旧 `bullet_interactions` codec fallback 被整块删除；现用 `Codec.either` 读取新旧格式，写出仍统一为新格式；
+5. 倾斜键原版在 sprint 起始判断处阻止奔跑，本端只在 tick 尾强制停跑；现也在真实 sprint setter 前处理，避免每 tick 反复启停。
+
+剩余同路径缺失项目前全部进入机器可检查的解释清单，不再接受“文件名不同所以大概移植了”的口头结论。
+
 ## 从 TaCZ Refabricated 26.2 当前仓库吸收的维护规则
 
 2026-08-18 再次对照目标仓库 `26.2(main)` 的 `AGENTS.md`、

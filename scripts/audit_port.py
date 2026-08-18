@@ -19,6 +19,7 @@ mixins were intentionally merged or redesigned in this port.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import re
 import struct
@@ -470,7 +471,11 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
             owner_info = jars.class_info(owner_name)
             if owner_info is None:
                 continue
-            if not jars.has_method(owner_name, (name, descriptor)):
+            referenced_by_target = any(
+                (owner, name, descriptor) in references
+                for references in info.method_references.values()
+            )
+            if not jars.has_method(owner_name, (name, descriptor)) and not referenced_by_target:
                 message = (
                     f"@At method reference is absent: {owner_name}#{name}{descriptor} "
                     f"({path.relative_to(ROOT)})"
@@ -483,7 +488,11 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
             owner_info = jars.class_info(owner_name)
             if owner_info is None:
                 continue
-            if not jars.has_field(owner_name, (name, descriptor)):
+            referenced_by_target = any(
+                (owner, name, descriptor) in references
+                for references in info.method_references.values()
+            )
+            if not jars.has_field(owner_name, (name, descriptor)) and not referenced_by_target:
                 message = (
                     f"@At field reference is absent: {owner_name}#{name}:{descriptor} "
                     f"({path.relative_to(ROOT)})"
@@ -608,20 +617,46 @@ def audit_versions(config: dict) -> list[str]:
     return errors
 
 
-def compare_upstream(path: Path) -> None:
+def compare_upstream(path: Path) -> list[str]:
+    errors: list[str] = []
     upstream_root = path / "src/main"
     if not upstream_root.is_dir():
-        print(f"UPSTREAM: {upstream_root} is not a source tree", file=sys.stderr)
-        return
-    upstream = {str(p.relative_to(upstream_root)) for p in upstream_root.rglob("*") if p.is_file()}
-    current = {str(p.relative_to(SOURCE_ROOT)) for p in SOURCE_ROOT.rglob("*") if p.is_file()}
-    omitted = sorted(
-        name for name in upstream - current
-        if name.endswith((".java", ".kt")) and "/compat/" not in f"/{name}"
+        return [f"{upstream_root} is not an upstream source tree"]
+    upstream = {
+        str(p.relative_to(upstream_root)) for p in upstream_root.rglob("*")
+        if p.is_file() and p.suffix in {".java", ".kt"}
+    }
+    current = {
+        str(p.relative_to(SOURCE_ROOT)) for p in SOURCE_ROOT.rglob("*")
+        if p.is_file() and p.suffix in {".java", ".kt"}
+    }
+    omitted = sorted(upstream - current)
+    allowlist_path = ROOT / "scripts/upstream_omissions.json"
+    rules = json.loads(allowlist_path.read_text(encoding="utf-8"))
+    for rule in rules:
+        if not rule.get("glob") or not rule.get("reason"):
+            errors.append(f"invalid upstream omission rule: {rule!r}")
+
+    print(
+        f"UPSTREAM: {len(upstream)} code files; port: {len(current)} code files; "
+        f"direct-path omissions: {len(omitted)}"
     )
-    print(f"UPSTREAM: {len(upstream)} files; port: {len(current)} files; direct-path omissions: {len(omitted)}")
+    matched_rules: set[int] = set()
     for name in omitted:
-        print(f"  upstream-only {name}")
+        matches = [
+            (index, rule) for index, rule in enumerate(rules)
+            if fnmatch.fnmatchcase(name, rule["glob"])
+        ]
+        if not matches:
+            errors.append(f"unexplained upstream source omission: {name}")
+            print(f"  UNEXPLAINED {name}")
+            continue
+        matched_rules.update(index for index, _ in matches)
+        print(f"  explained {name}: {matches[0][1]['reason']}")
+    for index, rule in enumerate(rules):
+        if index not in matched_rules:
+            errors.append(f"stale upstream omission rule matches nothing: {rule['glob']}")
+    return errors
 
 
 def find_minecraft_jars(explicit: list[str]) -> list[Path]:
@@ -655,7 +690,7 @@ def main() -> int:
     errors.extend(audit_versions(config))
 
     if args.upstream_root:
-        compare_upstream(args.upstream_root)
+        errors.extend(compare_upstream(args.upstream_root))
 
     print(f"AUDIT: {len(errors)} error(s), {len(warnings)} warning(s)")
     for message in errors:

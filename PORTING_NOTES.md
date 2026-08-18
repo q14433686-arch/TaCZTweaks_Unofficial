@@ -497,6 +497,16 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 同时修复了配置 payload 复用/长度校验、跨维度粒子、方块保护事件、静态 raytrace 上下文竞争、
 `sprintWhileReloading` 被目标端二次取消等完整性问题。详细证据和测试矩阵见 `AUDIT.md`。
 
+## 7.18 隐藏删减复审（2026-08-18）
+
+第二轮不再只看配置 getter，而是把原版同路径源码、95 个 mixin、空方法/固定返回和注释代码一起纳入。
+恢复了旧数据格式 converter、改装属性图全局基线、筛选复选框隐藏、射击换弹动画判定和倾斜阻止起跑。
+
+所有仍不同路径/缺失的原版源码记录在 `scripts/upstream_omissions.json`；提供上游 checkout 运行
+`audit_port.py --upstream-root` 时，新增未解释缺失和已经失效的豁免都会失败。当前允许缺失仅包括：
+26.2 原生替代、已合并到新 hook 的行为、record/数据驱动 API 的重设计，以及确实没有 Fabric 26.2
+目标的 LSO/MTS/VS 系列。
+
 ## 8. 当前待办
 
 ### 8.1 已完成
@@ -507,7 +517,8 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 - [x] predicate / tier / burst_index / pellet_index 数据兼容
 - [x] First Aid New / Sound Physics Remastered / Pillager’s Gun Fabric 26.2 可选兼容
 - [x] 无目标的 LSO / MTS / VS 与已原生修复的 thirdPerson 开关从配置 codec/GUI 删除
-- [x] `scripts/audit_port.py` 系统审计（mixin 注册/目标方法、配置死项、语言键、MixinExtras 版本）
+- [x] `scripts/audit_port.py` 系统审计（注入调用点字节码、配置死项、语言键、版本一致性）
+- [x] 57 项上游源码缺失解释门禁、旧数据格式、属性图表与隐藏 UI/动画路径复原
 
 ### 8.2 发布前验证
 

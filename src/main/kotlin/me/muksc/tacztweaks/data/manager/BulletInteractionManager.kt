@@ -1,5 +1,7 @@
 package me.muksc.tacztweaks.data.manager
 
+import com.mojang.datafixers.util.Either
+import com.mojang.serialization.Codec
 import com.tacz.guns.entity.EntityKineticBullet
 import com.tacz.guns.particles.BulletHoleOption
 import com.tacz.guns.util.AttachmentDataUtils
@@ -8,7 +10,9 @@ import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.BlockBreakingManager
 import me.muksc.tacztweaks.core.Context
 import me.muksc.tacztweaks.data.BulletInteraction
+import me.muksc.tacztweaks.data.old.convert
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
+import me.muksc.tacztweaks.data.old.BulletInteraction as OldBulletInteraction
 import me.muksc.tacztweaks.thenPrioritizeBy
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.core.BlockPos
@@ -22,6 +26,14 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 import kotlin.math.exp
+
+private val BULLET_INTERACTION_CODEC: Codec<BulletInteraction> =
+    Codec.either(BulletInteraction.CODEC, OldBulletInteraction.CODEC).xmap(
+        { value: Either<BulletInteraction, OldBulletInteraction> ->
+            value.map({ it }, { it.convert() })
+        },
+        { value: BulletInteraction -> Either.left<BulletInteraction, OldBulletInteraction>(value) }
+    )
 
 private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
@@ -39,7 +51,7 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
  * hit loop while preserving custom gun-pierce consumption and persistent damage falloff.
  */
 object BulletInteractionManager : BaseDataManager<BulletInteraction>(
-    "bullet_interactions", BulletInteraction.CODEC, COMPARATOR
+    "bullet_interactions", BULLET_INTERACTION_CODEC, COMPARATOR
 ) {
     override fun debugEnabled(): Boolean = Config.Debug.bulletInteractions()
 

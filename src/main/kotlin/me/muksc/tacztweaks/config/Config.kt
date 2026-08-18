@@ -808,7 +808,9 @@ object Config : SyncableJsonFileCodecConfig<Config>(
             .coloured(true)
     }
 
-    fun touch() { /* Nothing */ }
+    fun initialize() {
+        check(syncableEntries.size == 6) { "TaCZ Tweaks config groups were not fully registered" }
+    }
 
     init {
         loadFromFile()

@@ -2,6 +2,8 @@ package me.muksc.tacztweaks.mixin.gun.movement;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import me.muksc.tacztweaks.client.input.TiltGunKey;
+import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.core.SprintReloadContext;
 import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,6 +27,11 @@ public abstract class LocalPlayerSprintReloadMixin {
         boolean sprinting,
         Operation<Void> original
     ) {
-        SprintReloadContext.run(() -> original.call(player, sprinting));
+        boolean processed = sprinting;
+        if (Config.Gun.INSTANCE.tiltGunKeyCancelsSprint() && TiltGunKey.isActive(player)) {
+            processed = false;
+        }
+        boolean finalSprinting = processed;
+        SprintReloadContext.run(() -> original.call(player, finalSprinting));
     }
 }
