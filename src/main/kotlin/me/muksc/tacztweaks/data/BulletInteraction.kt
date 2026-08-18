@@ -14,7 +14,7 @@ import me.muksc.tacztweaks.data.core.BlockTestable
 import me.muksc.tacztweaks.data.core.EntityTestable
 import me.muksc.tacztweaks.data.core.Target
 import me.muksc.tacztweaks.data.core.ValueRange
-import net.minecraft.advancements.critereon.ItemPredicate
+import net.minecraft.advancements.criterion.ItemPredicate
 import net.minecraft.commands.arguments.blocks.BlockInput
 import net.minecraft.world.level.block.Blocks
 import java.util.Optional

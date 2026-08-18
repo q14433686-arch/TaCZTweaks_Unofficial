@@ -12,8 +12,8 @@ import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.data.codec.strictOptionalFieldOf
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
-import net.minecraft.advancements.critereon.EntityPredicate
-import net.minecraft.advancements.critereon.MinMaxBounds
+import net.minecraft.advancements.criterion.EntityPredicate
+import net.minecraft.advancements.criterion.MinMaxBounds
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.StringRepresentable

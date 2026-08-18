@@ -6,15 +6,14 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.id
-import net.minecraft.advancements.critereon.BlockPredicate
+import net.minecraft.advancements.criterion.BlockPredicate
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.TagKey
-import net.minecraft.world.item.Tier
-import net.minecraft.world.item.Tiers
+import net.minecraft.world.item.ToolMaterial
 import net.minecraft.world.level.block.state.BlockState
 
 /** Structured block matcher used by `block`/`melee` bullet interactions. */
@@ -125,15 +124,16 @@ sealed class BlockTarget(
         }
     }
 
-    data class TierDefinition(val id: Identifier, val material: Tier) {
+    data class TierDefinition(val id: Identifier, val material: ToolMaterial) {
         companion object {
             private val VALUES = listOf(
-                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "wood"), Tiers.WOOD),
-                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "stone"), Tiers.STONE),
-                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "iron"), Tiers.IRON),
-                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "diamond"), Tiers.DIAMOND),
-                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "gold"), Tiers.GOLD),
-                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "netherite"), Tiers.NETHERITE)
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "wood"), ToolMaterial.WOOD),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "stone"), ToolMaterial.STONE),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "copper"), ToolMaterial.COPPER),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "iron"), ToolMaterial.IRON),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "diamond"), ToolMaterial.DIAMOND),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "gold"), ToolMaterial.GOLD),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "netherite"), ToolMaterial.NETHERITE)
             )
             private val BY_ID = VALUES.associateBy(TierDefinition::id)
             val CODEC: Codec<TierDefinition> = Identifier.CODEC.comapFlatMap(

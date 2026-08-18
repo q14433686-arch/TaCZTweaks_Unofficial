@@ -66,7 +66,7 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
             val hardness = state.getDestroySpeed(level, blockPos)
             if (hardness < 0.0F || hardness !in interaction.blockBreak.hardness) return@run false
             val tier = interaction.blockBreak.tier
-            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops)) return@run false
+            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops())) return@run false
 
             when (interaction.blockBreak) {
                 is BulletInteraction.Block.BlockBreak.Never -> false

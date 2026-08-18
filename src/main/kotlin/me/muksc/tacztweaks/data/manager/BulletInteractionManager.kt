@@ -82,7 +82,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
             val hardness = state.getDestroySpeed(level, blockPos)
             if (hardness < 0.0F || hardness !in interaction.blockBreak.hardness) return@run false
             val tier = interaction.blockBreak.tier
-            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops)) return@run false
+            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops())) return@run false
 
             val gun = Context.Gun(ext.`tacztweaks$getGunStack`())
             val gunStack = gun.stack
