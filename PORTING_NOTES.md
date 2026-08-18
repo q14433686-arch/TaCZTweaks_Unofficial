@@ -480,10 +480,18 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 
 ## 8. 已知待办
 
-- [ ] 匍匐动态俯仰角（基于方块碰撞；需 MixinSquared 或改 TaCZ 常量）
-- [ ] betterInaccuracy / betterGunTilt / betterMonoConversion / bulletProtection /
-      endermenEvadeBullets / disableRefitOnAdventure / alwaysFilterByHand / rps /
-      audibleFirstPersonGunSounds / forceFirstPersonShootingSound
-- [ ] 卸弹的创造模式 / 枪膛内子弹支持（针对新 `dropAllAmmo` 重写）
-- [ ] 示例包、数据驱动的子弹交互系统
-- [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译验证）
+> **2026-08-18：** 下面旧清单大量过期（动态俯仰 / betterInaccuracy / betterGunTilt /
+> endermen / 卸弹创造+枪膛 / 数据驱动行为层 **都已做完**）。「不能做」的论证见
+> [`AUDIT.md`](AUDIT.md)，结论是几乎都能做。
+
+2026-08-18 已落地（换路，不是照搬）：
+
+- [x] `betterMonoConversion` — `MonoAudio` sidecar，不 mixin Identifier
+- [x] `bulletProtection` — ThreadLocal + `EnchantmentHelper.getDamageProtection`（R2 字节码确认）
+- [x] `crawl.visualTweak` — `AvatarRenderer.setupRotations`（render state）
+- [x] melee 行为层 — `doMelee` + 内置 `IMeleeWeapon.performAttack`
+- [x] shield — `hurtServer` mixin，`ItemMatch` 替 `ItemPredicate`
+- [x] airspace — optional SPR mixin（字符串目标，无 compileOnly jar）+ 自研数据包
+- [x] `ObjectAnimationSoundChannel` / `ProjectileExplosion` / `GunSmithTableScreen`
+- [x] GUI：compat 五件套和 `thirdPersonGunRenderingFix` 已藏；mono / bulletProtection 已重新显示
+- [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译 / 字节码核对）

@@ -60,6 +60,12 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     @Unique
     private final List<ServerPlayer> tacztweaks$hitPlayers = new ArrayList<>();
 
+    @Unique
+    private int tacztweaks$burstIndex = 0;
+
+    @Unique
+    private int tacztweaks$pelletIndex = 0;
+
     @Override
     public ItemStack tacztweaks$getGunStack() {
         return tacztweaks$gunStack;
@@ -93,6 +99,26 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     @Override
     public void tacztweaks$setPosition(Vec3 position) {
         tacztweaks$position = position;
+    }
+
+    @Override
+    public int tacztweaks$getBurstIndex() {
+        return tacztweaks$burstIndex;
+    }
+
+    @Override
+    public void tacztweaks$setBurstIndex(int index) {
+        tacztweaks$burstIndex = index;
+    }
+
+    @Override
+    public int tacztweaks$getPelletIndex() {
+        return tacztweaks$pelletIndex;
+    }
+
+    @Override
+    public void tacztweaks$setPelletIndex(int index) {
+        tacztweaks$pelletIndex = index;
     }
 
     @Override

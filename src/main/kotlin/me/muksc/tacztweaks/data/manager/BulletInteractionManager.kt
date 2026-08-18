@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
@@ -26,6 +27,7 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
     .thenPrioritizeBy { when (it) {
         is BulletInteraction.Block -> it.blocks.isNotEmpty()
         is BulletInteraction.Entity -> it.entities.isNotEmpty()
+        is BulletInteraction.Shield -> it.items != BulletInteraction.Shield.ItemMatch.ANY
     } }
 
 /**
@@ -144,6 +146,33 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         return interaction.damage.modifier to interaction.damage.multiplier
     }
 
+    fun handleShieldInteraction(
+        ammo: EntityKineticBullet,
+        location: Vec3,
+        shield: ItemStack,
+        originalDamage: Float
+    ): ShieldInteractionResult {
+        val (id, interaction) = getBulletInteraction<BulletInteraction.Shield>(ammo, location) {
+            it.items.matches(shield)
+        } ?: (DEFAULT to BulletInteraction.Shield.DEFAULT)
+        logDebug { "Using shield bullet interaction: $id" }
+
+        val damage = (originalDamage - interaction.damage.falloff) * interaction.damage.multiplier
+        val durabilityDamage = label@{ durabilityDamage: Int ->
+            if (interaction.durability.conditional && damage <= 0) return@label 0
+            when (val durability = interaction.durability) {
+                is BulletInteraction.Shield.Durability.DynamicDamage ->
+                    ((durabilityDamage + durability.modifier) * durability.multiplier).toInt()
+                is BulletInteraction.Shield.Durability.FixedDamage -> durability.damage
+            }
+        }
+        val disableDuration = run {
+            if (interaction.disable.conditional && damage <= 0) return@run 0
+            if (ammo.getRandom().nextFloat() < interaction.disable.chance) interaction.disable.duration else 0
+        }
+        return ShieldInteractionResult(originalDamage - damage, durabilityDamage, disableDuration)
+    }
+
     private fun shouldPierce(
         ammo: EntityKineticBullet,
         result: HitResult,
@@ -186,5 +215,11 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
     data class InteractionResult(
         val pierce: Boolean,
         val condition: Boolean
+    )
+
+    data class ShieldInteractionResult(
+        val blockedDamage: Float,
+        val durabilityDamage: (Int) -> Int,
+        val disableDuration: Int
     )
 }

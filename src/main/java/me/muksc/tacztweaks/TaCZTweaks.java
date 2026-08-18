@@ -7,6 +7,7 @@ import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.core.BlockBreakingManager;
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager;
 import me.muksc.tacztweaks.data.manager.BulletParticlesManager;
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired;
 import me.muksc.tacztweaks.data.manager.BulletSoundsManager;
 import me.muksc.tacztweaks.data.manager.MeleeInteractionManager;
 import me.muksc.tacztweaks.mixin.accessor.InaccuracyTypeAccessor;
@@ -69,6 +70,9 @@ public class TaCZTweaks implements ModInitializer {
         // Push server-authoritative config to players as they join.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             NetworkHandler.INSTANCE.sendSyncConfig(handler.getPlayer());
+            if (BulletSoundsManager.INSTANCE.hasAirspaceSounds()) {
+                NetworkHandler.INSTANCE.sendS2C(handler.getPlayer(), ServerMessageSoundPhysicsRequired.INSTANCE);
+            }
         });
     }
 

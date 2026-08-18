@@ -64,20 +64,30 @@
     每 tick 播 constant + whizz 擦弹音）
   - 方块破坏（玻璃穿透、滴水石、石头砖裂纹替换）、实体伤害修饰（末影龙 -10）、
     金属击中音、擦弹音、火箭尾音、血液/方块粒子
-- ⏳ 已知简化：melee 近战破坏、airspace 混响（依赖 Sound Physics）、shield 格挡交互未实现
-  （数据层相关类型已同步砍掉，详见 PORTING_NOTES §7.15）
+- ✅ **本轮补齐**（换 26.2 路径，见 [`AUDIT.md`](AUDIT.md) §6）：
+  - `betterMonoConversion`（Identifier sidecar，不 mixin record）
+  - `bulletProtection`（`EnchantmentHelper.getDamageProtection` + ThreadLocal）
+  - `visualTweak`（`AvatarRenderer.setupRotations`）
+  - melee 近战破块（`doMelee` + 内置 LRTactical `IMeleeWeapon`）
+  - shield 格挡（`hurtServer`，`ItemMatch` 替 ItemPredicate）
+  - airspace（optional Sound Physics mixin + 自研数据包）
+  - 漏搬：`ObjectAnimationSoundChannel` / `ProjectileExplosion` / `GunSmithTableScreen`
 
-### 已确认不可移植、已从配置界面隐藏的选项
+### 「不可移植」已推翻（2026-08-18 审计）
 
-| 选项 | 原因 |
-|---|---|
-| `betterMonoConversion` | 26.2 里 `ResourceLocation` 改名 `Identifier` 且是 **record，无法 mixin 打标记** |
-| `bulletProtection` | 26.2 已删除 `ProtectionEnchantment` 类（附魔系统改为数据驱动），需重新设计 |
-| `thirdPersonGunRenderingFix` | **目标端已原生修复**，无需移植 |
-| compat 组（FirstAid/LSO/MTS/VS/SoundPhysics/PillagersGun） | Forge 独占，Fabric 26.2 无对应版本 |
-| 示例包 / 数据驱动子弹交互系统（debug 组） | 依赖数据加载子系统，范围过大，暂缓 |
+README 旧表把「原版那条 hook 没了」写成了功能死刑。逐条核对原版源码 + R2 jar + 26.2 生态后：
 
-详见 [`PORTING_NOTES.md`](PORTING_NOTES.md)。
+| 选项 | 旧结论 | 实际 |
+|---|---|---|
+| `betterMonoConversion` | Identifier 是 record，无法打标 | **能做**。sidecar `WeakHashMap`，不必 mixin Identifier。`GunSoundInstance` 10 参构造的 `mono` 还在 |
+| `bulletProtection` | `ProtectionEnchantment` 已删 | **能做**。datapack 把 `tacz:bullets` 推进 `#minecraft:is_projectile`，或 mixin EPF 计算 |
+| `thirdPersonGunRenderingFix` | 目标端已修 | **属实**，不必移植。GUI 开关应拿掉，现在是空操作 |
+| Sound Physics / airspace | Forge 独占 | **错**。[Fabric 26.2 1.5.1 已发布](https://www.curseforge.com/minecraft/mc-mods/sound-physics-remastered/files/all)。数据层 `AirSpace` 已移植，只差 optional mixin |
+| LRTactical 近战 | 当 compat 砍掉 | **目标端已内置**（`provides: ["lrtactical"]`）。`doMelee` 也还在 |
+| FirstAid / LSO / MTS / PillagersGun | 不能移植 | 目标模组暂无 Fabric 26.2，**compat 无意义**，不是 Tweaks 写不了 |
+| melee / shield / `tier` / FakePlayer | 砍掉 | 全都能换路：`doMelee` TAIL、`hurtServer` mixin、方块 tag、解析式破坏进度 |
+
+完整论证与落地顺序：[`AUDIT.md`](AUDIT.md)。移植笔记：[`PORTING_NOTES.md`](PORTING_NOTES.md)。
 
 ---
 

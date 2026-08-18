@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.Pair
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.data.codec.strictOptionalFieldOf
+import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
 import net.minecraft.resources.Identifier
 import net.minecraft.util.StringRepresentable
 import net.minecraft.world.entity.LivingEntity
@@ -22,10 +23,8 @@ import kotlin.jvm.optionals.getOrNull
  * melee) plus the weapon id and bullet damage.
  *
  * 26.2 notes:
- * - `predicate` (EntityPredicate), `burst_index` and `pellet_index` (MinMaxBounds +
- *   EntityKineticBulletExtension) are dropped — the first no longer exists in 26.2, the
- *   latter two belong to the behavior layer.
- * - EntityKineticBullet fields are private in 26.2, so accessors are used.
+ * - `predicate` (EntityPredicate) is dropped — 26.2 deleted the old predicate classes.
+ * - `burst_index` / `pellet_index` use {@link ValueRange} instead of MinMaxBounds.
  */
 sealed class Target(
     val type: ETargetType
@@ -46,6 +45,8 @@ sealed class Target(
         DAMAGE("damage", { Damage.CODEC }),
         SPEED("speed", { Speed.CODEC }),
         SILENCED("silenced", { Silenced.CODEC }),
+        BURST_INDEX("burst_index", { BurstIndex.CODEC }),
+        PELLET_INDEX("pellet_index", { PelletIndex.CODEC }),
         RANDOM_CHANCE("random_chance", { RandomChance.CODEC });
 
         companion object {
@@ -178,6 +179,32 @@ sealed class Target(
         }
 
         val CODEC: Codec<Silenced> = MapCodec.unitCodec(Silenced)
+    }
+
+    class BurstIndex(val index: ValueRange) : Target(ETargetType.BURST_INDEX) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
+            val ext = entity as? EntityKineticBulletExtension ?: return false
+            return index.contains(ext.`tacztweaks$getBurstIndex`().toDouble())
+        }
+
+        companion object {
+            val CODEC: Codec<BurstIndex> = RecordCodecBuilder.create { it.group(
+                ValueRange.CODEC.strictOptionalFieldOf("index", ValueRange.DEFAULT).forGetter(BurstIndex::index)
+            ).apply(it, ::BurstIndex) }
+        }
+    }
+
+    class PelletIndex(val index: ValueRange) : Target(ETargetType.PELLET_INDEX) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
+            val ext = entity as? EntityKineticBulletExtension ?: return false
+            return index.contains(ext.`tacztweaks$getPelletIndex`().toDouble())
+        }
+
+        companion object {
+            val CODEC: Codec<PelletIndex> = RecordCodecBuilder.create { it.group(
+                ValueRange.CODEC.strictOptionalFieldOf("index", ValueRange.DEFAULT).forGetter(PelletIndex::index)
+            ).apply(it, ::PelletIndex) }
+        }
     }
 
     class RandomChance(val chance: Float) : Target(ETargetType.RANDOM_CHANCE) {

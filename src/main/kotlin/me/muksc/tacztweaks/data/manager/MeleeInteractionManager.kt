@@ -1,8 +1,20 @@
 package me.muksc.tacztweaks.data.manager
 
+import me.muksc.tacztweaks.anyOrEmpty
+import me.muksc.tacztweaks.compat.lrtactical.LRTacticalCompat
 import me.muksc.tacztweaks.config.Config
+import me.muksc.tacztweaks.core.BlockBreakingManager
+import me.muksc.tacztweaks.core.Context
+import me.muksc.tacztweaks.data.BulletInteraction
 import me.muksc.tacztweaks.data.MeleeInteraction
+import me.muksc.tacztweaks.data.manager.BulletInteractionManager.calcBlockBreakingDelta
 import me.muksc.tacztweaks.thenPrioritizeBy
+import net.minecraft.resources.Identifier
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.HitResult
 
 private val COMPARATOR = compareBy<MeleeInteraction> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
@@ -10,12 +22,59 @@ private val COMPARATOR = compareBy<MeleeInteraction> { it.priority }
         is MeleeInteraction.Block -> it.blocks.isNotEmpty()
     } }
 
-/**
- * Loads `melee_interactions` JSON files (LRTactical knives breaking blocks, …). Behavior
- * is deferred to the behavior-layer round.
- */
 object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
     "melee_interactions", MeleeInteraction.CODEC, COMPARATOR
 ) {
     override fun debugEnabled(): Boolean = Config.Debug.meleeInteractions()
+
+    private inline fun <reified T : MeleeInteraction, E> getMeleeInteraction(
+        weaponId: Identifier,
+        damage: Float,
+        selector: (T) -> List<E>,
+        predicate: (E) -> Boolean
+    ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
+        interaction.target.anyOrEmpty { it.test(null, weaponId, damage) }
+            && selector(interaction).anyOrEmpty(predicate)
+    }?.toPair()
+
+    fun handleBlockInteraction(player: ServerPlayer, reach: Double, damage: Float) {
+        val level = player.level() as? ServerLevel ?: return
+        val stack = player.mainHandItem
+        val weaponId = Context.Gun(stack).id ?: LRTacticalCompat.getWeaponId(stack) ?: return
+        val result = player.pick(reach, 1.0F, false)
+        if (result !is BlockHitResult || result.type == HitResult.Type.MISS) return
+
+        val blockPos = result.blockPos
+        val state = level.getBlockState(blockPos)
+        val (id, interaction) = getMeleeInteraction(weaponId, damage, MeleeInteraction.Block::blocks) {
+            it.test(level, result.blockPos, state)
+        } ?: return
+        logDebug { "Using block melee interaction: $id" }
+
+        val breakBlock = run {
+            val hardness = state.getDestroySpeed(level, blockPos)
+            if (hardness !in interaction.blockBreak.hardness) return@run false
+            when (interaction.blockBreak) {
+                is BulletInteraction.Block.BlockBreak.Never -> false
+                is BulletInteraction.Block.BlockBreak.Instant -> true
+                is BulletInteraction.Block.BlockBreak.Count -> {
+                    val delta = BlockBreakingManager.addCurrentProgress(level, blockPos, 1.0F / interaction.blockBreak.count)
+                    delta >= 1.0F
+                }
+                is BulletInteraction.Block.BlockBreak.FixedDamage -> {
+                    var delta = calcBlockBreakingDelta(interaction.blockBreak.damage, 0.0, state, level, blockPos)
+                    if (interaction.blockBreak.accumulate) delta = BlockBreakingManager.addCurrentProgress(level, blockPos, delta)
+                    delta >= 1.0F
+                }
+                is BulletInteraction.Block.BlockBreak.DynamicDamage -> {
+                    var delta = calcBlockBreakingDelta(damage, 0.0, state, level, blockPos)
+                    if (interaction.blockBreak.accumulate) delta = BlockBreakingManager.addCurrentProgress(level, blockPos, delta)
+                    delta >= 1.0F
+                }
+            }
+        }
+        if (breakBlock) {
+            level.destroyBlock(blockPos, interaction.blockBreak.drop, player, Block.UPDATE_NEIGHBORS or Block.UPDATE_CLIENTS)
+        }
+    }
 }
