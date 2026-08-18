@@ -508,7 +508,7 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 26.2 原生替代、已合并到新 hook 的行为、共享对象/数据驱动 API 的重设计，以及确实没有 Fabric 26.2
 目标的 LSO/MTS/VS 系列。
 
-## 7.19 外部差距报告复核与 R3 加固（2026-08-18）
+## 7.19 外部差距报告复核与 BETA_1 加固（2026-08-18）
 
 外部审计基于旧提交 `69bc17a`，但其中多数边界指控在当前代码上仍可复现，因此没有因提交过旧而忽略：
 
@@ -523,7 +523,7 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
 - `ValueRange.DEFAULT` 改为 `-Double.MAX_VALUE..Double.MAX_VALUE` 并验证 finite/min<=max；
 - airspace payload 限 64 candidates × 32 sounds；mono/stereo 按请求使用独立缓存；
 - 示例包修正 `#minecraft:chains`，恢复缺失 ogg，并加入 predicate/tier/burst/pellet/airspace smoke data；
-- 版本提升到 R3，补单测、wrapper checksum、example zip task 和第三方 notices。
+- 发布标识调整为 BETA_1（机器版本 `BETA-1`），补单测、wrapper checksum、example zip task 和第三方 notices。
 
 CI workflow 仍需要仓库维护者以具备 workflow 权限的身份写入；当前 Agent GitHub App 无此权限，
 所以不能把“本地有验证入口”误写成“GitHub 已有 check run”。

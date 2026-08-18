@@ -132,7 +132,7 @@ python3 scripts/audit_port.py --strict \
   清理 mono 与 Sound Physics 待处理队列；
 - **优先当前 26.2 API**：实体标签使用 `BuiltInRegistries.*.wrapAsHolder`，数据 reload 使用
   `ResourceLoader` v1，不保留仅仅“还能编译”的 deprecated 接口；
-- **版本号与文档同改**：`audit_port.py` 会要求 `gradle.properties`、README、BUILD 的 R 版本唯一一致；
+- **版本号与文档同改**：`audit_port.py` 会要求 `gradle.properties`、README、BUILD 的发布标识唯一一致；
 - **未实测不写成实测完成**：PR 在真实构建和游戏矩阵完成前保持 Draft。
 
 ## 仍需运行时矩阵
