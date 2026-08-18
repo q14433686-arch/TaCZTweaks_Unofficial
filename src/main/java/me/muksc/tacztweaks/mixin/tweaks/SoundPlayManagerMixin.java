@@ -55,7 +55,7 @@ public abstract class SoundPlayManagerMixin {
     // First-person gunshot assets are usually stereo. When the server substitutes one
     // for a positional 3P sound, ask GunSoundInstance to load it as mono as well.
     @WrapOperation(
-        method = "playMessageSound",
+        method = "lambda$playMessageSound$0(Lcom/tacz/guns/network/message/ServerMessageSound;Lnet/minecraft/world/entity/LivingEntity;Lcom/tacz/guns/client/resource/GunDisplayInstance;)V",
         at = @At(value = "INVOKE", target = "Ljava/lang/String;equals(Ljava/lang/Object;)Z")
     )
     private static boolean tacztweaks$playMessageSound$monoFirstPersonSounds(

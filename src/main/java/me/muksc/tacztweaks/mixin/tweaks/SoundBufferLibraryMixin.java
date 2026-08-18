@@ -1,5 +1,6 @@
 package me.muksc.tacztweaks.mixin.tweaks;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import me.muksc.tacztweaks.client.sound.MonoConversion;
 import net.minecraft.client.sounds.SoundBufferLibrary;
 import net.minecraft.resources.Identifier;
@@ -29,7 +30,10 @@ public abstract class SoundBufferLibraryMixin {
             target = "Lcom/mojang/blaze3d/audio/SoundBuffer;<init>(Ljava/nio/ByteBuffer;Ljavax/sound/sampled/AudioFormat;)V"
         )
     )
-    private void tacztweaks$getCompleteBuffer$convert(Args args, Identifier id) {
+    private void tacztweaks$getCompleteBuffer$convert(
+        Args args,
+        @Local(argsOnly = true) Identifier id
+    ) {
         ByteBuffer data = args.get(0);
         AudioFormat format = args.get(1);
         if (!MonoConversion.INSTANCE.shouldConvert(format, id)) return;

@@ -1,7 +1,7 @@
 package me.muksc.tacztweaks.mixin.crawl;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.muksc.tacztweaks.config.Config;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
@@ -9,16 +9,17 @@ import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
  * Ports upstream's crawl transition smoothing to 26.2's render-state renderer.
  *
- * <p>The targets below are intentionally exact and required. The first attempted port used
- * the old entity call, the wrong field owner, and {@code require = 0}; it therefore could
- * silently do nothing. In 26.2 {@code setupRotations} reads
- * {@link AvatarRenderState#isVisuallySwimming} directly and exposes the interpolation value
- * as {@link AvatarRenderState#swimAmount}, so no fragile local-variable ordinal is needed.</p>
+ * <p>26.2 reads {@link AvatarRenderState#isVisuallySwimming} directly. The interpolation
+ * amount is the first float local declared by the method, after its two float arguments;
+ * therefore it is float ordinal 2. {@link ModifyArgs} changes Y and Z in one injector and
+ * avoids the invalid "modified argument + target method arguments" signature that
+ * {@code ModifyArg} rejects at runtime.</p>
  */
 @Mixin(AvatarRenderer.class)
 public abstract class AvatarRendererMixin {
@@ -38,35 +39,19 @@ public abstract class AvatarRendererMixin {
         return Config.Crawl.INSTANCE.visualTweak() || original;
     }
 
-    @ModifyArg(
+    @ModifyArgs(
         method = SETUP_ROTATIONS,
-        at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V"),
-        index = 1
+        at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V")
     )
-    private float tacztweaks$setupRotations$smoothY(
-        float original,
-        AvatarRenderState state,
-        PoseStack poseStack,
-        float bodyRot,
-        float scale
+    private void tacztweaks$setupRotations$smoothTranslation(
+        Args args,
+        @Local(ordinal = 2) float swimAmount
     ) {
-        if (!Config.Crawl.INSTANCE.visualTweak()) return original;
-        return Mth.lerp(Mth.clamp(state.swimAmount, 0.0F, 1.0F), 0.0F, original - 0.4F);
-    }
-
-    @ModifyArg(
-        method = SETUP_ROTATIONS,
-        at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V"),
-        index = 2
-    )
-    private float tacztweaks$setupRotations$smoothZ(
-        float original,
-        AvatarRenderState state,
-        PoseStack poseStack,
-        float bodyRot,
-        float scale
-    ) {
-        if (!Config.Crawl.INSTANCE.visualTweak()) return original;
-        return Mth.lerp(Mth.clamp(state.swimAmount, 0.0F, 1.0F), 0.0F, original);
+        if (!Config.Crawl.INSTANCE.visualTweak()) return;
+        float progress = Mth.clamp(swimAmount, 0.0F, 1.0F);
+        float y = args.get(1);
+        float z = args.get(2);
+        args.set(1, Mth.lerp(progress, 0.0F, y - 0.4F));
+        args.set(2, Mth.lerp(progress, 0.0F, z));
     }
 }

@@ -63,10 +63,7 @@ public abstract class LivingEntityMixin {
         DamageSource source,
         float amount,
         double angle,
-        Operation<Float> original,
-        ServerLevel level,
-        DamageSource methodSource,
-        float methodAmount
+        Operation<Float> original
     ) {
         float vanillaBlocked = original.call(attacks, source, amount, angle);
         if (vanillaBlocked <= 0.0F || !source.is(ModDamageTypes.BULLETS_TAG)) return vanillaBlocked;
