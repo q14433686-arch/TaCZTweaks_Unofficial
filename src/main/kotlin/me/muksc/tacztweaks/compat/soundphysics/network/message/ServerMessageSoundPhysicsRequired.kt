@@ -14,12 +14,8 @@ object ServerMessageSoundPhysicsRequired : CustomPacketPayload {
     val TYPE = CustomPacketPayload.Type<ServerMessageSoundPhysicsRequired>(
         Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "server_sound_physics_required")
     )
-    val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageSoundPhysicsRequired> = StreamCodec.ofMember(
-        ServerMessageSoundPhysicsRequired::write,
-        { ServerMessageSoundPhysicsRequired }
-    )
-
-    fun write(out: FriendlyByteBuf) = Unit
+    val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageSoundPhysicsRequired> =
+        StreamCodec.unit(ServerMessageSoundPhysicsRequired)
 
     fun handle(msg: ServerMessageSoundPhysicsRequired, client: Minecraft) {
         if (SoundPhysicsCompat.isEnabled()) return
