@@ -30,7 +30,7 @@ public abstract class LocalPlayerReloadMixin {
     @Final
     private LocalPlayer player;
 
-    // NOTE: upstream targeted `lambda$reload$2`; the 26.2 refabricated port renamed the
+    // NOTE: upstream targeted `lambda$reload$2`; the 26.1.2 refabricated port renamed the
     // reload body to the stable hook `reloadWithDisplay`.
     @Inject(method = "reloadWithDisplay", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;lockState(Ljava/util/function/Predicate;)V"), cancellable = true)
     private void tacztweaks$reload$boltBeforeReload(CallbackInfo ci, @Local(argsOnly = true) ItemStack mainHandItem, @Local(argsOnly = true) AbstractGunItem gunItem) {

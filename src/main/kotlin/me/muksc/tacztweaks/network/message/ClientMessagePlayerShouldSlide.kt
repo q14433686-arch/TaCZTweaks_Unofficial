@@ -1,6 +1,9 @@
 package me.muksc.tacztweaks.network.message
 
+import com.tacz.guns.api.TimelessAPI
+import com.tacz.guns.api.item.IGun
 import me.muksc.tacztweaks.TaCZTweaks
+import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder
 import net.fabricmc.fabric.api.networking.v1.PacketSender
 import net.minecraft.network.FriendlyByteBuf
@@ -31,8 +34,39 @@ class ClientMessagePlayerShouldSlide private constructor(private val shouldSlide
         @JvmStatic
         fun create(shouldSlide: Boolean): ClientMessagePlayerShouldSlide = ClientMessagePlayerShouldSlide(shouldSlide)
 
+        private const val REQUEST_TIMEOUT_TICKS = 40
+
         fun handle(msg: ClientMessagePlayerShouldSlide, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
-            (player as SlideDataHolder).`tacztweaks$setShouldSlide`(msg.shouldSlide)
+            server.execute {
+                if (player == null) return@execute
+                val holder = player as SlideDataHolder
+                val accepted = msg.shouldSlide && canRequestSlide(player)
+                holder.`tacztweaks$setShouldSlide`(accepted)
+                holder.`tacztweaks$setSlideRequestExpiry`(
+                    if (accepted) player.tickCount + REQUEST_TIMEOUT_TICKS else 0
+                )
+            }
+        }
+
+        @JvmStatic
+        fun validateServerState(player: ServerPlayer) {
+            val holder = player as SlideDataHolder
+            if (!holder.`tacztweaks$getShouldSlide`()) return
+            if (holder.`tacztweaks$getSlideRequestExpiry`() < player.tickCount || !canRequestSlide(player)) {
+                holder.`tacztweaks$setShouldSlide`(false)
+                holder.`tacztweaks$setSlideRequestExpiry`(0)
+            }
+        }
+
+        /** Server-visible eligibility; the packet is only a short-lived input request. */
+        @JvmStatic
+        fun canRequestSlide(player: ServerPlayer): Boolean {
+            if (!Config.Tweaks.betterGunTilt() || !player.isAlive || player.isRemoved) return false
+            if (!IGun.mainHandHoldGun(player)) return false
+            val gun = IGun.getIGunOrNull(player.mainHandItem) ?: return false
+            val index = TimelessAPI.getCommonGunIndex(gun.getGunId(player.mainHandItem)).orElse(null)
+                ?: return false
+            return index.getGunData().canSlide()
         }
     }
 }

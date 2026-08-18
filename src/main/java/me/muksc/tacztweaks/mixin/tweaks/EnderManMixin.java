@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 /**
  * Makes endermen treat gun bullets as projectiles, so they teleport away from them.
  * The first {@code DamageSource#is(TagKey)} call in {@code hurtServer} is the
- * {@code IS_PROJECTILE} check (verified against the 26.2 bytecode).
+ * {@code IS_PROJECTILE} check (verified against the 26.1.2 bytecode).
  */
 @Mixin(EnderMan.class)
 public abstract class EnderManMixin {

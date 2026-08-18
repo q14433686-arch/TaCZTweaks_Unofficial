@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(value = LivingEntityReload.class, remap = false)
 public abstract class LivingEntityReloadMixin {
-    // NOTE: upstream targeted `lambda$reload$0`; the 26.2 refabricated port renamed the
+    // NOTE: upstream targeted `lambda$reload$0`; the 26.1.2 refabricated port renamed the
     // reload body to the stable hook `reloadWithIndex`.
     @ModifyExpressionValue(method = "reloadWithIndex", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/shooter/LivingEntityShoot;getShootCoolDown()J"))
     private long tacztweaks$reload$allowReloadWhileShoot(long original) {

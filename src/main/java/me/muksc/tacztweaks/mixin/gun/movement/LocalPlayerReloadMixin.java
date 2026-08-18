@@ -3,6 +3,7 @@ package me.muksc.tacztweaks.mixin.gun.movement;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.tacz.guns.api.entity.IGunOperator;
+import com.tacz.guns.api.item.IGun;
 import com.tacz.guns.api.item.gun.AbstractGunItem;
 import com.tacz.guns.client.gameplay.LocalPlayerDataHolder;
 import com.tacz.guns.client.gameplay.LocalPlayerReload;
@@ -26,7 +27,28 @@ public abstract class LocalPlayerReloadMixin {
     @Final
     private LocalPlayerDataHolder data;
 
-    // NOTE: upstream targeted `lambda$reload$2`; the 26.2 refabricated port renamed the
+    /**
+     * When shooting and reloading overlap, select the empty-reload animation only if both
+     * chamber and magazine are empty. R2 otherwise checks only the chamber on closed-bolt
+     * guns, which was the behavior repaired by upstream's old doReload injection.
+     */
+    @ModifyExpressionValue(
+        method = "triggerClientReloadAnimation",
+        at = @At(
+            value = "INVOKE",
+            target = "Lcom/tacz/guns/api/item/IGun;hasBulletInBarrel(Lnet/minecraft/world/item/ItemStack;)Z"
+        )
+    )
+    private boolean tacztweaks$triggerClientReloadAnimation$countMagazineAmmo(
+        boolean chambered,
+        @Local(argsOnly = true) IGun gun,
+        @Local(argsOnly = true) ItemStack mainHandItem
+    ) {
+        if (!Config.Gun.INSTANCE.reloadWhileShooting()) return chambered;
+        return chambered || gun.getCurrentAmmoCount(mainHandItem) > 0;
+    }
+
+    // NOTE: upstream targeted `lambda$reload$2`; the 26.1.2 refabricated port renamed the
     // reload body to the stable hook `reloadWithDisplay`.
     @ModifyExpressionValue(method = "reloadWithDisplay", at = @At(value = "FIELD", opcode = Opcodes.GETFIELD, target = "Lcom/tacz/guns/client/gameplay/LocalPlayerDataHolder;clientStateLock:Z"))
     private boolean tacztweaks$reload$allowReloadWhileShoot(boolean original, @Local(argsOnly = true) ItemStack mainHandItem, @Local(argsOnly = true) AbstractGunItem gunItem) {

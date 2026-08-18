@@ -16,7 +16,7 @@ import net.minecraft.world.phys.BlockHitResult
  * "pierce", this returns null so the ray-tracer skips the block and keeps going; otherwise
  * the original hit result is returned and the bullet stops on the block as usual.
  *
- * Entity hits are deliberately NOT handled here — in the 26.2 refabricated port
+ * Entity hits are deliberately NOT handled here — in the 26.1.2 refabricated port
  * {@code EntityKineticBullet#onBulletTick} already iterates entities and calls
  * {@code onHitEntity} itself (the entity mixin hooks that call instead).
  */

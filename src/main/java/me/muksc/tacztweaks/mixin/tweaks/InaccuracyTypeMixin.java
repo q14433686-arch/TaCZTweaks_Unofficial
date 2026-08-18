@@ -3,8 +3,8 @@ package me.muksc.tacztweaks.mixin.tweaks;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.tacz.guns.resource.pojo.data.gun.InaccuracyType;
+import me.muksc.tacztweaks.TaCZTweaks;
 import me.muksc.tacztweaks.config.Config;
-import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,7 +21,7 @@ public abstract class InaccuracyTypeMixin {
     private static Pose tacztweaks$getInaccuracyType$betterGunTilt(LivingEntity instance, Operation<Pose> original) {
         Pose pose = original.call(instance);
         if (!Config.Tweaks.INSTANCE.betterGunTilt()) return pose;
-        if (((SlideDataHolder) instance).tacztweaks$getShouldSlide()) return Pose.CROUCHING;
+        if (TaCZTweaks.isSpreadReducingTilt(instance)) return Pose.CROUCHING;
         return pose;
     }
 }
