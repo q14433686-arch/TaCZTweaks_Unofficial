@@ -1,12 +1,9 @@
 package me.muksc.tacztweaks.mixin.tweaks;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.tacz.guns.client.sound.GunSoundInstance;
 import me.muksc.tacztweaks.mixininterface.tweaks.MonoTaczSound;
-import net.minecraft.resources.Identifier;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,13 +16,8 @@ public abstract class GunSoundInstanceMixin {
     @Unique
     private boolean tacztweaks$mono = false;
 
-    @Inject(method = "<init>(Lnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FFLnet/minecraft/world/entity/Entity;ILnet/minecraft/resources/Identifier;ZZ)V", at = @At("TAIL"))
-    private void tacztweaks$init$storeMono(SoundEvent soundEvent, SoundSource source, float volume, float pitch, Entity entity, int soundDistance, Identifier registryName, boolean mono, boolean relative, CallbackInfo ci) {
-        tacztweaks$mono = mono;
-    }
-
-    @Inject(method = "<init>(Lnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FFLnet/minecraft/world/entity/Entity;ILnet/minecraft/resources/Identifier;Z)V", at = @At("TAIL"))
-    private void tacztweaks$init$storeMonoShort(SoundEvent soundEvent, SoundSource source, float volume, float pitch, Entity entity, int soundDistance, Identifier registryName, boolean mono, CallbackInfo ci) {
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void tacztweaks$init$storeMono(CallbackInfo ci, @Local(argsOnly = true, ordinal = 0) boolean mono) {
         tacztweaks$mono = mono;
     }
 

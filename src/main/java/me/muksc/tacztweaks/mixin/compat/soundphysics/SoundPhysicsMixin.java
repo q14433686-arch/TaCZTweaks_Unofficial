@@ -36,7 +36,8 @@ public abstract class SoundPhysicsMixin {
         method = EVALUATE,
         at = @At(
             value = "INVOKE",
-            target = "Lcom/sonicether/soundphysics/SoundPhysics;calculateOcclusion(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/sounds/SoundSource;Lnet/minecraft/resources/Identifier;)D"
+            target = "Lcom/sonicether/soundphysics/SoundPhysics;calculateOcclusion(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/sounds/SoundSource;Lnet/minecraft/resources/Identifier;)D",
+            remap = true
         )
     )
     private static double tacztweaks$evaluateEnvironment$captureOcclusion(double original) {
@@ -49,7 +50,8 @@ public abstract class SoundPhysicsMixin {
         at = @At(
             value = "INVOKE",
             target = "Lcom/sonicether/soundphysics/ReflectedAudio;getSharedAirspaces()I",
-            ordinal = 0
+            ordinal = 0,
+            remap = true
         )
     )
     private static int tacztweaks$evaluateEnvironment$captureAirspace(int original) {
