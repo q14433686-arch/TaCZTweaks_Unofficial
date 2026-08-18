@@ -2,6 +2,8 @@ package me.muksc.tacztweaks.mixin.features.melee_interactions;
 
 import com.google.common.base.Supplier;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
@@ -34,19 +36,24 @@ public abstract class ModernKineticGunItemMixin {
         return original;
     }
 
-    @Inject(method = "doMelee", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/item/ModernKineticGunItem;doPerLivingHurt(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;FFLjava/util/List;)V"))
-    private void tacztweaks$doMelee$setHit(
+    @WrapOperation(
+        method = "doMelee",
+        at = @At(
+            value = "INVOKE",
+            target = "Lcom/tacz/guns/item/ModernKineticGunItem;doPerLivingHurt(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;FFLjava/util/List;)V"
+        )
+    )
+    private static void tacztweaks$doMelee$setHit(
         LivingEntity user,
-        float gunDistance,
-        float meleeDistance,
-        float rangeAngle,
+        LivingEntity target,
         float knockback,
         float damage,
         List<EffectData> effects,
-        CallbackInfo ci,
+        Operation<Void> original,
         @Share("hit") LocalBooleanRef hitRef
     ) {
-        hitRef.set(true);
+        if (!target.equals(user)) hitRef.set(true);
+        original.call(user, target, knockback, damage, effects);
     }
 
     @Inject(method = "doMelee", at = @At("TAIL"))

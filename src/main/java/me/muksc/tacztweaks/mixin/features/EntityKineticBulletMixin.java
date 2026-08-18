@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -43,6 +44,9 @@ import java.util.List;
  */
 @Mixin(value = EntityKineticBullet.class, remap = false)
 public abstract class EntityKineticBulletMixin implements EntityKineticBulletExtension {
+    @Shadow
+    private int pierce;
+
     @Unique
     private ItemStack tacztweaks$gunStack = null;
 
@@ -96,6 +100,26 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     }
 
     @Override
+    public int tacztweaks$getGunPierce() {
+        return pierce;
+    }
+
+    @Override
+    public void tacztweaks$setGunPierce(int value) {
+        pierce = value;
+    }
+
+    @Override
+    public void tacztweaks$incrementGunPierce() {
+        pierce++;
+    }
+
+    @Override
+    public void tacztweaks$decrementGunPierce() {
+        pierce--;
+    }
+
+    @Override
     public Vec3 tacztweaks$getPosition() {
         return tacztweaks$position;
     }
@@ -143,6 +167,20 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         tacztweaks$gunStack = gunItem;
     }
 
+    @ModifyExpressionValue(
+        method = "onBulletTick",
+        at = @At(
+            value = "FIELD",
+            target = "Lcom/tacz/guns/entity/EntityKineticBullet;pierce:I",
+            ordinal = 0
+        )
+    )
+    private int tacztweaks$onBulletTick$traceCustomPierce(int original) {
+        return BulletInteractionManager.INSTANCE.needsExtendedEntityTrace()
+            ? Math.max(2, original)
+            : original;
+    }
+
     @ModifyExpressionValue(method = "getDamage", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/ExtraDamage$DistanceDamagePair;getDamage()F"))
     private float tacztweaks$getDamage$applyDamageModifiers(float original) {
         float damage = original;
@@ -159,16 +197,30 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         Entity entity = result.getEntity();
         if (entity instanceof ServerPlayer player) tacztweaks$hitPlayers.add(player);
 
-        var damage = BulletInteractionManager.INSTANCE.getEntityDamage(self, result.getLocation(), entity);
-        if (damage != null) tacztweaks$addDamageModifier(damage.getFirst(), damage.getSecond());
+        BulletInteractionManager.EntityInteraction interaction =
+            BulletInteractionManager.INSTANCE.prepareEntityInteraction(self, result.getLocation(), entity);
+        tacztweaks$addDamageModifier(interaction.getDamageModifier(), interaction.getDamageMultiplier());
         try {
             original.call(self, result, from, to);
         } finally {
-            if (damage != null) tacztweaks$popDamageModifier();
+            tacztweaks$popDamageModifier();
+        }
+
+        boolean dead = !entity.isAlive();
+        BulletInteractionManager.EntityInteractionResult interactionResult =
+            BulletInteractionManager.INSTANCE.finishEntityInteraction(
+                self, result.getLocation(), interaction, dead
+            );
+        if (!interactionResult.getPierce()) {
+            // The caller decrements immediately after this wrapper. Setting one makes it
+            // reach zero and follow its normal stop/discard path.
+            tacztweaks$setGunPierce(1);
+        } else if (!interactionResult.getConsumeGunPierce()) {
+            // Compensate the caller's unconditional native decrement.
+            tacztweaks$incrementGunPierce();
         }
 
         if (self.level() instanceof ServerLevel level) {
-            boolean dead = !entity.isAlive();
             BulletSoundsManager.INSTANCE.handleEntitySound(
                 dead ? BulletSoundsManager.EEntitySoundType.KILL : BulletSoundsManager.EEntitySoundType.HIT,
                 level, self, result.getLocation(), entity

@@ -20,6 +20,14 @@ public interface EntityKineticBulletExtension {
 
     void tacztweaks$incrementEntityPierce();
 
+    int tacztweaks$getGunPierce();
+
+    void tacztweaks$setGunPierce(int value);
+
+    void tacztweaks$incrementGunPierce();
+
+    void tacztweaks$decrementGunPierce();
+
     void tacztweaks$addDamageModifier(float flat, float multiplier);
 
     void tacztweaks$popDamageModifier();

@@ -20,7 +20,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
-import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import kotlin.math.exp
 
@@ -36,9 +35,8 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
  * Loads `bullet_interactions` JSON files (glass piercing, dripstone breaking, custom
  * entity damage, …).
  *
- * Behavior methods (`handleBlockInteraction` / `handleEntityInteraction` / shield handling)
- * are intentionally left for the behavior-layer round — they need `BlockBreakingManager`,
- * `BulletRayTracer` and the bullet mixin accessors, none of which exist yet.
+ * Block, entity and shield behavior is active. Entity rules cooperate with R2's native
+ * hit loop while preserving custom gun-pierce consumption and persistent damage falloff.
  */
 object BulletInteractionManager : BaseDataManager<BulletInteraction>(
     "bullet_interactions", BulletInteraction.CODEC, COMPARATOR
@@ -46,6 +44,10 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
     init { BulletInteraction }
 
     override fun debugEnabled(): Boolean = Config.Debug.bulletInteractions()
+
+    /** Whether a data rule can pierce entities without requiring the gun's native pierce. */
+    fun needsExtendedEntityTrace(): Boolean =
+        byType<BulletInteraction.Entity>().values.any { !it.gunPierce.required }
 
     private val DEFAULT = Identifier.fromNamespaceAndPath("tacztweaks", "default")
 
@@ -137,7 +139,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
             }
         }
         val pierce = shouldPierce(
-            ammo, result, interaction.pierce, blockBroken,
+            ammo, result.location, interaction.pierce, interaction.gunPierce, blockBroken,
             ext::`tacztweaks$incrementBlockPierce`, ext::`tacztweaks$getBlockPierce`
         )
         if (pierce && !blockBroken && interaction.pierce.renderBulletHole) {
@@ -153,16 +155,42 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         return InteractionResult(pierce, blockBroken).also { logDebug { it.toString() } }
     }
 
-    /**
-     * Looks up the damage modifier for a bullet hitting an entity. Returns null when no
-     * interaction matches. The actual damage application happens in the entity mixin.
-     */
-    fun getEntityDamage(ammo: EntityKineticBullet, location: Vec3, entity: Entity): Pair<Float, Float>? {
+    /** Resolve an entity rule once so random predicates cannot change between damage and pierce. */
+    fun prepareEntityInteraction(ammo: EntityKineticBullet, location: Vec3, entity: Entity): EntityInteraction {
         val (id, interaction) = getBulletInteraction(ammo, location, BulletInteraction.Entity::entities) {
             it.test(entity)
-        } ?: return null
+        } ?: (DEFAULT to BulletInteraction.Entity.DEFAULT)
         logDebug { "Using entity bullet interaction: $id" }
-        return interaction.damage.modifier to interaction.damage.multiplier
+        return EntityInteraction(interaction)
+    }
+
+    /**
+     * Called after damage. The native 26.2 loop decrements gun pierce immediately after
+     * our wrapped onHitEntity returns, so this reports whether to continue and whether that
+     * upcoming decrement should be compensated.
+     */
+    fun finishEntityInteraction(
+        ammo: EntityKineticBullet,
+        location: Vec3,
+        prepared: EntityInteraction,
+        condition: Boolean
+    ): EntityInteractionResult {
+        val interaction = prepared.interaction
+        val ext = ammo as EntityKineticBulletExtension
+        val remainingAfterNativeConsume = ext.`tacztweaks$getGunPierce`() -
+            if (interaction.gunPierce.consume) 1 else 0
+        if (interaction.gunPierce.required && remainingAfterNativeConsume <= 0) {
+            return EntityInteractionResult(false, interaction.gunPierce.consume)
+        }
+        val pierce = shouldPierceRule(
+            ammo,
+            location,
+            interaction.pierce,
+            condition,
+            ext::`tacztweaks$incrementEntityPierce`,
+            ext::`tacztweaks$getEntityPierce`
+        )
+        return EntityInteractionResult(pierce, interaction.gunPierce.consume)
     }
 
     fun handleShieldInteraction(
@@ -195,7 +223,24 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
 
     private fun shouldPierce(
         ammo: EntityKineticBullet,
-        result: HitResult,
+        location: Vec3,
+        pierce: BulletInteraction.Pierce,
+        gunPierce: BulletInteraction.GunPierce,
+        condition: Boolean,
+        incrementCustomPierce: () -> Unit,
+        getCustomPierce: () -> Int
+    ): Boolean {
+        val ext = ammo as EntityKineticBulletExtension
+        if (gunPierce.consume) ext.`tacztweaks$decrementGunPierce`()
+        if (gunPierce.required && ext.`tacztweaks$getGunPierce`() <= 0) return false
+        return shouldPierceRule(
+            ammo, location, pierce, condition, incrementCustomPierce, getCustomPierce
+        )
+    }
+
+    private fun shouldPierceRule(
+        ammo: EntityKineticBullet,
+        location: Vec3,
         pierce: BulletInteraction.Pierce,
         condition: Boolean,
         incrementCustomPierce: () -> Unit,
@@ -208,11 +253,13 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
                 incrementCustomPierce.invoke()
                 if (getCustomPierce.invoke() >= pierce.count) return false
             }
-            is BulletInteraction.Pierce.Damage -> if (ammo.getDamage(result.location) <= 0.0F) return false
+            is BulletInteraction.Pierce.Damage -> if (ammo.getDamage(location) <= 0.0F) return false
         }
         if (pierce.conditional && !condition) return false
-        val ext = ammo as EntityKineticBulletExtension
-        ext.`tacztweaks$addDamageModifier`(-pierce.damageFalloff, pierce.damageMultiplier)
+        (ammo as EntityKineticBulletExtension).`tacztweaks$addDamageModifier`(
+            -pierce.damageFalloff,
+            pierce.damageMultiplier
+        )
         return true
     }
 
@@ -231,6 +278,18 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
 
     private fun remapArmorIgnore(armorIgnore: Double): Float =
         exp(-2 * armorIgnore).toFloat()
+
+    class EntityInteraction internal constructor(
+        internal val interaction: BulletInteraction.Entity
+    ) {
+        val damageModifier: Float get() = interaction.damage.modifier
+        val damageMultiplier: Float get() = interaction.damage.multiplier
+    }
+
+    data class EntityInteractionResult(
+        val pierce: Boolean,
+        val consumeGunPierce: Boolean
+    )
 
     data class InteractionResult(
         val pierce: Boolean,

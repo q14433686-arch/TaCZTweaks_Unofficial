@@ -62,7 +62,9 @@ public class TaCZTweaks implements ModInitializer {
             BulletParticlesManager.INSTANCE.onServerTick(server);
         });
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
-            BlockBreakingManager.INSTANCE.onBlockBreak(level, pos);
+            if (level instanceof ServerLevel serverLevel) {
+                BlockBreakingManager.INSTANCE.onBlockBreak(serverLevel, pos);
+            }
         });
 
         // Disable shooting while underwater (server authoritative).
