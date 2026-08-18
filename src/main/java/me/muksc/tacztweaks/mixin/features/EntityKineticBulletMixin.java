@@ -7,6 +7,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.resource.pojo.data.gun.BulletData;
 import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.tacz.guns.util.TacHitResult;
+import me.muksc.tacztweaks.compat.FirstAidCompat;
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager;
 import me.muksc.tacztweaks.data.manager.BulletParticlesManager;
 import me.muksc.tacztweaks.data.manager.BulletSoundsManager;
@@ -58,7 +59,16 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     private Vec3 tacztweaks$position = Vec3.ZERO;
 
     @Unique
+    private boolean tacztweaks$positionUpdatedThisTick;
+
+    @Unique
     private final List<ServerPlayer> tacztweaks$hitPlayers = new ArrayList<>();
+
+    @Unique
+    private int tacztweaks$burstIndex;
+
+    @Unique
+    private int tacztweaks$pelletIndex;
 
     @Override
     public ItemStack tacztweaks$getGunStack() {
@@ -93,6 +103,27 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     @Override
     public void tacztweaks$setPosition(Vec3 position) {
         tacztweaks$position = position;
+        tacztweaks$positionUpdatedThisTick = true;
+    }
+
+    @Override
+    public int tacztweaks$getBurstIndex() {
+        return tacztweaks$burstIndex;
+    }
+
+    @Override
+    public void tacztweaks$setBurstIndex(int index) {
+        tacztweaks$burstIndex = index;
+    }
+
+    @Override
+    public int tacztweaks$getPelletIndex() {
+        return tacztweaks$pelletIndex;
+    }
+
+    @Override
+    public void tacztweaks$setPelletIndex(int index) {
+        tacztweaks$pelletIndex = index;
     }
 
     @Override
@@ -123,6 +154,8 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
 
     @WrapOperation(method = "onBulletTick", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onHitEntity(Lcom/tacz/guns/util/TacHitResult;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)V"))
     private void tacztweaks$onBulletTick$onHitEntity(EntityKineticBullet self, TacHitResult result, Vec3 from, Vec3 to, Operation<Void> original) {
+        FirstAidCompat.recordProjectileHit(self, result);
+        tacztweaks$setPosition(result.getLocation());
         Entity entity = result.getEntity();
         if (entity instanceof ServerPlayer player) tacztweaks$hitPlayers.add(player);
 
@@ -147,10 +180,18 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         }
     }
 
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onBulletTick()V"))
+    private void tacztweaks$tick$resetDestination(CallbackInfo ci) {
+        tacztweaks$positionUpdatedThisTick = false;
+    }
+
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onBulletTick()V", shift = At.Shift.AFTER))
     private void tacztweaks$tick$handleSounds(CallbackInfo ci) {
         EntityKineticBullet self = (EntityKineticBullet) (Object) this;
         if (!(self.level() instanceof ServerLevel level)) return;
+        if (!tacztweaks$positionUpdatedThisTick) {
+            tacztweaks$position = self.position().add(self.getDeltaMovement());
+        }
         BulletSoundsManager.INSTANCE.handleConstant(level, self);
         BulletSoundsManager.INSTANCE.handleSoundWhizz(level, self, tacztweaks$hitPlayers);
     }

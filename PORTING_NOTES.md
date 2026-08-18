@@ -3,6 +3,9 @@
 记录从 Forge 1.20.1 原版（MUKSC/TaCZTweaks v2.14.2）移植到
 `TaCZ_Refabricated_Unofficial`（26.2 主分支）的要点，供后续维护者参考。
 
+> 本文件 §1–§7.16 是按时间保留的迁移日志，其中“砍掉/不存在/暂未实现”描述的是**当轮状态**，
+> 不是最终能力结论。2026-08-18 复审后的当前事实见 §7.17、§8 和 [`AUDIT.md`](AUDIT.md)。
+
 ---
 
 ## 1. 目标仓库关键事实
@@ -478,12 +481,38 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
    视觉效果，解析失败记日志并跳过，**绝不**再让实体 tick 崩溃。第三方枪包的非法粒子
    语法也不会拖垮游戏。
 
-## 8. 已知待办
+## 7.17 “不可移植”复审与 R2 完成项（2026-08-18）
 
-- [ ] 匍匐动态俯仰角（基于方块碰撞；需 MixinSquared 或改 TaCZ 常量）
-- [ ] betterInaccuracy / betterGunTilt / betterMonoConversion / bulletProtection /
-      endermenEvadeBullets / disableRefitOnAdventure / alwaysFilterByHand / rps /
-      audibleFirstPersonGunSounds / forceFirstPersonShootingSound
-- [ ] 卸弹的创造模式 / 枪膛内子弹支持（针对新 `dropAllAmmo` 重写）
-- [ ] 示例包、数据驱动的子弹交互系统
-- [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译验证）
+本轮不再按 1.20 类名判断能力，而是核对 26.2 class 调用链和实际 Fabric 发行物：
+
+- `Identifier` record 只阻止加实例字段；mono 标记改为资源路径旁表，并在 `SoundBuffer` 构造前 downmix；
+- 数据驱动附魔删除了 `ProtectionEnchantment` 类，但 `EnchantmentHelper#getDamageProtection` 仍是汇总点；
+- predicate 移到 `net.minecraft.advancements.predicates`，并未删除；MinMaxBounds 同样只是换包；
+- tier 语义由 `ToolMaterial.incorrectBlocksForDrops` 承担；
+- shield 走 26.2 `BlocksAttacks` component，不再寻找旧 `hurtCurrentlyUsedShield`；
+- `Level#getGameTime()` 实际存在，破坏进度已从 wall clock 改回 400 game ticks；
+- SPR、First Aid New、Pillager’s Gun 均已有 Fabric 26.2 发行物，已恢复可选兼容；
+- melee、airspace、shield、predicate/tier、burst/pellet 均已接回行为层。
+
+同时修复了配置 payload 复用/长度校验、跨维度粒子、方块保护事件、静态 raytrace 上下文竞争、
+`sprintWhileReloading` 被目标端二次取消等完整性问题。详细证据和测试矩阵见 `AUDIT.md`。
+
+## 8. 当前待办
+
+### 8.1 已完成
+
+- [x] 全部在 GUI 中公开的 gun/crawl/tweaks/modifier/debug 选项都有行为读取点
+- [x] betterMonoConversion / bulletProtection / crawl visualTweak
+- [x] melee（枪械 + 内置 LRTactical）、shield、airspace 行为层
+- [x] predicate / tier / burst_index / pellet_index 数据兼容
+- [x] First Aid New / Sound Physics Remastered / Pillager’s Gun Fabric 26.2 可选兼容
+- [x] 无目标的 LSO / MTS / VS 与已原生修复的 thirdPerson 开关从配置 codec/GUI 删除
+- [x] `scripts/audit_port.py` 系统审计（mixin 注册/目标方法、配置死项、语言键、MixinExtras 版本）
+
+### 8.2 发布前验证
+
+- [ ] JDK 25 `./gradlew clean build` 和产物 remap 检查
+- [ ] 纯必需依赖的客户端、集成服、独立服务端启动
+- [ ] SPR / First Aid / Pillager’s Gun 单独和组合安装测试
+- [ ] mono、四件弹射物保护与 void bullet、盾牌、近战、领地取消破坏、多维度粒子实测
+- [ ] 第三方数据包对 predicate/tier/burst/pellet/airspace 的兼容回归

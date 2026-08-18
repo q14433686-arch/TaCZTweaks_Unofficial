@@ -54,17 +54,15 @@ class ClientMessagePlayerUnload private constructor(@Suppress("UNUSED_PARAMETER"
                         gun.dropAllAmmo(player, gunStack)
                     } else {
                         val ammoId = gunData.getAmmoId()
-                        TimelessAPI.getCommonAmmoIndex(ammoId).ifPresent { ammoIndex ->
-                            if (gunData.getReloadData().getType() != FeedType.FUEL) {
-                                val stackSize = ammoIndex.getStackSize()
-                                var remaining = ammoCount
-                                val rounds = remaining / (stackSize + 1)
-                                for (i in 0..rounds) {
-                                    val count = min(remaining, stackSize)
-                                    val ammoItem = AmmoItemBuilder.create().setId(ammoId).setCount(count).build()
-                                    ItemHandlerHelper.giveItemToPlayer(player, ammoItem)
-                                    remaining -= stackSize
-                                }
+                        if (gunData.getReloadData().getType() != FeedType.FUEL) {
+                            val ammoIndex = TimelessAPI.getCommonAmmoIndex(ammoId).orElse(null) ?: return@execute
+                            val stackSize = ammoIndex.getStackSize().coerceAtLeast(1)
+                            var remaining = ammoCount
+                            while (remaining > 0) {
+                                val count = min(remaining, stackSize)
+                                val ammoItem = AmmoItemBuilder.create().setId(ammoId).setCount(count).build()
+                                ItemHandlerHelper.giveItemToPlayer(player, ammoItem)
+                                remaining -= count
                             }
                         }
                         gun.setCurrentAmmoCount(gunStack, 0)
@@ -76,11 +74,11 @@ class ClientMessagePlayerUnload private constructor(@Suppress("UNUSED_PARAMETER"
                     val boltType = gunData.getBolt()
                     val hasInBarrel = gun.hasBulletInBarrel(gunStack) && boltType != Bolt.OPEN_BOLT
                     if (hasInBarrel) {
-                        gun.setBulletInBarrel(gunStack, false)
                         val ammoId = gunData.getAmmoId()
-                        TimelessAPI.getCommonAmmoIndex(ammoId).ifPresent {
+                        if (TimelessAPI.getCommonAmmoIndex(ammoId).isPresent) {
                             val ammoItem = AmmoItemBuilder.create().setId(ammoId).setCount(1).build()
                             ItemHandlerHelper.giveItemToPlayer(player, ammoItem)
+                            gun.setBulletInBarrel(gunStack, false)
                         }
                     }
                 }

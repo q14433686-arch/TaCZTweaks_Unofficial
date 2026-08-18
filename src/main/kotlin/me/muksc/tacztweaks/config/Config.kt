@@ -101,7 +101,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
         val tiltGunKeyTriggersReduceSensitivity by register(true, BOOL)
         val cancelInspection by register(false, BOOL)
         val disableBulletCulling by register(false, BOOL)
-        val thirdPersonGunRenderingFix by register(true, BOOL)
 
         fun shootWhileSprinting(): Boolean = shootWhileSprinting.syncedValue
         fun sprintWhileReloading(): Boolean = sprintWhileReloading.syncedValue
@@ -119,7 +118,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
         fun tiltGunKeyTriggersReduceSensitivity(): Boolean = tiltGunKeyTriggersReduceSensitivity.value
         fun cancelInspection(): Boolean = cancelInspection.value
         fun disableBulletCulling(): Boolean = disableBulletCulling.value
-        fun thirdPersonGunRenderingFix(): Boolean = thirdPersonGunRenderingFix.value
     }
 
     abstract class ModifierConfig : SyncableCodecConfig<ModifierConfig>() {
@@ -251,36 +249,8 @@ object Config : SyncableJsonFileCodecConfig<Config>(
             encoder = FriendlyByteBuf::writeBoolean,
             decoder = FriendlyByteBuf::readBoolean
         )
-        val lsoCompat by registerSyncable(
-            default = true,
-            codec = BOOL,
-            encoder = FriendlyByteBuf::writeBoolean,
-            decoder = FriendlyByteBuf::readBoolean
-        )
-        val vsCollisionCompat by registerSyncable(
-            default = false,
-            codec = BOOL,
-            encoder = FriendlyByteBuf::writeBoolean,
-            decoder = FriendlyByteBuf::readBoolean
-        )
-        val vsExplosionCompat by registerSyncable(
-            default = false,
-            codec = BOOL,
-            encoder = FriendlyByteBuf::writeBoolean,
-            decoder = FriendlyByteBuf::readBoolean
-        )
-        val mtsFix by registerSyncable(
-            default = true,
-            codec = BOOL,
-            encoder = FriendlyByteBuf::writeBoolean,
-            decoder = FriendlyByteBuf::readBoolean
-        )
 
         fun firstAidCompat(): Boolean = firstAidCompat.syncedValue
-        fun lsoCompat(): Boolean = lsoCompat.syncedValue
-        fun vsCollisionCompat(): Boolean = vsCollisionCompat.syncedValue
-        fun vsExplosionCompat(): Boolean = vsExplosionCompat.syncedValue
-        fun mtsFix(): Boolean = mtsFix.syncedValue
     }
 
     object Tweaks : SyncableCodecConfig<Tweaks>() {
@@ -489,12 +459,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     binding(Gun.disableBulletCulling.asBinding())
                     controller(booleanController())
                 }.build())
-                option(Option.createBuilder<Boolean>().apply {
-                    name(TaCZTweaks.translatable("config.gun.thirdPersonGunRenderingFix.name"))
-                    description(OptionDescription.of(TaCZTweaks.translatable("config.gun.thirdPersonGunRenderingFix.description")))
-                    binding(Gun.thirdPersonGunRenderingFix.asBinding())
-                    controller(booleanController())
-                }.build())
             }.build())
             group(OptionGroup.createBuilder().apply {
                 name(TaCZTweaks.translatable("config.crawl"))
@@ -519,34 +483,6 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     nameSynced(TaCZTweaks.translatable("config.compat.firstAidCompat.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.compat.firstAidCompat.description")))
                     binding(Compat.firstAidCompat.asSyncedBinding())
-                    controller(booleanController())
-                    available(canUpdateServerConfig)
-                }.build())
-                option(Option.createBuilder<Boolean>().apply {
-                    nameSynced(TaCZTweaks.translatable("config.compat.lsoCompat.name"))
-                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.compat.lsoCompat.description")))
-                    binding(Compat.lsoCompat.asSyncedBinding())
-                    controller(booleanController())
-                    available(canUpdateServerConfig)
-                }.build())
-                option(Option.createBuilder<Boolean>().apply {
-                    nameSynced(TaCZTweaks.translatable("config.compat.vsCollisionCompat.name"))
-                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.compat.vsCollisionCompat.description")))
-                    binding(Compat.vsCollisionCompat.asSyncedBinding())
-                    controller(booleanController())
-                    available(canUpdateServerConfig)
-                }.build())
-                option(Option.createBuilder<Boolean>().apply {
-                    nameSynced(TaCZTweaks.translatable("config.compat.vsExplosionCompat.name"))
-                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.compat.vsExplosionCompat.description")))
-                    binding(Compat.vsExplosionCompat.asSyncedBinding())
-                    controller(booleanController())
-                    available(canUpdateServerConfig)
-                }.build())
-                option(Option.createBuilder<Boolean>().apply {
-                    nameSynced(TaCZTweaks.translatable("config.compat.mtsFix.name"))
-                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.compat.mtsFix.description")))
-                    binding(Compat.mtsFix.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
@@ -756,6 +692,20 @@ object Config : SyncableJsonFileCodecConfig<Config>(
                     nameSynced(TaCZTweaks.translatable("config.tweaks.betterInaccuracy.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterInaccuracy.description")))
                     binding(Tweaks.betterInaccuracy.asSyncedBinding())
+                    controller(booleanController())
+                    available(canUpdateServerConfig)
+                }.build())
+                option(Option.createBuilder<Boolean>().apply {
+                    name(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.name"))
+                    description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.description")))
+                    binding(Tweaks.betterMonoConversion.asBinding())
+                    controller(booleanController())
+                    flag(OptionFlag.ASSET_RELOAD)
+                }.build())
+                option(Option.createBuilder<Boolean>().apply {
+                    nameSynced(TaCZTweaks.translatable("config.tweaks.bulletProtection.name"))
+                    descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.bulletProtection.description")))
+                    binding(Tweaks.bulletProtection.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())

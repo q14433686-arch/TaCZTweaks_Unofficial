@@ -97,7 +97,7 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.R1.jar   ← 这就是模组，扔进 .minecraft/mods/ 即可
+build/libs/tacztweaks-2.14.2+fabric.26.2.R2.jar   ← 这就是模组，扔进 .minecraft/mods/ 即可
 ```
 
 ---

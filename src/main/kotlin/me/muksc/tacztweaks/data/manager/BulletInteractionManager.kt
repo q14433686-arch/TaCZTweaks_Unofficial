@@ -10,10 +10,13 @@ import me.muksc.tacztweaks.core.Context
 import me.muksc.tacztweaks.data.BulletInteraction
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
 import me.muksc.tacztweaks.thenPrioritizeBy
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
@@ -26,6 +29,7 @@ private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
     .thenPrioritizeBy { when (it) {
         is BulletInteraction.Block -> it.blocks.isNotEmpty()
         is BulletInteraction.Entity -> it.entities.isNotEmpty()
+        is BulletInteraction.Shield -> it.predicate.isPresent
     } }
 
 /**
@@ -81,6 +85,8 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         val breakBlock = run {
             val hardness = state.getDestroySpeed(level, blockPos)
             if (hardness !in interaction.blockBreak.hardness) return@run false
+            val tier = interaction.blockBreak.tier
+            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops())) return@run false
 
             val gun = Context.Gun(ext.`tacztweaks$getGunStack`())
             val gunStack = gun.stack
@@ -107,19 +113,34 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
                 }
             }
         }
+        var blockBroken = false
         if (breakBlock) run {
             val owner = ammo.getOwner()
-            level.destroyBlock(blockPos, interaction.blockBreak.drop, owner, Block.UPDATE_NEIGHBORS or Block.UPDATE_CLIENTS)
+            val blockEntity = level.getBlockEntity(blockPos)
+            if (owner is ServerPlayer && !PlayerBlockBreakEvents.BEFORE.invoker()
+                    .beforeBlockBreak(level, owner, blockPos, state, blockEntity)) return@run
+            val destroyed = level.destroyBlock(
+                blockPos,
+                interaction.blockBreak.drop,
+                owner,
+                Block.UPDATE_NEIGHBORS or Block.UPDATE_CLIENTS
+            )
+            if (!destroyed) return@run
+            blockBroken = true
+            if (owner is ServerPlayer) {
+                PlayerBlockBreakEvents.AFTER.invoker()
+                    .afterBlockBreak(level, owner, blockPos, state, blockEntity)
+            }
             val replaceWith = interaction.blockBreak.replaceWith
             if (!replaceWith.state.isAir && replaceWith.place(level, blockPos, Block.UPDATE_CLIENTS)) {
                 level.sendBlockUpdated(blockPos, replaceWith.state, replaceWith.state, Block.UPDATE_CLIENTS)
             }
         }
         val pierce = shouldPierce(
-            ammo, result, interaction.pierce, breakBlock,
+            ammo, result, interaction.pierce, blockBroken,
             ext::`tacztweaks$incrementBlockPierce`, ext::`tacztweaks$getBlockPierce`
         )
-        if (pierce && !breakBlock && interaction.pierce.renderBulletHole) {
+        if (pierce && !blockBroken && interaction.pierce.renderBulletHole) {
             val bulletHoleOption = BulletHoleOption(
                 result.direction,
                 blockPos,
@@ -129,7 +150,7 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
             )
             level.sendParticles(bulletHoleOption, result.location.x, result.location.y, result.location.z, 1, 0.0, 0.0, 0.0, 0.0)
         }
-        return InteractionResult(pierce, breakBlock).also { logDebug { it.toString() } }
+        return InteractionResult(pierce, blockBroken).also { logDebug { it.toString() } }
     }
 
     /**
@@ -142,6 +163,34 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
         } ?: return null
         logDebug { "Using entity bullet interaction: $id" }
         return interaction.damage.modifier to interaction.damage.multiplier
+    }
+
+    fun handleShieldInteraction(
+        ammo: EntityKineticBullet,
+        location: Vec3,
+        shield: ItemStack,
+        originalDamage: Float
+    ): ShieldInteractionResult {
+        val (id, interaction) = getBulletInteraction<BulletInteraction.Shield>(ammo, location) {
+            it.predicate.map { predicate -> predicate.test(shield) }.orElse(true)
+        } ?: (DEFAULT to BulletInteraction.Shield.DEFAULT)
+        logDebug { "Using shield bullet interaction: $id" }
+
+        val damage = ((originalDamage - interaction.damage.falloff) * interaction.damage.multiplier)
+            .coerceIn(0.0F, originalDamage)
+        val durabilityDamage = label@{ durabilityDamage: Int ->
+            if (interaction.durability.conditional && damage <= 0) return@label 0
+            when (val durability = interaction.durability) {
+                is BulletInteraction.Shield.Durability.DynamicDamage ->
+                    ((durabilityDamage + durability.modifier) * durability.multiplier).toInt().coerceAtLeast(0)
+                is BulletInteraction.Shield.Durability.FixedDamage -> durability.damage.coerceAtLeast(0)
+            }
+        }
+        val disableDuration = run {
+            if (interaction.disable.conditional && damage <= 0) return@run 0
+            if (ammo.getRandom().nextFloat() < interaction.disable.chance) interaction.disable.duration else 0
+        }
+        return ShieldInteractionResult(originalDamage - damage, durabilityDamage, disableDuration)
     }
 
     private fun shouldPierce(
@@ -186,5 +235,11 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
     data class InteractionResult(
         val pierce: Boolean,
         val condition: Boolean
+    )
+
+    data class ShieldInteractionResult(
+        val blockedDamage: Float,
+        val durabilityDamage: (Int) -> Int,
+        val disableDuration: Int
     )
 }

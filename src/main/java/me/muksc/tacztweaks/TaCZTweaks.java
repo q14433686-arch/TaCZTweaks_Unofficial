@@ -3,6 +3,7 @@ package me.muksc.tacztweaks;
 import com.tacz.guns.api.event.common.GunShootEvent;
 import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.resource.pojo.data.gun.InaccuracyType;
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.core.BlockBreakingManager;
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager;
@@ -15,6 +16,7 @@ import me.muksc.tacztweaks.network.NetworkHandler;
 import me.muksc.tacztweaks.registry.ModStatusEffects;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -59,6 +61,9 @@ public class TaCZTweaks implements ModInitializer {
             }
             BulletParticlesManager.INSTANCE.onServerTick(server);
         });
+        PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
+            BlockBreakingManager.INSTANCE.onBlockBreak(level, pos);
+        });
 
         // Disable shooting while underwater (server authoritative).
         GunShootEvent.CALLBACK.register(event -> {
@@ -69,6 +74,9 @@ public class TaCZTweaks implements ModInitializer {
         // Push server-authoritative config to players as they join.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             NetworkHandler.INSTANCE.sendSyncConfig(handler.getPlayer());
+            if (BulletSoundsManager.INSTANCE.hasAirspaceSounds()) {
+                NetworkHandler.INSTANCE.sendS2C(handler.getPlayer(), ServerMessageSoundPhysicsRequired.INSTANCE);
+            }
         });
     }
 

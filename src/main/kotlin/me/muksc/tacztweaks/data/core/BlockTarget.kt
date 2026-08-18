@@ -1,21 +1,25 @@
 package me.muksc.tacztweaks.data.core
 
 import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
 import com.mojang.serialization.codecs.RecordCodecBuilder
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.id
+import net.minecraft.advancements.predicates.BlockPredicate
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.TagKey
+import net.minecraft.world.item.ToolMaterial
 import net.minecraft.world.level.block.state.BlockState
 
 /**
  * Structured block matcher used by `block`/`melee` bullet interactions.
- * 26.2 note: the Forge-only `tier` type and the 1.20 `predicate` type (removed in 26.2)
- * are dropped from the dispatch.
+ * 26.2 moved [BlockPredicate] and replaced Forge's tier registry with vanilla
+ * [ToolMaterial] incorrect-block tags; both legacy matcher types remain representable.
  */
 sealed class BlockTarget(
     val type: EBlockTargetType
@@ -30,6 +34,8 @@ sealed class BlockTarget(
         BLOCK("block", { Block.CODEC }),
         BLOCK_TAG("block_tag", { BlockTag.CODEC }),
         REGEX("regex", { RegexPattern.CODEC }),
+        PREDICATE("predicate", { Predicate.CODEC }),
+        TIER("tier", { HardnessTier.CODEC }),
         HARDNESS("hardness", { Hardness.CODEC });
 
         companion object {
@@ -100,6 +106,47 @@ sealed class BlockTarget(
             val CODEC: Codec<RegexPattern> = RecordCodecBuilder.create<RegexPattern> { it.group(
                 Codec.STRING.xmap(::Regex, Regex::pattern).fieldOf("regex").forGetter(RegexPattern::regex)
             ).apply(it, ::RegexPattern) }
+        }
+    }
+
+    class Predicate(val predicate: BlockPredicate) : BlockTarget(EBlockTargetType.PREDICATE) {
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
+            predicate.matches(level, pos)
+
+        companion object {
+            val CODEC: Codec<Predicate> = RecordCodecBuilder.create<Predicate> { it.group(
+                BlockPredicate.CODEC.fieldOf("predicate").forGetter(Predicate::predicate)
+            ).apply(it, ::Predicate) }
+        }
+    }
+
+    class HardnessTier(val tier: TierDefinition) : BlockTarget(EBlockTargetType.TIER) {
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
+            !state.`is`(tier.material.incorrectBlocksForDrops())
+
+        companion object {
+            val CODEC: Codec<HardnessTier> = RecordCodecBuilder.create<HardnessTier> { it.group(
+                TierDefinition.CODEC.fieldOf("tier").forGetter(HardnessTier::tier)
+            ).apply(it, ::HardnessTier) }
+        }
+    }
+
+    data class TierDefinition(val id: Identifier, val material: ToolMaterial) {
+        companion object {
+            private val VALUES = listOf(
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "wood"), ToolMaterial.WOOD),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "stone"), ToolMaterial.STONE),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "copper"), ToolMaterial.COPPER),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "iron"), ToolMaterial.IRON),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "diamond"), ToolMaterial.DIAMOND),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "gold"), ToolMaterial.GOLD),
+                TierDefinition(Identifier.fromNamespaceAndPath("minecraft", "netherite"), ToolMaterial.NETHERITE)
+            )
+            private val BY_ID = VALUES.associateBy(TierDefinition::id)
+            val CODEC: Codec<TierDefinition> = Identifier.CODEC.comapFlatMap(
+                { id -> BY_ID[id]?.let { DataResult.success(it) } ?: DataResult.error { "Unknown tool tier: $id" } },
+                TierDefinition::id
+            )
         }
     }
 

@@ -2,9 +2,11 @@ package me.muksc.tacztweaks.data.manager
 
 import com.tacz.guns.entity.EntityKineticBullet
 import me.muksc.tacztweaks.anyOrEmpty
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageAirspaceSounds
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.data.BulletSounds
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
+import me.muksc.tacztweaks.network.NetworkHandler
 import me.muksc.tacztweaks.thenPrioritizeBy
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
@@ -96,6 +98,42 @@ object BulletSoundsManager : BaseDataManager<BulletSounds>(
             if (entity.getOwner() == player || player in ignores) continue
             if (player.level().dimension() != level.dimension()) continue
             handleSoundWhizz(player, entity)
+        }
+    }
+
+    fun hasAirspaceSounds(): Boolean = byType<BulletSounds.AirSpace>().isNotEmpty()
+
+    fun logAirspace(msg: () -> String) {
+        logDebug(msg)
+    }
+
+    fun handleAirspace(level: ServerLevel, entity: EntityKineticBullet) {
+        val soundsList = getSounds<BulletSounds.AirSpace>(entity, entity.position()).takeIf { it.isNotEmpty() } ?: return
+        for (player in level.server.playerList.players) {
+            if (player.level().dimension() != level.dimension()) continue
+            val distance = player.position().distanceTo(entity.position())
+            val candidates = soundsList.mapNotNull { (id, sounds) ->
+                val sound = sounds.sounds.firstOrNull { distance <= it.threshold } ?: return@mapNotNull null
+                logDebug { "Using airspace bullet sounds '$id' for player '$player'" }
+                sounds to sound
+            }
+            if (candidates.isEmpty()) continue
+            NetworkHandler.sendS2C(player, ServerMessageAirspaceSounds(
+                candidates.map { (sounds, airspace) ->
+                    ServerMessageAirspaceSounds.AirspaceSound(
+                        airspace.sound.filter { spec ->
+                            spec.target.anyOrEmpty { it.test(entity, entity.getGunId(), entity.getDamage(entity.position())) }
+                        }.map { ServerMessageAirspaceSounds.SoundSpec(it.sound, it.volume, it.pitch, it.range) },
+                        sounds.airspace.min.toFloat(),
+                        sounds.airspace.max.toFloat(),
+                        sounds.occlusion.min.toFloat(),
+                        sounds.occlusion.max.toFloat(),
+                        sounds.reflectivity.min.toFloat(),
+                        sounds.reflectivity.max.toFloat()
+                    )
+                },
+                entity.position().x, entity.position().y, entity.position().z
+            ))
         }
     }
 

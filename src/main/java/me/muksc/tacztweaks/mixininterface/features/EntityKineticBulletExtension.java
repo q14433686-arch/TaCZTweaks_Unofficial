@@ -27,4 +27,12 @@ public interface EntityKineticBulletExtension {
     Vec3 tacztweaks$getPosition();
 
     void tacztweaks$setPosition(Vec3 position);
+
+    int tacztweaks$getBurstIndex();
+
+    void tacztweaks$setBurstIndex(int index);
+
+    int tacztweaks$getPelletIndex();
+
+    void tacztweaks$setPelletIndex(int index);
 }

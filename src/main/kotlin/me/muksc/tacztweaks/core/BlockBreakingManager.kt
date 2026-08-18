@@ -7,33 +7,24 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import java.util.Objects.hash
 
-/**
- * Tracks accumulated block-break progress from bullets (for `count` / `fixed_damage` /
- * `dynamic_damage` break types). Each bullet hit adds a delta; once the total reaches 1.0
- * the block breaks.
- *
- * 26.2 note: `Level#gameTime` no longer exists, so stale entries are expired against
- * wall-clock time (400 ticks ≈ 20 seconds).
- */
+/** Tracks accumulated bullet/melee block-break progress and crack rendering. */
 object BlockBreakingManager {
     private val blockBreakProgress = Object2ObjectOpenHashMap<ServerLevel, Long2ObjectMap<Progress>>()
-
-    private const val STALE_MS = 20_000L
+    private const val STALE_TICKS = 400L
 
     fun addCurrentProgress(level: ServerLevel, pos: BlockPos, delta: Float): Float {
         val progress = blockBreakProgress.computeIfAbsent(level) { Long2ObjectOpenHashMap() }
             .compute(pos.asLong()) { _, value ->
                 (value ?: Progress()).apply {
-                    this.delta += delta
-                    this.lastUpdated = System.currentTimeMillis()
+                    this.delta = (this.delta + delta).coerceAtLeast(0.0F)
+                    this.lastUpdated = level.gameTime
                 }
             }!!
 
-        val stage = run {
-            if (progress.delta >= 1.0F) {
-                blockBreakProgress[level]?.remove(pos.asLong())
-                return@run -1
-            }
+        val stage = if (progress.delta >= 1.0F) {
+            blockBreakProgress[level]?.remove(pos.asLong())
+            -1
+        } else {
             progress.stage
         }
         level.destroyBlockProgress(hash(level, pos), pos, stage)
@@ -41,17 +32,21 @@ object BlockBreakingManager {
     }
 
     fun onLevelTick(level: ServerLevel) {
-        val iterator = blockBreakProgress[level]?.iterator() ?: return
+        val progressMap = blockBreakProgress[level] ?: return
+        val iterator = progressMap.iterator()
         while (iterator.hasNext()) {
             val (pos, progress) = iterator.next()
-            if (System.currentTimeMillis() < (progress.lastUpdated + STALE_MS)) continue
-            if (progress.stage > 0) level.destroyBlockProgress(hash(level, pos), BlockPos.of(pos), -1)
+            if (level.gameTime < progress.lastUpdated + STALE_TICKS) continue
+            level.destroyBlockProgress(hash(level, pos), BlockPos.of(pos), -1)
             iterator.remove()
         }
+        if (progressMap.isEmpty()) blockBreakProgress.remove(level)
     }
 
     fun onBlockBreak(level: ServerLevel, pos: BlockPos) {
-        blockBreakProgress[level]?.remove(pos.asLong())
+        val progressMap = blockBreakProgress[level] ?: return
+        progressMap.remove(pos.asLong())
+        if (progressMap.isEmpty()) blockBreakProgress.remove(level)
         level.destroyBlockProgress(hash(level, pos), pos, -1)
     }
 
@@ -60,6 +55,6 @@ object BlockBreakingManager {
         var lastUpdated: Long = 0L
 
         val stage: Int
-            get() = if (delta > 0.0F) (delta * 10.0F).toInt() else -1
+            get() = if (delta > 0.0F) (delta * 10.0F).toInt().coerceAtMost(9) else -1
     }
 }

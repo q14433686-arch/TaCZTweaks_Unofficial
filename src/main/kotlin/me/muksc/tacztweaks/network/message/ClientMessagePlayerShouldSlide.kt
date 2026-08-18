@@ -32,7 +32,9 @@ class ClientMessagePlayerShouldSlide private constructor(private val shouldSlide
         fun create(shouldSlide: Boolean): ClientMessagePlayerShouldSlide = ClientMessagePlayerShouldSlide(shouldSlide)
 
         fun handle(msg: ClientMessagePlayerShouldSlide, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
-            (player as SlideDataHolder).`tacztweaks$setShouldSlide`(msg.shouldSlide)
+            server.execute {
+                (player as? SlideDataHolder)?.`tacztweaks$setShouldSlide`(msg.shouldSlide)
+            }
         }
     }
 }
