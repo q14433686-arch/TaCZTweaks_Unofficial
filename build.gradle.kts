@@ -65,6 +65,10 @@ dependencies {
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release.set(21)
+    // Optional compat mixins target classes from mods which are intentionally NOT hard compile
+    // dependencies of this branch. Their runtime safety is enforced by scripts/audit_port.py and
+    // the mixin config plugin instead of the annotation processor's target validator.
+    options.compilerArgs.add("-AdisableTargetValidator=true")
 }
 
 kotlin {
