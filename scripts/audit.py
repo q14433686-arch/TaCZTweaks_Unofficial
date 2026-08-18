@@ -253,7 +253,12 @@ def check_targets(jar_index, mc_index):
                 if cls is None:
                     src_file = mc_index.get(target) or mc_index.get(target.replace("/", "."))
                     if src_file is None:
-                        warn("%s: target class not found (jar or MC src): %s" % (short, target))
+                        # net.minecraft.* targets are only resolvable when an MC source tree
+                        # was provided; without one this is an expected gap, not an error.
+                        if mc_index and binary.startswith("net/minecraft/"):
+                            err("%s: target class not found in MC source: %s" % (short, target))
+                        else:
+                            warn("%s: target class not found (jar or MC src): %s" % (short, target))
                         continue
                     _check_mc_target(short, src_file, info, mc_index)
                 else:
@@ -349,7 +354,8 @@ def check_stale_apis():
         r"OggAudioStream": "renamed FiniteAudioStream/JOrbisAudioStream in 26.2",
         r"\bProtectionEnchantment\b": "removed in 26.2 (data-driven enchantments)",
         r"\bGuiGraphics\b": "renamed GuiGraphicsExtractor in 26.2",
-        r"advancements\.critereon": "renamed to advancements.criterion in 26.2",
+        r"advancements\.critereon": "wrong package; use net.minecraft.advancements.predicates in 26.2",
+        r"advancements\.criterion\b": "wrong package (remapped/old source); use net.minecraft.advancements.predicates in 26.2",
         r"@Expression": "bytecode matcher; runtime-fragile, see PORTING_NOTES 7.6",
     }
     for dp, _, fns in os.walk(JAVA):

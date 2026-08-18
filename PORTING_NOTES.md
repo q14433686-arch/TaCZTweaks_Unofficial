@@ -525,6 +525,13 @@ EnchantmentHelper.getDamageProtection
 26.2 对应到 `TagPredicate#matches(Holder)`。`TagPredicateMixin` 在该处把 TaCZ 四个子弹伤害
 类型（`tacz:bullet*`）视为命中 `is_projectile`，由 `Config.Tweaks.bulletProtection`（同步）门控。
 
+> **包名教训（2026-08-18 编译反馈）**：`TagPredicate` 的真实 26.2 包名是
+> `net.minecraft.advancements.predicates`（与 `DamageSourcePredicate` 同包）。首次移植时
+> 参考了 `Renekovski/26.2-mcp` 这份**被人为改回旧包名**（`advancements.criterion`）的反编译源，
+> 导致编译失败。核对 `net.minecraft.*` API 必须以官方 26.2 源（如 DirectXmod 仓库的
+> `docs/official-262/`）为准。`TagPredicateMixin` 实现为 `@WrapOperation` 包
+> `Holder.is(TagKey)`（与 `EnderManMixin`/`tweaks.EntityKineticBulletMixin` 同款手法）。
+
 注意：`TagKey` 在 26.2 是带 **弱 interner** 的 record，`TagKey.codec` 与
 `DamageTypeTags.IS_PROJECTILE` 都经 `create()` intern，因此 `==` 也可比较；稳妥起见用 `equals`。
 `Holder` 是 sealed interface（只允许 `Direct`/`Reference`），**无法**伪造一个「撒谎的 Holder」，
