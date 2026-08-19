@@ -1,3 +1,4 @@
+import java.security.MessageDigest
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -142,15 +143,16 @@ val checkModIcon by tasks.registering {
         var execSuccess = false
         for (cmd in pythonCommands) {
             try {
-                val result = project.exec {
-                    commandLine(cmd, checker.asFile.absolutePath)
-                    isIgnoreExitValue = true
-                }
-                if (result.exitValue == 0) {
+                val process = ProcessBuilder(cmd, checker.asFile.absolutePath)
+                    .directory(rootDir)
+                    .inheritIO()
+                    .start()
+                val exitCode = process.waitFor()
+                if (exitCode == 0) {
                     execSuccess = true
                     break
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Command not found or failed to execute
             }
         }
@@ -173,8 +175,8 @@ val checkModIcon by tasks.registering {
                 errors.add("cannot read ${iconPath.name}")
             } else {
                 val bytes = iconPath.readBytes()
-                val md = java.security.MessageDigest.getInstance("SHA-256")
-                val digest = md.digest(bytes).joinToString("") { "%02x".format(it) }
+                val md = MessageDigest.getInstance("SHA-256")
+                val digest = md.digest(bytes).joinToString("") { b -> "%02x".format(b) }
                 val expectedSha = "c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d"
                 val rejectedSha = "5e1272a625af1b0b4d866d0fb468e1cea0a9258411f16a7d06d31a84e8953ac8"
 
