@@ -22,6 +22,8 @@
 ## 发布前检查
 
 ```bash
+python3 scripts/download_dependencies.py --check-only
+python3 scripts/check_release_consistency.py
 python3 scripts/check_mod_icon.py
 python3 scripts/audit_port.py --strict \
   --tacz-jar <matching-tacz-jar> \

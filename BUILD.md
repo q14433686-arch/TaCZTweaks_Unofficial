@@ -61,6 +61,9 @@ gradlew.bat build -Ptacztweaks.python=C:\Python312\python.exe
 
 ## 3. 放两个编译期依赖到 `libs/`
 
+这两个大 jar 通过 `flatDir` / `files(...)` 引用。仓库用 `RESOURCE_IMPORT_MANIFEST.tsv`
+固定来源、许可证和校验和。
+
 进入项目根目录 `libs/`，放入以下文件（**文件名必须完全一致**）：
 
 ### ① TaCZ 本体
@@ -77,6 +80,13 @@ https://cdn.modrinth.com/data/1eAoo2KR/versions/pHWDw3Vc/yet_another_config_lib_
 ```
 保存为：`yacl-fabric.jar`
 
+也可以直接让脚本按 manifest 下载并校验：
+
+```powershell
+python scripts/download_dependencies.py
+# Linux/macOS 可用 python3 scripts/download_dependencies.py
+```
+
 放好之后：
 
 ```text
@@ -84,6 +94,12 @@ libs/
 ├── README.txt
 ├── TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar
 └── yacl-fabric.jar
+```
+
+发布前必须校验哈希：
+
+```powershell
+python scripts/download_dependencies.py --check-only
 ```
 
 ---
@@ -104,14 +120,20 @@ build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1.jar
 build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 ```
 
+本分支使用 `fabric-loom-remap`，上面的 jar 是 **remapJar** 发布产物。
+
 ### 测试与门禁
 
-`check` / `build` 生命周期包含 `checkModIcon`：它会校验 `fabric.mod.json` 的图标路径、
-带有效 IHDR 的 512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的
-固定来源、作者、使用路径与 GPL-3.0 声明。也可在 Gradle 之外单独运行检查器。
+`check` / `build` 生命周期包含 `checkModIcon`、`checkVendoredDependencies` 和
+`checkJarContents`：它们会校验 `fabric.mod.json` 的图标路径、带有效 IHDR 的 512×512 PNG、
+批准的 SHA-256，`THIRD_PARTY_NOTICES.md` 中的固定来源、作者、使用路径与 GPL-3.0 声明，
+本地 `libs/` 校验和，以及 remapped 发布 jar 内的 `META-INF/LICENSE_tacztweaks` 与
+`META-INF/THIRD_PARTY_NOTICES_tacztweaks.md`。也可在 Gradle 之外单独运行检查器。
 
 ```powershell
 # Windows（Linux/macOS 将 `py -3` 换成 `python3`）
+py -3 scripts/download_dependencies.py --check-only
+py -3 scripts/check_release_consistency.py
 py -3 scripts/check_mod_icon.py
 py -3 scripts/audit_port.py --strict `
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar `

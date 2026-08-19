@@ -2,6 +2,7 @@ import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
+import java.util.zip.ZipFile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -9,7 +10,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("net.fabricmc.fabric-loom-remap")
     kotlin("jvm") version "2.4.10"
-    id("maven-publish")
 }
 
 val modVersion = providers.gradleProperty("mod_version").get()
@@ -271,8 +271,125 @@ val checkModIcon by tasks.registering {
     }
 }
 
+val checkVendoredDependencies by tasks.registering {
+    group = "verification"
+    description = "Verifies vendored binary dependencies against RESOURCE_IMPORT_MANIFEST.tsv."
+
+    val manifest = layout.projectDirectory.file("RESOURCE_IMPORT_MANIFEST.tsv")
+    inputs.file(manifest)
+    inputs.dir(layout.projectDirectory.dir("libs"))
+
+    doLast {
+        val rows = manifest.asFile.readLines(Charsets.UTF_8)
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+        check(rows.isNotEmpty()) { "RESOURCE_IMPORT_MANIFEST.tsv is empty" }
+        val headers = rows.first().split('\t')
+        val pathIndex = headers.indexOf("path")
+        val sha256Index = headers.indexOf("sha256")
+        val sha512Index = headers.indexOf("sha512")
+        val bundledIndex = headers.indexOf("bundled_in_release_jar")
+        check(pathIndex >= 0 && bundledIndex >= 0 && (sha256Index >= 0 || sha512Index >= 0)) {
+            "RESOURCE_IMPORT_MANIFEST.tsv must contain path, bundled_in_release_jar and sha256/sha512 columns"
+        }
+        rows.drop(1).forEach { row ->
+            val columns = row.split('\t')
+            val relativePath = columns.getOrNull(pathIndex).orEmpty()
+            val expectedSha256 = columns.getOrNull(sha256Index).orEmpty()
+            val expectedSha512 = columns.getOrNull(sha512Index).orEmpty()
+            check(relativePath.isNotBlank()) { "Malformed dependency manifest row: $row" }
+            check(expectedSha256.matches(Regex("[0-9a-f]{64}")) || expectedSha512.matches(Regex("[0-9a-f]{128}"))) {
+                "Manifest row for $relativePath must declare sha256 and/or sha512"
+            }
+            val file = layout.projectDirectory.file(relativePath).asFile
+            check(file.isFile) { "Manifest dependency is missing: $relativePath" }
+            if (expectedSha256.matches(Regex("[0-9a-f]{64}"))) {
+                val actualSha = MessageDigest.getInstance("SHA-256")
+                    .digest(file.readBytes())
+                    .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+                check(actualSha == expectedSha256) {
+                    "SHA-256 mismatch for $relativePath: expected $expectedSha256, got $actualSha"
+                }
+            }
+            if (expectedSha512.matches(Regex("[0-9a-f]{128}"))) {
+                val actualSha = MessageDigest.getInstance("SHA-512")
+                    .digest(file.readBytes())
+                    .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+                check(actualSha == expectedSha512) {
+                    "SHA-512 mismatch for $relativePath: expected $expectedSha512, got $actualSha"
+                }
+            }
+        }
+        logger.lifecycle("VENDORED DEPENDENCIES: OK (${rows.size - 1} files)")
+    }
+}
+
+tasks.named<Jar>("jar") {
+    from(layout.projectDirectory.file("LICENSE")) {
+        into("META-INF")
+        rename { "LICENSE_tacztweaks" }
+    }
+    from(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md")) {
+        into("META-INF")
+        rename { "THIRD_PARTY_NOTICES_tacztweaks.md" }
+    }
+}
+
+// 1.21.11 is obfuscated and this project uses fabric-loom-remap, so the published
+// artifact is remapJar. Do not copy the unobfuscated 26.2 dependsOn("jar") path,
+// and do not assume remapJar exists on every future Loom setup.
+val releaseJarTaskName = if (tasks.names.contains("remapJar")) "remapJar" else "jar"
+
+val checkJarContents by tasks.registering {
+    group = "verification"
+    description = "Verifies required release jar metadata and rejects accidental bundled fixtures/local jars."
+    dependsOn(releaseJarTaskName)
+
+    doLast {
+        val archiveTask = tasks.named(releaseJarTaskName).get()
+        val jarFile = if (archiveTask is org.gradle.api.tasks.bundling.AbstractArchiveTask) {
+            archiveTask.archiveFile.get().asFile
+        } else {
+            layout.buildDirectory
+                .file("libs/${project.property("archives_base_name")}-$modVersion.jar")
+                .get()
+                .asFile
+        }
+        check(jarFile.isFile) { "Expected release jar does not exist: $jarFile" }
+        ZipFile(jarFile).use { zip ->
+            fun requireEntry(name: String) {
+                check(zip.getEntry(name) != null) { "Release jar is missing $name" }
+            }
+            requireEntry("fabric.mod.json")
+            requireEntry("icon.png")
+            requireEntry("tacztweaks.mixins.json")
+            requireEntry("META-INF/LICENSE_tacztweaks")
+            requireEntry("META-INF/THIRD_PARTY_NOTICES_tacztweaks.md")
+
+            val metadata = zip.getInputStream(zip.getEntry("fabric.mod.json")).reader(Charsets.UTF_8).readText()
+            check("\${version}" !in metadata) { "fabric.mod.json version placeholder was not expanded" }
+            check("\"$modVersion\"" in metadata) {
+                "fabric.mod.json does not contain expanded version $modVersion"
+            }
+            check("\"contact\"" in metadata && "TaCZTweaks_Unofficial/issues" in metadata) {
+                "fabric.mod.json contact metadata is incomplete"
+            }
+
+            val forbidden = zip.entries().asSequence().map { it.name }.filter { name ->
+                name.startsWith("fixtures/") ||
+                    name.startsWith("src/test/") ||
+                    name.endsWith(".log") ||
+                    name.startsWith("libs/") ||
+                    name == "yacl-fabric.jar" ||
+                    name.startsWith("TACZ-Refabricated-")
+            }.toList()
+            check(forbidden.isEmpty()) { "Release jar contains forbidden entries: $forbidden" }
+        }
+        logger.lifecycle("JAR CONTENTS: OK ($jarFile via $releaseJarTaskName)")
+    }
+}
+
 tasks.named("check") {
-    dependsOn(checkModIcon)
+    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents)
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
