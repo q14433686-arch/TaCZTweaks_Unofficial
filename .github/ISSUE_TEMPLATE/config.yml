@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用说明与问题排查 / Documentation and troubleshooting
+    url: https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/HEAD/docs/SUPPORT.md
+    about: 提交前请先阅读支持范围、最小复现和日志要求
+  - name: 原版 TaCZ Tweaks 问题 / Original TaCZ Tweaks issues
+    url: https://github.com/MUKSC/TaCZTweaks/issues
+    about: 仅适用于能够在原版 TaCZ Tweaks 中复现、且与本 Fabric 移植无关的问题
+  - name: TaCZ Refabricated Unofficial 问题
+    url: https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/issues
+    about: 不安装 TaCZ Tweaks 也能在底层 TaCZ Fabric 移植中复现的问题，请提交到该项目

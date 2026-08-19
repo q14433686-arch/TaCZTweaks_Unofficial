@@ -1,3 +1,4 @@
+import java.security.MessageDigest
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -119,6 +120,123 @@ tasks.named<org.gradle.api.tasks.testing.Test>("test") {
     doFirst {
         stagedWorkingDirectory.mkdirs()
     }
+}
+
+val checkModIcon by tasks.registering {
+    group = "verification"
+    description = "Verifies the mod icon checksum, metadata path, dimensions, and license notice."
+    val checker = layout.projectDirectory.file("scripts/check_mod_icon.py")
+    val metadataFile = layout.projectDirectory.file("src/main/resources/fabric.mod.json")
+    val iconFile = layout.projectDirectory.file("src/main/resources/icon.png")
+    val noticeFile = layout.projectDirectory.file("THIRD_PARTY_NOTICES.md")
+
+    inputs.file(checker)
+    inputs.file(metadataFile)
+    inputs.file(iconFile)
+    inputs.file(noticeFile)
+
+    doLast {
+        val osName = System.getProperty("os.name") ?: ""
+        val isWindows = osName.startsWith("Windows", ignoreCase = true)
+        val pythonCommands = if (isWindows) listOf("py", "python", "python3") else listOf("python3", "python")
+
+        var execSuccess = false
+        for (cmd in pythonCommands) {
+            try {
+                val process = ProcessBuilder(cmd, checker.asFile.absolutePath)
+                    .directory(rootDir)
+                    .inheritIO()
+                    .start()
+                val exitCode = process.waitFor()
+                if (exitCode == 0) {
+                    execSuccess = true
+                    break
+                }
+            } catch (_: Exception) {
+                // Command not found or failed to execute
+            }
+        }
+
+        if (!execSuccess) {
+            val errors = mutableListOf<String>()
+
+            val metaPath = metadataFile.asFile
+            if (!metaPath.exists()) {
+                errors.add("cannot read ${metaPath.name}")
+            } else {
+                val metaText = metaPath.readText(Charsets.UTF_8)
+                if (!metaText.contains("\"icon\": \"icon.png\"") && !metaText.contains("\"icon\": 'icon.png'")) {
+                    errors.add("fabric.mod.json icon must be 'icon.png'")
+                }
+            }
+
+            val iconPath = iconFile.asFile
+            if (!iconPath.exists()) {
+                errors.add("cannot read ${iconPath.name}")
+            } else {
+                val bytes = iconPath.readBytes()
+                val md = MessageDigest.getInstance("SHA-256")
+                val digest = md.digest(bytes).joinToString("") { b -> "%02x".format(b) }
+                val expectedSha = "c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d"
+                val rejectedSha = "5e1272a625af1b0b4d866d0fb468e1cea0a9258411f16a7d06d31a84e8953ac8"
+
+                if (digest == rejectedSha) {
+                    errors.add("mod icon is the known dark-grey/orange placeholder")
+                } else if (digest != expectedSha) {
+                    errors.add("mod icon SHA-256 drifted: expected $expectedSha, got $digest")
+                }
+
+                if (bytes.size < 24 ||
+                    bytes[0] != 0x89.toByte() || bytes[1] != 'P'.code.toByte() ||
+                    bytes[2] != 'N'.code.toByte() || bytes[3] != 'G'.code.toByte() ||
+                    bytes[12] != 'I'.code.toByte() || bytes[13] != 'H'.code.toByte() ||
+                    bytes[14] != 'D'.code.toByte() || bytes[15] != 'R'.code.toByte()
+                ) {
+                    errors.add("mod icon is not a PNG with a valid leading IHDR chunk")
+                } else {
+                    val width = ((bytes[16].toInt() and 0xFF) shl 24) or
+                            ((bytes[17].toInt() and 0xFF) shl 16) or
+                            ((bytes[18].toInt() and 0xFF) shl 8) or
+                            (bytes[19].toInt() and 0xFF)
+                    val height = ((bytes[20].toInt() and 0xFF) shl 24) or
+                            ((bytes[21].toInt() and 0xFF) shl 16) or
+                            ((bytes[22].toInt() and 0xFF) shl 8) or
+                            (bytes[23].toInt() and 0xFF)
+                    if (width != 512 || height != 512) {
+                        errors.add("mod icon must be 512x512, got ${width}x${height}")
+                    }
+                }
+            }
+
+            val noticePath = noticeFile.asFile
+            if (!noticePath.exists()) {
+                errors.add("cannot read ${noticePath.name}")
+            } else {
+                val noticeText = noticePath.readText(Charsets.UTF_8)
+                val requiredNoticeValues = mapOf(
+                    "Modrinth icon source" to "https://cdn.modrinth.com/data/H8peNuJG/0c9fcf0f40ec59d591b7cc17452c63a843df122e.png",
+                    "immutable upstream revision" to "74ba2412a6149a1d91788c3663497c4c81992983",
+                    "approved icon checksum" to "c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d",
+                    "icon license" to "GPL-3.0"
+                )
+                for ((label, value) in requiredNoticeValues) {
+                    if (!noticeText.contains(value)) {
+                        errors.add("THIRD_PARTY_NOTICES.md is missing $label: $value")
+                    }
+                }
+            }
+
+            if (errors.isNotEmpty()) {
+                throw GradleException("MOD ICON: ${errors.size} error(s)\n" + errors.joinToString("\n") { "ERROR: $it" })
+            } else {
+                logger.lifecycle("MOD ICON: OK (512x512, SHA-256 c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d) [fallback JVM check]")
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(checkModIcon)
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
