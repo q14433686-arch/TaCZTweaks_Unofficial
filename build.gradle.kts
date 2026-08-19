@@ -248,14 +248,16 @@ val checkJarContents by tasks.registering {
     group = "verification"
     description = "Verifies required release jar metadata and rejects accidental bundled fixtures/local jars."
 
-    dependsOn("remapJar")
+    // Minecraft 26.1+ is unobfuscated in this port, so Loom does not create a remapJar task.
+    // The normal jar task is the release jar whose resources and notices must be audited.
+    dependsOn("jar")
 
     doLast {
         val jarFile = layout.buildDirectory
             .file("libs/${project.property("archives_base_name")}-$modVersion.jar")
             .get()
             .asFile
-        check(jarFile.isFile) { "Expected remapped jar does not exist: $jarFile" }
+        check(jarFile.isFile) { "Expected release jar does not exist: $jarFile" }
         ZipFile(jarFile).use { zip ->
             fun requireEntry(name: String) {
                 check(zip.getEntry(name) != null) { "Release jar is missing $name" }
