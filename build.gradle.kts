@@ -1,4 +1,5 @@
 import groovy.json.JsonSlurper
+import java.net.URL
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
@@ -54,7 +55,7 @@ val downloadTaczJar by tasks.registering {
     doLast {
         taczLocalFile.asFile.parentFile.mkdirs()
         logger.lifecycle("Downloading TaCZ jar from $taczDownloadUrl...")
-        java.net.URL(taczDownloadUrl).openStream().use { input ->
+        URL(taczDownloadUrl).openStream().use { input ->
             taczLocalFile.asFile.outputStream().use { output ->
                 input.copyTo(output)
             }
