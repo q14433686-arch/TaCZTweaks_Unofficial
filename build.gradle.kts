@@ -1,3 +1,4 @@
+import java.util.concurrent.TimeUnit
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -152,7 +153,7 @@ val checkModIcon by tasks.registering(org.gradle.api.tasks.Exec::class) {
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .start()
-            val finished = probe.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+            val finished = probe.waitFor(5, TimeUnit.SECONDS)
             if (!finished) probe.destroyForcibly()
             finished && probe.exitValue() == 0
         } catch (_: Exception) {
