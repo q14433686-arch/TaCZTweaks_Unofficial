@@ -90,7 +90,12 @@ build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 
 ### 测试与门禁
 
+`check` / `build` 生命周期包含 `checkModIcon`：它会校验 `fabric.mod.json` 的图标路径、
+带有效 IHDR 的 512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的
+固定来源、作者、使用路径与 GPL-3.0 声明。也可在 Gradle 之外单独运行检查器。
+
 ```powershell
+python scripts/check_mod_icon.py
 python scripts/audit_port.py --strict `
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar `
   --minecraft-named-jar <named-jar> `

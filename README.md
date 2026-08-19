@@ -9,6 +9,10 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 当前测试版本：**Beta-1**（`2.14.2+fabric.1.21.11.Beta-1`）。
 
+[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
+
+> **这是非官方社区移植。** 提交问题前必须完成最小环境测试，并移除本模组做相同条件的对照测试。本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
+
 ---
 
 ## 当前状态
@@ -95,6 +99,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 可用的发布前门禁：
 
 ```bash
+python3 scripts/check_mod_icon.py
 python3 scripts/audit_port.py --strict \
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar \
   --minecraft-named-jar <1.21.11 named jar> \
@@ -106,8 +111,22 @@ python3 scripts/check_server_log.py <dedicated-server-latest.log>
 > `libs/` 下的 `TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar`（compileOnly / testRuntimeOnly）
 > 与 `yacl-fabric.jar` 需要按 BUILD.md 手动下载。若已先执行 `build`，audit 也会自动尝试发现默认输出位置的 refmap。
 
+图标门禁同时进入静态审计和 Gradle `check` / `build` 生命周期，用于锁定 `fabric.mod.json`
+路径、有效 IHDR、512×512 尺寸、批准的 SHA-256 与第三方许可记录。
+
 ## 许可
 
 - 代码：GPL-3.0（继承原项目 MUKSC/TaCZTweaks）
 - 原作者：MUKSC
-- Bundled notices：见 `THIRD_PARTY_NOTICES.md`
+- 原版图标、嵌入组件与其他第三方来源/许可：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+
+## 问题反馈
+
+提交前请阅读[支持范围与问题反馈](docs/SUPPORT.md)，搜索 open 和 closed issues，并使用对应表单：
+
+- [Bug 报告](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues/new?template=bug_report.yml)
+- [内容包 / 兼容性问题](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues/new?template=compat_report.yml)
+
+报告必须包含完整版本、完整日志、从新建存档或测试服务器开始的最小复现步骤、出现环境、
+相关配置，以及枪包、可选兼容模组和其他第三方内容的准确名称与完整版本。“最新版”、
+截图或单行报错不能代替这些资料。

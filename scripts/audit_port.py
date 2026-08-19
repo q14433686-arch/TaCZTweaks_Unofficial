@@ -10,6 +10,8 @@ mixed named/intermediary remap safety and the easiest-to-miss regressions:
 * disallowed lambda$... mixin targets on vanilla classes in the obfuscated branch;
 * bundled MixinExtras lower than the mixin JSON minimum;
 * README/BUILD release drift after version bumps;
+* required support/publication files and version-free long-lived release copy;
+* mod-icon content, dimensions, metadata path, and license-provenance drift;
 * upstream source omissions without an allowlisted explanation.
 """
 
@@ -25,6 +27,8 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+from check_mod_icon import validate_icon
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src/main"
@@ -716,6 +720,50 @@ def audit_versions(config: dict) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def audit_release_guards() -> list[str]:
+    """Require support workflow files and stable, version-free publication copy."""
+    errors: list[str] = []
+    required_files = {
+        ".github/ISSUE_TEMPLATE/bug_report.yml",
+        ".github/ISSUE_TEMPLATE/compat_report.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        "docs/README.md",
+        "docs/SUPPORT.md",
+        "docs/publish/README.md",
+        "docs/publish/Modrinth.md",
+        "docs/publish/CurseForge.md",
+    }
+    for name in sorted(required_files):
+        if not (ROOT / name).is_file():
+            errors.append(f"missing support or publication document: {name}")
+
+    publish_paths = [
+        ROOT / name
+        for name in sorted(required_files)
+        if name.startswith("docs/publish/") and (ROOT / name).is_file()
+    ]
+    publication_text = "\n".join(
+        path.read_text(encoding="utf-8") for path in publish_paths
+    )
+    properties = read_properties(ROOT / "gradle.properties")
+    for key in ("minecraft_version", "mod_version"):
+        value = properties.get(key)
+        if value and value in publication_text:
+            errors.append(f"publication copy must not embed current {key}: {value}")
+
+    numbered_stage = re.compile(
+        r"(?ix)\b(?:"
+        r"alpha\s*[-_.]?\s*\d+|"
+        r"beta\s*[-_.]?\s*\d+|"
+        r"release\s*[-_ ]?\s*candidate\s*[-_.]?\s*\d+|"
+        r"rc\s*[-_.]?\s*\d+"
+        r")\b"
+    )
+    if numbered_stage.search(publication_text):
+        errors.append("publication copy must not embed a numbered release stage")
+    return errors
+
+
 def audit_mixins(
     config: dict,
     named: JarIndex,
@@ -936,6 +984,9 @@ def main() -> int:
     version_errors, version_warnings = audit_versions(config)
     errors.extend(version_errors)
     warnings.extend(version_warnings)
+
+    errors.extend(audit_release_guards())
+    errors.extend(validate_icon())
 
     if args.upstream_root:
         upstream_errors, upstream_warnings = compare_upstream(args.upstream_root)

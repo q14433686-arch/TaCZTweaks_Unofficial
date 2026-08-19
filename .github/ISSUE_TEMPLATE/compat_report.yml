@@ -1,0 +1,106 @@
+name: 内容包 / 兼容性问题
+description: 第三方枪包、数据包、资源包或可选模组的兼容问题
+title: "[Compat] "
+labels: ["compatibility", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        此模板用于只在特定第三方枪包、数据包、资源包或可选模组存在时发生的问题。**兼容不代表本项目拥有、维护或重新许可该第三方内容。** 请确认其作者声明支持你的游戏与加载器环境。
+
+        所有版本必须填写完整值；“最新版”或 “latest” 不是有效答案。完整日志是必需资料。
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前检查 / Pre-submit checklist
+      options:
+        - label: 我已搜索 open 和 closed issues，没有找到相同报告 / I searched open and closed issues.
+          required: true
+        - label: 我已阅读第三方作者声明的安装方式、前置依赖和许可 / I read the third-party author's installation, dependencies, and license information.
+          required: true
+        - label: 我已移除该第三方内容做对照测试 / I performed a control test with the third-party content removed.
+          required: true
+
+  - type: input
+    id: game_version
+    attributes:
+      label: Minecraft 完整版本 / Exact Minecraft version
+      description: 不要写“最新版” / Never answer “latest”.
+    validations:
+      required: true
+
+  - type: input
+    id: mod_version
+    attributes:
+      label: TaCZ Tweaks (Refabricated) 完整版本 / Exact TaCZ Tweaks (Refabricated) version
+      description: 不要写“最新版” / Never answer “latest”.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependency_versions
+    attributes:
+      label: Fabric Loader、Java、TaCZ 与全部必需依赖版本 / Loader, Java, TaCZ, and all required dependencies
+      description: 每行一个准确名称与完整版本，不要写“最新版” / One exact name and full version per line; never “latest”.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: content_name
+    attributes:
+      label: 第三方内容的准确名称与完整版本 / Exact third-party content name and version
+      description: 枪包、数据包、资源包或可选模组；不要写“最新版” / Name the gun pack, data pack, resource pack, or optional mod exactly.
+    validations:
+      required: true
+
+  - type: input
+    id: content_source
+    attributes:
+      label: 第三方内容的官方发布页或源码链接 / Official release or source URL
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: declared_dependencies
+    attributes:
+      label: 第三方作者声明的前置依赖与安装方法 / Author-declared prerequisites and installation
+      description: 按官方页面准确列出，不要根据文件内容猜测 / Quote or accurately summarize the official instructions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: removal_control
+    attributes:
+      label: 移除第三方内容后的对照结果 / Control result after removing the third-party content
+      description: 说明移除了哪些文件、保留了什么，以及相同步骤的结果 / State exactly what was removed and what happened with the same steps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 实际表现、预期表现与最小复现步骤 / Actual behavior, expected behavior, and minimal steps
+      description: 从新建存档或测试服务器开始 / Start from a new world or test server.
+    validations:
+      required: true
+
+  - type: input
+    id: log_link
+    attributes:
+      label: 完整 latest.log 或 crash report 链接 / Full latest.log or crash-report link
+      description: 截图和单行错误不能替代完整日志 / Screenshots and isolated lines cannot replace the full log.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: other_mods
+    attributes:
+      label: 其他已安装模组 / Other installed mods
+      description: 每行填写准确名称与完整版本；没有则写“无”。不要写“最新版” / Exact name and full version per line, or “none”.
+      render: text
+    validations:
+      required: true
