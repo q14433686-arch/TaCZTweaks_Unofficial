@@ -141,10 +141,44 @@ val checkModIcon by tasks.registering(org.gradle.api.tasks.Exec::class) {
     inputs.file(layout.projectDirectory.file("src/main/resources/icon.png"))
     inputs.file(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md"))
 
-    commandLine(
-        if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "python" else "python3",
-        checker.asFile.absolutePath,
-    )
+    doFirst {
+        fun supportsPython3(command: List<String>): Boolean = try {
+            val probe = ProcessBuilder(
+                command + listOf(
+                    "-c",
+                    "import sys; raise SystemExit(0 if sys.version_info >= (3, 8) else 1)",
+                )
+            )
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+            val finished = probe.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+            if (!finished) probe.destroyForcibly()
+            finished && probe.exitValue() == 0
+        } catch (_: Exception) {
+            false
+        }
+
+        val configuredPython = providers.gradleProperty("tacztweaks.python").orNull
+            ?: System.getenv("PYTHON")
+        val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+        val candidates = buildList {
+            configuredPython?.takeIf { it.isNotBlank() }?.let { add(listOf(it)) }
+            if (isWindows) add(listOf("py", "-3"))
+            add(listOf("python3"))
+            add(listOf("python"))
+        }.distinct()
+        val python = candidates.firstOrNull(::supportsPython3)
+            ?: throw GradleException(
+                "checkModIcon requires Python 3.8 or newer. Tried: " +
+                    candidates.joinToString { it.joinToString(" ") } +
+                    ". Install Python 3 (the Windows 'py' launcher is supported), set PYTHON, " +
+                    "or pass -Ptacztweaks.python=<path-to-python>."
+            )
+
+        logger.lifecycle("checkModIcon: using ${python.joinToString(" ")}")
+        commandLine(*(python + checker.asFile.absolutePath).toTypedArray())
+    }
 }
 
 tasks.named("check") {

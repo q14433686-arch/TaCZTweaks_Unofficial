@@ -15,6 +15,7 @@
 | 项目 | 要求 |
 |---|---|
 | JDK | **Java 21** |
+| Python | **Python 3.8+**（仅使用标准库；供图标与静态审计门禁使用） |
 | 网络 | 首次构建要从 Maven 下载依赖 |
 | 磁盘 | 约 1GB（Minecraft 1.21.11 + Fabric API + Loom remap 产物） |
 
@@ -30,6 +31,20 @@
   java -version
   ```
   应显示 `openjdk version "21.0.x"`。构建时 Gradle 优先使用 `JAVA_HOME`。
+
+图标和静态审计门禁还需要 **Python 3.8+**。Gradle 会依次探测 Windows 的
+`py -3`、`python3` 和 `python`，避免 Microsoft Store 的失效 `python.exe` 别名
+以退出码 9009 中断构建。安装后验证：
+
+```powershell
+py -3 --version
+```
+
+也可设置 `PYTHON` 环境变量，或在构建时显式指定解释器路径：
+
+```powershell
+gradlew.bat build -Ptacztweaks.python=C:\Python312\python.exe
+```
 
 ---
 
@@ -95,14 +110,15 @@ build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 固定来源、作者、使用路径与 GPL-3.0 声明。也可在 Gradle 之外单独运行检查器。
 
 ```powershell
-python scripts/check_mod_icon.py
-python scripts/audit_port.py --strict `
+# Windows（Linux/macOS 将 `py -3` 换成 `python3`）
+py -3 scripts/check_mod_icon.py
+py -3 scripts/audit_port.py --strict `
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar `
   --minecraft-named-jar <named-jar> `
   --minecraft-intermediary-jar <intermediary-jar> `
   --refmap build/resources/main/tacztweaks.refmap.json
-./gradlew test
-python scripts/check_server_log.py run/logs/latest.log
+gradlew.bat test
+py -3 scripts/check_server_log.py run/logs/latest.log
 ```
 
 `test` 任务会把运行时 classpath staging 到 ASCII-only `GRADLE_USER_HOME`，
@@ -130,6 +146,7 @@ python scripts/check_server_log.py run/logs/latest.log
 | `Could not resolve ... TACZ-Refabricated ...` | `libs/` 里 TaCZ jar 缺失或文件名不对 |
 | `Could not resolve ... yacl ...` | `libs/yacl-fabric.jar` 缺失 |
 | `UnsupportedClassVersionError` / `invalid source release 21` | JDK 版本不对，换成 JDK 21 |
+| `checkModIcon` / Python 退出码 `9009` | 安装 Python 3.8+ 并确认 `py -3 --version`；也可用 `-Ptacztweaks.python=<解释器路径>` |
 | `MixinApplyError` / `InvalidInjectionException` | 不要只看 Gradle 退出码，先跑 `scripts/audit_port.py` 与 `scripts/check_server_log.py` |
 | `Out of space in CodeCache for adapters` | 先执行 `gradlew.bat --stop`，再重跑 `gradlew.bat build`，确保新的 `gradle.properties` JVM 参数已生效 |
 | Daemon 内存不足 | 调整 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` |
