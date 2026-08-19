@@ -1,3 +1,4 @@
+import java.security.MessageDigest
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -144,9 +145,9 @@ val checkModIcon by tasks.registering {
         }
 
         val raw = iconFile.asFile.readBytes()
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val digest = MessageDigest.getInstance("SHA-256")
             .digest(raw)
-            .joinToString("") { "%02x".format(it) }
+            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
         check(digest != rejectedPlaceholderSha256) {
             "mod icon is the known dark-grey/orange placeholder"
         }
