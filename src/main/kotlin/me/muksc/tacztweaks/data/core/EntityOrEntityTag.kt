@@ -18,7 +18,8 @@ sealed interface EntityOrEntityTag : EntityTestable {
     }
 
     class EntityTag(val tag: TagKey<EntityType<*>>) : EntityOrEntityTag {
-        override fun test(entity: net.minecraft.world.entity.Entity): Boolean = entity.type.builtInRegistryHolder().`is`(tag)
+        override fun test(entity: net.minecraft.world.entity.Entity): Boolean =
+            BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(entity.type).`is`(tag)
 
         companion object {
             val CODEC: Codec<EntityTag> = TagKey.hashedCodec(Registries.ENTITY_TYPE).xmap(::EntityTag, EntityTag::tag)

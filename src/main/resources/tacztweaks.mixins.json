@@ -11,7 +11,6 @@
     "accessor.ModifierAccessor",
     "accessor.InaccuracyTypeAccessor",
     "crawl.LivingEntityCrawlMixin",
-    "crawl.LocalPlayerCrawlMixin",
     "features.BlockRayTraceMixin",
     "features.EntityKineticBulletMixin",
     "gun.LivingEntityMixin",
@@ -31,14 +30,24 @@
     "modifiers.AttachmentDataUtilsMixin",
     "modifiers.EntityKineticBulletMixin",
     "modifiers.GunRecoilMixin",
+    "compat.lrtactical.IMeleeWeaponMixin",
+    "features.melee_interactions.ModernKineticGunItemMixin",
+    "tweaks.EnchantmentHelperMixin",
     "tweaks.EnderManMixin",
     "tweaks.EntityKineticBulletMixin",
     "tweaks.InaccuracyTypeMixin",
     "tweaks.LivingEntityAmmoCheckMixin",
-    "tweaks.ModernKineticGunScriptAPIMixin"
+    "tweaks.ModernKineticGunScriptAPIMixin",
+    "compat.firstaid.EventHandlerMixin",
+    "compat.pillagers_gun.EntityUtilMixin",
+    "features.ModernKineticGunScriptAPIMixin",
+    "features.bullet_interactions.LivingEntityMixin",
+    "modifiers.ProjectileExplosionMixin"
   ],
   "client": [
     "accessor.LocalPlayerShootAccessor",
+    "crawl.LocalPlayerCrawlMixin",
+    "crawl.AvatarRendererMixin",
     "gun.EntityBulletRendererMixin",
     "gun.GunAnimationStateContextMixin",
     "gun.LocalPlayerBoltMixin",
@@ -54,13 +63,30 @@
     "gun.movement.LocalPlayerSprintMixin",
     "gun.movement.TickAnimationEventMixin",
     "modifiers.CameraSetupEventMixin",
+    "modifiers.AdsModifierDiagramMixin",
+    "modifiers.AmmoSpeedModifierDiagramMixin",
+    "modifiers.ArmorIgnoreModifierDiagramMixin",
+    "modifiers.DamageModifierDiagramMixin",
+    "modifiers.HeadshotModifierDiagramMixin",
+    "modifiers.RPMModifierDiagramMixin",
+    "modifiers.RecoilModifierDiagramMixin",
+    "modifiers.InaccuracyModifierDiagramMixin",
     "tweaks.GunPackListMixin",
+    "tweaks.ObjectAnimationSoundChannelMixin",
+    "tweaks.GunSoundInstanceMixin",
+    "tweaks.GunSoundInstanceTaczSoundMixin",
     "tweaks.RefitKeyMixin",
     "tweaks.RPMModifierMixin",
     "tweaks.RenderCrosshairEventMixin",
-    "tweaks.SoundPlayManagerMixin"
+    "tweaks.SoundBufferLibraryMixin",
+    "tweaks.SoundPlayManagerMixin",
+    "compat.soundphysics.SoundPhysicsMixin",
+    "gun.movement.LocalPlayerReloadCancelMixin",
+    "gun.movement.LocalPlayerSprintReloadMixin",
+    "tweaks.GunSmithTableScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "plugin": "me.muksc.tacztweaks.ModMixinPlugin"
 }

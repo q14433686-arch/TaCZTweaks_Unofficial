@@ -8,7 +8,7 @@
     "minecraft:iron_bars",
     "minecraft:iron_door",
     "minecraft:iron_trapdoor",
-    "minecraft:chain",
+    "#minecraft:chains",
     "minecraft:heavy_weighted_pressure_plate",
     "minecraft:light_weighted_pressure_plate",
     "minecraft:anvil",

@@ -2,6 +2,8 @@
 
 本模组是 **TaCZ Tweaks 的 Fabric 26.2 移植版**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
+当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
+`2.14.2+fabric.26.2.Beta-1`。
 
 ---
 
@@ -97,8 +99,21 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.R1.jar   ← 这就是模组，扔进 .minecraft/mods/ 即可
+build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1.zip  ← 可重载示例包
 ```
+
+### 专用服务器 smoke test 门禁
+
+Loom 在 Minecraft 子进程启动失败时可能仍让 Gradle 任务返回 0，不能只看 `BUILD SUCCESSFUL`。
+对专服的 `latest.log`（或捕获的 stdout）再运行：
+
+```powershell
+python scripts/check_server_log.py run/logs/latest.log
+```
+
+只有日志出现 `Done (...)!`，且不含 `MixinApplyError`、`InvalidInjectionException` 或
+`Failed to start the minecraft server` 时才通过。
 
 ---
 
@@ -111,7 +126,7 @@ build/libs/tacztweaks-2.14.2+fabric.26.2.R1.jar   ← 这就是模组，扔进 .
 | `java.lang.UnsupportedClassVersionError` / `invalid source release 25` | 用了旧 JDK，换成 JDK 25 并设好 `JAVA_HOME` |
 | 下载依赖超时 | 重跑一次；国内网络可给 Gradle 配镜像仓库 |
 | `Daemon` 内存不足 | 编辑 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` 调大（如 `-Xmx4G`） |
-| 想跳过测试 | 加参数：`gradlew.bat build -x test`（本项目无测试，通常没差别） |
+| 想临时跳过测试 | 加参数：`gradlew.bat build -x test`（发布构建不得跳过；SafeMath、卸弹拆栈、PCM、codec 和 burst/pellet 均有测试） |
 
 ---
 

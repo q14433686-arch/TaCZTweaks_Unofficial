@@ -5,8 +5,10 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.id
+import net.minecraft.advancements.predicates.entity.EntityPredicate
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.TagKey
 import net.minecraft.util.StringRepresentable
 import net.minecraft.world.entity.EntityType
@@ -15,7 +17,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes
 
 /**
  * Structured entity matcher used by `entity` bullet interactions.
- * 26.2 note: the `predicate` type (removed in 26.2) is dropped from the dispatch.
+ * The 26.2 predicate API moved packages but still exposes a codec and match operation.
  */
 sealed class EntityTarget(
     val type: EEntityTargetType
@@ -30,6 +32,7 @@ sealed class EntityTarget(
         ENTITY("entity", { Entity.CODEC }),
         ENTITY_TAG("entity_tag", { EntityTag.CODEC }),
         REGEX("regex", { RegexPattern.CODEC }),
+        PREDICATE("predicate", { Predicate.CODEC }),
         HEALTH("health", { Health.CODEC }),
         ARMOR("armor", { Armor.CODEC }),
         ARMOR_TOUGHNESS("armor_toughness", { ArmorToughness.CODEC });
@@ -81,7 +84,8 @@ sealed class EntityTarget(
     }
 
     class EntityTag(val values: List<TagKey<EntityType<*>>>) : EntityTarget(EEntityTargetType.ENTITY_TAG) {
-        override fun test(entity: net.minecraft.world.entity.Entity): Boolean = values.any { entity.type.builtInRegistryHolder().`is`(it) }
+        override fun test(entity: net.minecraft.world.entity.Entity): Boolean =
+            values.any { BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(entity.type).`is`(it) }
 
         companion object {
             val CODEC: Codec<EntityTag> = RecordCodecBuilder.create<EntityTag> { it.group(
@@ -97,6 +101,18 @@ sealed class EntityTarget(
             val CODEC: Codec<RegexPattern> = RecordCodecBuilder.create<RegexPattern> { it.group(
                 Codec.STRING.xmap(::Regex, Regex::pattern).fieldOf("regex").forGetter(RegexPattern::regex)
             ).apply(it, ::RegexPattern) }
+        }
+    }
+
+    class Predicate(val predicate: EntityPredicate) : EntityTarget(EEntityTargetType.PREDICATE) {
+        override fun test(entity: net.minecraft.world.entity.Entity): Boolean =
+            entity.level() is ServerLevel &&
+                predicate.matches(entity.level() as ServerLevel, entity.position(), entity)
+
+        companion object {
+            val CODEC: Codec<Predicate> = RecordCodecBuilder.create<Predicate> { it.group(
+                EntityPredicate.CODEC.fieldOf("predicate").forGetter(Predicate::predicate)
+            ).apply(it, ::Predicate) }
         }
     }
 

@@ -3,6 +3,9 @@
 记录从 Forge 1.20.1 原版（MUKSC/TaCZTweaks v2.14.2）移植到
 `TaCZ_Refabricated_Unofficial`（26.2 主分支）的要点，供后续维护者参考。
 
+> 本文件 §1–§7.16 是按时间保留的迁移日志，其中“砍掉/不存在/暂未实现”描述的是**当轮状态**，
+> 不是最终能力结论。2026-08-18 复审后的当前事实见 §7.17、§8 和 [`AUDIT.md`](AUDIT.md)。
+
 ---
 
 ## 1. 目标仓库关键事实
@@ -350,7 +353,7 @@ helper。
 | 挖掘等级 | `TierSortingRegistry` | Fabric 无，需砍掉 `tier` 类型 |
 | 方块破坏事件 | Forge `BlockEvent.BreakEvent` | 改 Fabric `PlayerBlockBreakEvents` / 直接 `destroyBlock` |
 | 盾牌格挡事件 | Forge `ShieldBlockEvent` | 需 mixin `LivingEntity.hurtServer` 自行检测 |
-| 假玩家 | Forge `FakePlayer` | 需砍掉或自实现 |
+| 假玩家 | Forge `FakePlayer` | 当时误判需砍；Fabric API 26.2 实际提供 `net.fabricmc.fabric.api.entity.FakePlayer`，本移植最终选择可测试的纯数学路径 |
 | TaCZ 内部 | `EntityKineticBulletAccessor(onHitEntity)`、`BlockRayTrace.rayTraceBlocks` 的 `lambda$rayTraceBlocks$1/2`、`onBulletTick`、`BulletHoleOption`、`TacHitResult` | 需逐一对 26.2 字节码考古（lambda 名几乎肯定变了） |
 
 ### 移植计划（分两轮）
@@ -430,8 +433,9 @@ helper。
 
 ### 砍掉 / 简化的部分
 
-- **FakePlayer + DestroySpeedModifierHolder + BlockBehaviourMixin**：Fabric 无 FakePlayer，
-  `calcBlockBreakingDelta` 改为解析式 `digSpeed/hardness*30`（语义等价，数值略不同）。
+- **FakePlayer + DestroySpeedModifierHolder + BlockBehaviourMixin**：此处“Fabric 无 FakePlayer”是早期误判；
+  Fabric API 26.2 实际提供 FakePlayer。本移植选择独立 `SafeMath.blockBreakingDelta`，直接计算
+  `(1 + damage) / (effectiveHardness * 30)`，并对零硬度、非有限值和 armor-ignore 边界做测试。
 - **melee 行为层**：`melee_interactions` 的 mixin 依赖 `Suppliers.memoize`/@Share sugar 且示例包无
   数据，manager 保留加载、行为砍掉。
 - **airspace 行为**（Sound Physics Remastered 相关）：数据保留解析，播放砍掉。
@@ -478,12 +482,80 @@ Caused by: CommandSyntaxException: 无法解析粒子选项：No key block_state
    视觉效果，解析失败记日志并跳过，**绝不**再让实体 tick 崩溃。第三方枪包的非法粒子
    语法也不会拖垮游戏。
 
-## 8. 已知待办
+## 7.17 “不可移植”复审与 R2 完成项（2026-08-18）
 
-- [ ] 匍匐动态俯仰角（基于方块碰撞；需 MixinSquared 或改 TaCZ 常量）
-- [ ] betterInaccuracy / betterGunTilt / betterMonoConversion / bulletProtection /
-      endermenEvadeBullets / disableRefitOnAdventure / alwaysFilterByHand / rps /
-      audibleFirstPersonGunSounds / forceFirstPersonShootingSound
-- [ ] 卸弹的创造模式 / 枪膛内子弹支持（针对新 `dropAllAmmo` 重写）
-- [ ] 示例包、数据驱动的子弹交互系统
-- [ ] 运行时实测（沙箱无法启动游戏，所有 mixin 仅通过编译验证）
+本轮不再按 1.20 类名判断能力，而是核对 26.2 class 调用链和实际 Fabric 发行物：
+
+- `Identifier` 实际是普通 final class，并非 record；共享资源标识也不应承载每次播放状态。mono 改为请求上下文和 mono/stereo 独立缓存，并在 `SoundBuffer` 构造前 downmix；
+- 数据驱动附魔删除了 `ProtectionEnchantment` 类，但 `EnchantmentHelper#getDamageProtection` 仍是汇总点；
+- predicate 移到 `net.minecraft.advancements.predicates`，并未删除；MinMaxBounds 同样只是换包；
+- tier 语义由 `ToolMaterial.incorrectBlocksForDrops` 承担；
+- shield 走 26.2 `BlocksAttacks` component，不再寻找旧 `hurtCurrentlyUsedShield`；
+- `Level#getGameTime()` 实际存在，破坏进度已从 wall clock 改回 400 game ticks；
+- SPR、First Aid New、Pillager’s Gun 均已有 Fabric 26.2 发行物，已恢复可选兼容；
+- melee、airspace、shield、predicate/tier、burst/pellet 均已接回行为层。
+
+同时修复了配置 payload 复用/长度校验、跨维度粒子、方块保护事件、静态 raytrace 上下文竞争、
+`sprintWhileReloading` 被目标端二次取消等完整性问题。详细证据和测试矩阵见 `AUDIT.md`。
+
+## 7.18 隐藏删减复审（2026-08-18）
+
+第二轮不再只看配置 getter，而是把原版同路径源码、95 个 mixin、空方法/固定返回和注释代码一起纳入。
+恢复了旧数据格式 converter、改装属性图全局基线、筛选复选框隐藏、射击换弹动画判定和倾斜阻止起跑。
+
+所有仍不同路径/缺失的原版源码记录在 `scripts/upstream_omissions.json`；提供上游 checkout 运行
+`audit_port.py --upstream-root` 时，新增未解释缺失和已经失效的豁免都会失败。当前允许缺失仅包括：
+26.2 原生替代、已合并到新 hook 的行为、共享对象/数据驱动 API 的重设计，以及确实没有 Fabric 26.2
+目标的 LSO/MTS/VS 系列。
+
+## 7.19 外部差距报告复核与 Beta-1 加固（2026-08-18）
+
+外部审计基于旧提交 `69bc17a`，但其中多数边界指控在当前代码上仍可复现，因此没有因提交过旧而忽略：
+
+- 无 shield 规则时明确返回 null，保留 `BlocksAttacks` 的 vanilla blocked damage/durability；
+- tilt C2S 改为短时输入请求：服务端每次使用都复核 alive、主手枪和 `GunData.canSlide`，40 tick 超时；
+- 共享第一人称枪声要求 alive + 主手持枪 + 当前枪包/TaCZ namespace，并收紧为 96 格、16 次/秒；
+- `SafeMath.blockBreakingDelta` 让 armor ignore 降低有效硬度，处理零硬度/负值/NaN/Infinity；
+- bullet/melee 共用 `ProtectedBlockBreaking`，执行 `mayInteract` 和 BEFORE/CANCELED/AFTER 完整链；
+- 每颗子弹记录已播放 whizz 的 UUID，实体 PIERCE sound/particle 分支恢复，并完整排序候选；
+- 粒子只替换 `%s`、限制 finite/range/1024 emitters；constant interval codec 强制为正；
+- physical/dummy/FUEL/inventory/chamber 卸弹分支拆开，畸形计数和 stack size 直接拒绝；
+- `ValueRange.DEFAULT` 改为 `-Double.MAX_VALUE..Double.MAX_VALUE` 并验证 finite/min<=max；
+- airspace payload 限 64 candidates × 32 sounds；mono/stereo 按请求使用独立缓存；
+- 示例包修正 `#minecraft:chains`，恢复缺失 ogg，并加入 predicate/tier/burst/pellet/airspace smoke data；
+- 发布标识统一调整为 Fabric/SemVer 可解析的 `Beta-1`，补单测、wrapper checksum、example zip task 和第三方 notices。
+
+CI workflow 仍需要仓库维护者以具备 workflow 权限的身份写入；当前 Agent GitHub App 无此权限，
+所以不能把“本地有验证入口”误写成“GitHub 已有 check run”。
+
+## 7.20 dedicated-server environment stripping（2026-08-18）
+
+`AdsModifier` 等目标类本身是 common，但 `getPropertyDiagramsData` 标有
+`@Environment(EnvType.CLIENT)`。Fabric 专服会在 Mixin 应用前剥离该方法；把 cache/gameplay 和
+property diagram 注入放在同一个 common mixin，会造成 `InvalidInjectionException` 并阻断启动。
+
+修复不是 `require=0`：八组 modifier 均拆为 common `initCache` mixin 与登记在 JSON `client`
+数组中的 `*DiagramMixin`。`audit_port.py` 现在解析 class 的 RuntimeVisible/InvisibleAnnotations，
+任何 common mixin 注入 `@Environment(CLIENT)` 方法都会失败。另增 `check_server_log.py`，要求专服
+日志真实出现 `Done (...)!` 且不含 fatal mixin/startup marker，避免 Loom 子进程失败但 Gradle 返回 0。
+
+## 8. 当前待办
+
+### 8.1 已完成
+
+- [x] 全部在 GUI 中公开的 gun/crawl/tweaks/modifier/debug 选项都有行为读取点
+- [x] betterMonoConversion / bulletProtection / crawl visualTweak
+- [x] melee（枪械 + 内置 LRTactical）、shield、airspace 行为层
+- [x] predicate / tier / burst_index / pellet_index 数据兼容
+- [x] First Aid New / Sound Physics Remastered / Pillager’s Gun Fabric 26.2 可选兼容
+- [x] 无目标的 LSO / MTS / VS 与已原生修复的 thirdPerson 开关从配置 codec/GUI 删除
+- [x] `scripts/audit_port.py` 系统审计（注入调用点字节码、配置死项、语言键、版本一致性）
+- [x] 57 项上游源码缺失解释门禁、旧数据格式、属性图表与隐藏 UI/动画路径复原
+
+### 8.2 发布前验证
+
+- [ ] JDK 25 `./gradlew clean build` 和产物 remap 检查
+- [ ] 纯必需依赖的客户端、集成服、独立服务端启动
+- [ ] SPR / First Aid / Pillager’s Gun 单独和组合安装测试
+- [ ] mono、四件弹射物保护与 void bullet、盾牌、近战、领地取消破坏、多维度粒子实测
+- [ ] 第三方数据包对 predicate/tier/burst/pellet/airspace 的兼容回归
