@@ -1,0 +1,54 @@
+{
+  "type": "block",
+  "priority": -1000,
+  "target": {
+    "type": "all_of",
+    "terms": [
+      {
+        "type": "gun",
+        "values": [
+          "tacztweaks:codec_smoke"
+        ]
+      },
+      {
+        "type": "predicate",
+        "predicate": {}
+      },
+      {
+        "type": "burst_index",
+        "index": {
+          "min": 0,
+          "max": 2
+        }
+      },
+      {
+        "type": "pellet_index",
+        "index": {
+          "min": 0,
+          "max": 8
+        }
+      }
+    ]
+  },
+  "blocks": [
+    {
+      "type": "all_of",
+      "terms": [
+        {
+          "type": "predicate",
+          "predicate": {}
+        },
+        {
+          "type": "tier",
+          "tier": "minecraft:iron"
+        }
+      ]
+    }
+  ],
+  "block_break": {
+    "type": "never"
+  },
+  "pierce": {
+    "type": "never"
+  }
+}

@@ -43,8 +43,8 @@ class ServerMessageBroadcastSound(
         )
 
         fun handle(msg: ServerMessageBroadcastSound, client: Minecraft) {
-            val entity = client.level?.getEntity(msg.entityId) ?: return
             client.execute {
+                val entity = client.level?.getEntity(msg.entityId) ?: return@execute
                 SoundPlayManager.playClientSound(
                     entity,
                     msg.soundName,

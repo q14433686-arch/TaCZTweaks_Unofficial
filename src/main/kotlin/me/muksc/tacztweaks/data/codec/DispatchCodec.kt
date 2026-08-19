@@ -24,7 +24,7 @@ interface DispatchCodec<T> {
 }
 
 /**
- * DFU 10 (bundled with Minecraft 26.2) changed [Codec.dispatch] to require a
+ * DFU 10 (bundled with Minecraft 26.1.2) changed [Codec.dispatch] to require a
  * [MapCodec] provider instead of a [Codec] provider. This extension keeps the 1.20-style
  * call shape (`dispatch(keyOf) { it.codecProvider() }`) by bridging through
  * [MapCodec.assumeMapUnsafe].

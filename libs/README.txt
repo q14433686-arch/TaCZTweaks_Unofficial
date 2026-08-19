@@ -1,13 +1,8 @@
-本目录需要手动放入两个编译期依赖（文件名必须完全一致），见 BUILD.md 第 3 步：
+本目录只需要手动放入 TaCZ 编译期依赖（构建时经 build.gradle.kts 引用）：
 
-1. TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar  （compileOnly，约 58MB）
-   https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/download/26.1.2_R2/TACZ-Refabricated-26.1.2-1.1.8%2Bfabric.26.1.2.R2.jar
+TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar  (compileOnly / testRuntimeOnly)
+来源：https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.1.2_R2
+作用：提供 com.tacz.guns.* 与 cn.sh1rocu.tacz.* 的编译类及精确 Mixin 目标。
 
-2. yacl-fabric.jar  （implementation，约 1MB）
-   https://cdn.modrinth.com/data/1eAoo2KR/versions/svTkvBec/yet_another_config_lib_v3-3.9.6%2B26.1-fabric.jar
-
-放好后本目录应为：
-  libs/
-  ├── README.txt
-  ├── TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar
-  └── yacl-fabric.jar
+YACL 不再需要手动放入 libs/；Gradle 会从 Modrinth Maven 自动解析精确版本
+3.9.6+26.1-fabric（version id svTkvBec）。

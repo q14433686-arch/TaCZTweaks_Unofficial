@@ -1,5 +1,7 @@
 package me.muksc.tacztweaks.data.manager
 
+import com.mojang.datafixers.util.Either
+import com.mojang.serialization.Codec
 import com.tacz.guns.entity.EntityKineticBullet
 import com.tacz.guns.particles.BulletHoleOption
 import com.tacz.guns.util.AttachmentDataUtils
@@ -7,41 +9,54 @@ import me.muksc.tacztweaks.anyOrEmpty
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.BlockBreakingManager
 import me.muksc.tacztweaks.core.Context
+import me.muksc.tacztweaks.core.ProtectedBlockBreaking
+import me.muksc.tacztweaks.core.SafeMath
 import me.muksc.tacztweaks.data.BulletInteraction
+import me.muksc.tacztweaks.data.old.convert
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
+import me.muksc.tacztweaks.data.old.BulletInteraction as OldBulletInteraction
 import me.muksc.tacztweaks.thenPrioritizeBy
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
-import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
-import kotlin.math.exp
+
+internal val BULLET_INTERACTION_CODEC: Codec<BulletInteraction> =
+    Codec.either(BulletInteraction.CODEC, OldBulletInteraction.CODEC).xmap(
+        { value: Either<BulletInteraction, OldBulletInteraction> ->
+            value.map({ it }, { it.convert() })
+        },
+        { value: BulletInteraction -> Either.left<BulletInteraction, OldBulletInteraction>(value) }
+    )
 
 private val COMPARATOR = compareBy<BulletInteraction> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
     .thenPrioritizeBy { when (it) {
         is BulletInteraction.Block -> it.blocks.isNotEmpty()
         is BulletInteraction.Entity -> it.entities.isNotEmpty()
+        is BulletInteraction.Shield -> it.predicate.isPresent
     } }
 
 /**
  * Loads `bullet_interactions` JSON files (glass piercing, dripstone breaking, custom
  * entity damage, …).
  *
- * Behavior methods (`handleBlockInteraction` / `handleEntityInteraction` / shield handling)
- * are intentionally left for the behavior-layer round — they need `BlockBreakingManager`,
- * `BulletRayTracer` and the bullet mixin accessors, none of which exist yet.
+ * Block, entity and shield behavior is active. Entity rules cooperate with R2's native
+ * hit loop while preserving custom gun-pierce consumption and persistent damage falloff.
  */
 object BulletInteractionManager : BaseDataManager<BulletInteraction>(
-    "bullet_interactions", BulletInteraction.CODEC, COMPARATOR
+    "bullet_interactions", BULLET_INTERACTION_CODEC, COMPARATOR
 ) {
-    init { BulletInteraction }
-
     override fun debugEnabled(): Boolean = Config.Debug.bulletInteractions()
+
+    /** Whether a data rule can pierce entities without requiring the gun's native pierce. */
+    fun needsExtendedEntityTrace(): Boolean =
+        byType<BulletInteraction.Entity>().values.any { !it.gunPierce.required }
 
     private val DEFAULT = Identifier.fromNamespaceAndPath("tacztweaks", "default")
 
@@ -80,7 +95,9 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
 
         val breakBlock = run {
             val hardness = state.getDestroySpeed(level, blockPos)
-            if (hardness !in interaction.blockBreak.hardness) return@run false
+            if (hardness < 0.0F || hardness !in interaction.blockBreak.hardness) return@run false
+            val tier = interaction.blockBreak.tier
+            if (tier != null && state.`is`(tier.material.incorrectBlocksForDrops())) return@run false
 
             val gun = Context.Gun(ext.`tacztweaks$getGunStack`())
             val gunStack = gun.stack
@@ -107,19 +124,27 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
                 }
             }
         }
+        var blockBroken = false
         if (breakBlock) run {
-            val owner = ammo.getOwner()
-            level.destroyBlock(blockPos, interaction.blockBreak.drop, owner, Block.UPDATE_NEIGHBORS or Block.UPDATE_CLIENTS)
+            blockBroken = ProtectedBlockBreaking.destroy(
+                level,
+                blockPos,
+                state,
+                ammo.getOwner(),
+                interaction.blockBreak.drop,
+                Block.UPDATE_NEIGHBORS or Block.UPDATE_CLIENTS
+            )
+            if (!blockBroken) return@run
             val replaceWith = interaction.blockBreak.replaceWith
             if (!replaceWith.state.isAir && replaceWith.place(level, blockPos, Block.UPDATE_CLIENTS)) {
                 level.sendBlockUpdated(blockPos, replaceWith.state, replaceWith.state, Block.UPDATE_CLIENTS)
             }
         }
         val pierce = shouldPierce(
-            ammo, result, interaction.pierce, breakBlock,
+            ammo, result.location, interaction.pierce, interaction.gunPierce, blockBroken,
             ext::`tacztweaks$incrementBlockPierce`, ext::`tacztweaks$getBlockPierce`
         )
-        if (pierce && !breakBlock && interaction.pierce.renderBulletHole) {
+        if (pierce && !blockBroken && interaction.pierce.renderBulletHole) {
             val bulletHoleOption = BulletHoleOption(
                 result.direction,
                 blockPos,
@@ -129,24 +154,95 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
             )
             level.sendParticles(bulletHoleOption, result.location.x, result.location.y, result.location.z, 1, 0.0, 0.0, 0.0, 0.0)
         }
-        return InteractionResult(pierce, breakBlock).also { logDebug { it.toString() } }
+        return InteractionResult(pierce, blockBroken).also { logDebug { it.toString() } }
+    }
+
+    /** Resolve an entity rule once so random predicates cannot change between damage and pierce. */
+    fun prepareEntityInteraction(ammo: EntityKineticBullet, location: Vec3, entity: Entity): EntityInteraction {
+        val (id, interaction) = getBulletInteraction(ammo, location, BulletInteraction.Entity::entities) {
+            it.test(entity)
+        } ?: (DEFAULT to BulletInteraction.Entity.DEFAULT)
+        logDebug { "Using entity bullet interaction: $id" }
+        return EntityInteraction(interaction)
     }
 
     /**
-     * Looks up the damage modifier for a bullet hitting an entity. Returns null when no
-     * interaction matches. The actual damage application happens in the entity mixin.
+     * Called after damage. The native 26.1.2 loop decrements gun pierce immediately after
+     * our wrapped onHitEntity returns, so this reports whether to continue and whether that
+     * upcoming decrement should be compensated.
      */
-    fun getEntityDamage(ammo: EntityKineticBullet, location: Vec3, entity: Entity): Pair<Float, Float>? {
-        val (id, interaction) = getBulletInteraction(ammo, location, BulletInteraction.Entity::entities) {
-            it.test(entity)
+    fun finishEntityInteraction(
+        ammo: EntityKineticBullet,
+        location: Vec3,
+        prepared: EntityInteraction,
+        condition: Boolean
+    ): EntityInteractionResult {
+        val interaction = prepared.interaction
+        val ext = ammo as EntityKineticBulletExtension
+        val remainingAfterNativeConsume = ext.`tacztweaks$getGunPierce`() -
+            if (interaction.gunPierce.consume) 1 else 0
+        if (interaction.gunPierce.required && remainingAfterNativeConsume <= 0) {
+            return EntityInteractionResult(false, interaction.gunPierce.consume)
+        }
+        val pierce = shouldPierceRule(
+            ammo,
+            location,
+            interaction.pierce,
+            condition,
+            ext::`tacztweaks$incrementEntityPierce`,
+            ext::`tacztweaks$getEntityPierce`
+        )
+        return EntityInteractionResult(pierce, interaction.gunPierce.consume)
+    }
+
+    fun handleShieldInteraction(
+        ammo: EntityKineticBullet,
+        location: Vec3,
+        shield: ItemStack,
+        originalDamage: Float
+    ): ShieldInteractionResult? {
+        val (id, interaction) = getBulletInteraction<BulletInteraction.Shield>(ammo, location) {
+            it.predicate.map { predicate -> predicate.test(shield) }.orElse(true)
         } ?: return null
-        logDebug { "Using entity bullet interaction: $id" }
-        return interaction.damage.modifier to interaction.damage.multiplier
+        logDebug { "Using shield bullet interaction: $id" }
+
+        val damage = ((originalDamage - interaction.damage.falloff) * interaction.damage.multiplier)
+            .coerceIn(0.0F, originalDamage)
+        val durabilityDamage = label@{ durabilityDamage: Int ->
+            if (interaction.durability.conditional && damage <= 0) return@label 0
+            when (val durability = interaction.durability) {
+                is BulletInteraction.Shield.Durability.DynamicDamage ->
+                    ((durabilityDamage + durability.modifier) * durability.multiplier).toInt().coerceAtLeast(0)
+                is BulletInteraction.Shield.Durability.FixedDamage -> durability.damage.coerceAtLeast(0)
+            }
+        }
+        val disableDuration = run {
+            if (interaction.disable.conditional && damage <= 0) return@run 0
+            if (ammo.getRandom().nextFloat() < interaction.disable.chance) interaction.disable.duration else 0
+        }
+        return ShieldInteractionResult(originalDamage - damage, durabilityDamage, disableDuration)
     }
 
     private fun shouldPierce(
         ammo: EntityKineticBullet,
-        result: HitResult,
+        location: Vec3,
+        pierce: BulletInteraction.Pierce,
+        gunPierce: BulletInteraction.GunPierce,
+        condition: Boolean,
+        incrementCustomPierce: () -> Unit,
+        getCustomPierce: () -> Int
+    ): Boolean {
+        val ext = ammo as EntityKineticBulletExtension
+        if (gunPierce.consume) ext.`tacztweaks$decrementGunPierce`()
+        if (gunPierce.required && ext.`tacztweaks$getGunPierce`() <= 0) return false
+        return shouldPierceRule(
+            ammo, location, pierce, condition, incrementCustomPierce, getCustomPierce
+        )
+    }
+
+    private fun shouldPierceRule(
+        ammo: EntityKineticBullet,
+        location: Vec3,
         pierce: BulletInteraction.Pierce,
         condition: Boolean,
         incrementCustomPierce: () -> Unit,
@@ -159,32 +255,45 @@ object BulletInteractionManager : BaseDataManager<BulletInteraction>(
                 incrementCustomPierce.invoke()
                 if (getCustomPierce.invoke() >= pierce.count) return false
             }
-            is BulletInteraction.Pierce.Damage -> if (ammo.getDamage(result.location) <= 0.0F) return false
+            is BulletInteraction.Pierce.Damage -> if (ammo.getDamage(location) <= 0.0F) return false
         }
         if (pierce.conditional && !condition) return false
-        val ext = ammo as EntityKineticBulletExtension
-        ext.`tacztweaks$addDamageModifier`(-pierce.damageFalloff, pierce.damageMultiplier)
+        (ammo as EntityKineticBulletExtension).`tacztweaks$addDamageModifier`(
+            -pierce.damageFalloff,
+            pierce.damageMultiplier
+        )
         return true
     }
 
-    /**
-     * Maps bullet damage into a vanilla-style block-breaking progress delta.
-     * 26.2 note: there is no Forge `FakePlayer` on Fabric, so instead of the upstream
-     * fake-player + destroy-speed-multiplier approach we compute a simple equivalent:
-     * virtual dig speed = (1 + damage) scaled by armor-ignore, progress = digSpeed / (hardness * 30).
-     */
-    fun calcBlockBreakingDelta(damage: Float, armorIgnore: Double, state: BlockState, level: ServerLevel, pos: BlockPos): Float {
-        val hardness = state.getDestroySpeed(level, pos)
-        if (hardness < 0) return 0.0F
-        val digSpeed = (1.0F + damage) * remapArmorIgnore(armorIgnore)
-        return digSpeed / (hardness * 30.0F)
+    /** Maps bullet damage into bounded vanilla-style block-breaking progress. */
+    fun calcBlockBreakingDelta(
+        damage: Float,
+        armorIgnore: Double,
+        state: BlockState,
+        level: ServerLevel,
+        pos: BlockPos
+    ): Float = SafeMath.blockBreakingDelta(damage, armorIgnore, state.getDestroySpeed(level, pos))
+
+    class EntityInteraction internal constructor(
+        internal val interaction: BulletInteraction.Entity
+    ) {
+        val damageModifier: Float get() = interaction.damage.modifier
+        val damageMultiplier: Float get() = interaction.damage.multiplier
     }
 
-    private fun remapArmorIgnore(armorIgnore: Double): Float =
-        exp(-2 * armorIgnore).toFloat()
+    data class EntityInteractionResult(
+        val pierce: Boolean,
+        val consumeGunPierce: Boolean
+    )
 
     data class InteractionResult(
         val pierce: Boolean,
         val condition: Boolean
+    )
+
+    data class ShieldInteractionResult(
+        val blockedDamage: Float,
+        val durabilityDamage: (Int) -> Int,
+        val disableDuration: Int
     )
 }

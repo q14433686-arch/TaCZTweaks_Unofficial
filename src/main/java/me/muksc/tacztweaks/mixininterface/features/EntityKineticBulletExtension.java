@@ -20,6 +20,14 @@ public interface EntityKineticBulletExtension {
 
     void tacztweaks$incrementEntityPierce();
 
+    int tacztweaks$getGunPierce();
+
+    void tacztweaks$setGunPierce(int value);
+
+    void tacztweaks$incrementGunPierce();
+
+    void tacztweaks$decrementGunPierce();
+
     void tacztweaks$addDamageModifier(float flat, float multiplier);
 
     void tacztweaks$popDamageModifier();
@@ -27,4 +35,12 @@ public interface EntityKineticBulletExtension {
     Vec3 tacztweaks$getPosition();
 
     void tacztweaks$setPosition(Vec3 position);
+
+    int tacztweaks$getBurstIndex();
+
+    void tacztweaks$setBurstIndex(int index);
+
+    int tacztweaks$getPelletIndex();
+
+    void tacztweaks$setPelletIndex(int index);
 }

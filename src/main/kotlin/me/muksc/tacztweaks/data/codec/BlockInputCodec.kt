@@ -11,7 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries
  * Codec for `BlockInput` (`replace_with` fields) using the vanilla block-state string
  * format (e.g. `minecraft:stone_bricks`, `minecraft:chest[waterlogged=true]`).
  *
- * 26.2 note: [BlockInput] no longer exposes its NBT tag publicly, so the encode side only
+ * 26.1.2 note: [BlockInput] no longer exposes its NBT tag publicly, so the encode side only
  * serializes the block state (dropping NBT on round-trip — acceptable since the example
  * pack's `replace_with` values carry no NBT).
  */
