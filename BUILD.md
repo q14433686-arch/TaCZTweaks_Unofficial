@@ -48,7 +48,7 @@
 
 ## 3. 放 TaCZ 编译期依赖到 libs/ 目录
 
-TaCZ 本体通过本地文件引用，必须手动下载到项目根目录的 `libs/` 文件夹，且文件名必须完全一致。
+TaCZ 本体通过本地文件引用。仓库会用 `RESOURCE_IMPORT_MANIFEST.tsv` 固定来源、许可证和 SHA-256；其余依赖会自动从 Maven 拉。
 YACL 3.9.6+26.1-fabric 已由 Gradle 从 Modrinth Maven 自动解析，不需要手动下载。
 
 ### TaCZ 本体（compileOnly，提供 mixin 目标类）
@@ -59,11 +59,24 @@ https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.1
 ```
 下载文件：`TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar`（约 58MB）
 
+也可以直接让脚本按 manifest 下载并校验：
+
+```powershell
+python scripts/download_dependencies.py
+# Linux/macOS 可用 python3 scripts/download_dependencies.py
+```
+
 放好之后 `libs/` 里应该是：
 ```
 libs/
 ├── README.txt
 └── TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar
+```
+
+发布前必须校验哈希：
+
+```powershell
+python scripts/download_dependencies.py --check-only
 ```
 
 构建日志不应再出现 `Specified Dependency Does Not Exist ... libs/yacl-fabric.jar`；YACL 将以
@@ -84,8 +97,8 @@ gradlew.bat build
 ```
 
 - **首次构建**会下载 Gradle 9.5.1、Minecraft 26.1.2、Fabric API 等，视网速可能要几分钟到十几分钟；
-- `build` 包含 `checkModIcon` 门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`（Linux/macOS 使用 `python3`）；
+- `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
+- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
 - 成功后输出：
   ```
   BUILD SUCCESSFUL

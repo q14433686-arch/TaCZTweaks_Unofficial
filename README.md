@@ -1,6 +1,15 @@
 # TaCZ Tweaks (Refabricated)
 
-**TaCZ Tweaks 的 Fabric 26.1.2 社区移植版**，适配
+**English:** an unofficial Fabric 26.1.2 community port of
+[`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks) v2.14.2 for
+[`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial).
+It is not affiliated with or endorsed by MUKSC, the TACZ Dev Team, or optional compatibility mod
+authors. Install the exact dependencies listed below before filing issues. Start with
+[documentation](docs/README.md), [configuration](docs/CONFIGURATION.md),
+[compatibility](docs/COMPATIBILITY.md), [known issues](docs/KNOWN_ISSUES.md), and
+[support requirements](docs/SUPPORT.md).
+
+**中文：TaCZ Tweaks 的 Fabric 26.1.2 社区移植版**，适配
 [`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
 
 原项目：[MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks) v2.14.2
@@ -9,7 +18,7 @@
 
 当前测试版本：**Beta-1**（`2.14.2+fabric.26.1.2.Beta-1`）。
 
-[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
+[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [已知问题](docs/KNOWN_ISSUES.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
 
 > 本项目是非官方社区移植。请先按支持文档完成最小环境对照测试；本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
 
@@ -88,21 +97,25 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 
 ```bash
 # 需要 JDK 25
+python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
+python3 scripts/check_release_consistency.py
 ./gradlew build
 # build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、
 MixinExtras 最低版本，以及模组图标的元数据路径、尺寸、SHA-256 与许可声明。`./gradlew build`
-也会通过 `checkModIcon` 执行图标回归门禁。可再传 `--minecraft-jar <loom生成的26.1.2.jar>` 做原版
+也会通过 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁。可再传 `--minecraft-jar <loom生成的26.1.2.jar>` 做原版
 类方法审计，或传 `--upstream-root <TaCZTweaks-v2.14.2>` 输出上游差异清单。
 
 ## 许可
 
 - 代码：GPL-3.0（继承原项目 MUKSC/TaCZTweaks）
 - 原作者：MUKSC
-- 原版图标、嵌入依赖和示例包音频来源/许可证：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- 许可证总览：[`LICENSES.md`](LICENSES.md)
+- 原版图标、嵌入依赖、本地二进制输入和示例包音频来源/许可证：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- 本地二进制依赖来源和 SHA-256：[`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv)
 
 ## 问题反馈
 
