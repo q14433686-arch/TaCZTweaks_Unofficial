@@ -5,12 +5,23 @@
 ## 玩家与服务器管理员
 
 - [安装、真实依赖与构建](../BUILD.md)
+- [配置参考（全部选项、默认值与同步范围）](CONFIGURATION.md)
+- [兼容性矩阵（支持范围与验证证据）](COMPATIBILITY.md)
+- [已知问题](KNOWN_ISSUES.md)
 - [支持范围、问题排查与 Bug 提交流程](SUPPORT.md)
 - [项目 Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues)
 
 下载文件时，以发布平台为该文件标注的 Minecraft、加载器、依赖、环境和发布渠道字段为准，不要从项目标题、旧截图或旧过程笔记推断兼容范围。
 
-## 数据驱动示例包
+## 数据驱动内容
+
+- [数据格式总览](data/README.md)
+- [选择器（Selectors）](data/SELECTORS.md)
+- [弹丸交互（Bullet interactions）](data/BULLET_INTERACTIONS.md)
+- [弹丸音效（Bullet sounds）](data/BULLET_SOUNDS.md)
+- [弹丸粒子（Bullet particles）](data/BULLET_PARTICLES.md)
+- [近战交互（Melee interactions）](data/MELEE_INTERACTIONS.md)
+- [迁移说明（MIGRATION）](data/MIGRATION.md)
 
 仓库中的 [`tacz-tweaks-example-pack/`](../tacz-tweaks-example-pack/) 是可重载的示例包。当前分支实际提供：
 
@@ -41,6 +52,8 @@
 - [README 当前状态、已知差距与依赖](../README.md)
 - [当前静态审计实现](../scripts/audit_port.py)
 - [专用服务器日志门禁](../scripts/check_server_log.py)
+- [发布一致性检查](../scripts/check_release_consistency.py)
+- [提议的 CI workflow（需维护者移动到 `.github/workflows/ci.yml`）](maintenance/ci-workflow.yml)
 - [移植笔记](../PORTING_NOTES.md)
 
 当前分支保留了静态审计、测试夹具与服务器日志门禁，但 README 中列出的实机矩阵仍未全部完成。审计命令及其外部 jar/refmap 前置条件以 [BUILD.md](../BUILD.md) 为准。
@@ -53,4 +66,6 @@
 2. 更改图标、支持文件或发布文案后必须运行严格审计和图标检查；
 3. `docs/publish/` 不写当前游戏、模组、依赖版本或带编号的发布阶段；
 4. 第三方资源必须记录不可变来源、作者、许可、校验和与仓库使用路径；
-5. 功能声明必须能由当前源码、测试或明确标注的实机验证支持，不能从其他分支直接推断。
+5. `libs/` 下每个 jar 必须记录在 `RESOURCE_IMPORT_MANIFEST.tsv` 中并固定 SHA-256，禁止无记录的可变二进制；
+6. 发布前运行 `scripts/check_release_consistency.py`、`scripts/download_dependencies.py --check-only`、`scripts/check_mod_icon.py` 与 `./gradlew clean build`；
+7. 功能声明必须能由当前源码、测试或明确标注的实机验证支持，不能从其他分支直接推断。

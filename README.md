@@ -1,5 +1,48 @@
 # TaCZ Tweaks (Refabricated) — 1.21.11
 
+## English summary
+
+**TaCZ Tweaks (Refabricated)** is an **unofficial community Fabric port** of
+[MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks) (Forge 1.20.1 / TaCZ 1.1.8), built for
+the unofficial Fabric port **[TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)**
+on **Minecraft 1.21.11** (Java 21). It adds configurable gun handling and movement, global balance
+modifiers, projectile and melee interactions, sound and particle rules, data-driven customization,
+server configuration synchronization, and quality-of-life controls to Timeless & Classics: Zero.
+
+> **This is NOT an official release and is not affiliated with, reviewed by, or endorsed by
+> MUKSC, the TaCZ team, or the TaCZ_Refabricated_Unofficial maintainers.** Before reporting a
+> problem, reproduce it with only this mod and its hard dependencies, then repeat the same test
+> after removing this mod. Do not ask the original TaCZ Tweaks, TaCZ, or compatibility-mod
+> authors to support issues caused by this port.
+
+**Current test build:** Beta-1 (`2.14.2+fabric.1.21.11.Beta-1`)
+
+### Required dependencies
+
+| Dependency | Version |
+|---|---|
+| Minecraft | `1.21.11` |
+| Java | `>=21` |
+| Fabric Loader | `>=0.19.3` |
+| Fabric API | `0.141.6+1.21.11` (build pinned in `gradle.properties`; metadata uses `*`) |
+| [UNOFFICIAL] TaCZ Refabricated | exactly `1.1.8+fabric.1.21.11.R2` |
+| Fabric Language Kotlin | `1.13.13+kotlin.2.4.10` |
+| YetAnotherConfigLib (YACL) | `3.8.2+1.21.11-fabric` (vendored build; metadata uses `*`) |
+
+Optional compatibility: Mod Menu, Sound Physics Remastered `>=1.5.1 <1.6.0`, First Aid New
+`>=1.2.5 <1.3.0`, Pillager's Gun `>=3.2.2 <3.3.0` (see `fabric.mod.json` and
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)).
+
+### Documentation and support
+
+- [Documentation index](docs/README.md) · [Installation & build](BUILD.md) · [Configuration](docs/CONFIGURATION.md) · [Compatibility matrix](docs/COMPATIBILITY.md) · [Known issues](docs/KNOWN_ISSUES.md)
+- [Support & troubleshooting](docs/SUPPORT.md) · [Bug reports](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues/new?template=bug_report.yml) · [Compatibility reports](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues/new?template=compat_report.yml)
+- [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [Source](https://github.com/q14433686-arch/TaCZTweaks_Unofficial) · License: GPL-3.0 · [Third-party notices](THIRD_PARTY_NOTICES.md)
+
+---
+
+# TaCZ Tweaks (Refabricated) — 1.21.11（中文）
+
 **Fabric 移植版 TaCZ Tweaks**，适配非官方 Fabric 移植
 [`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial) 的
 Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
@@ -81,7 +124,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 - **Sound Physics Remastered**：1.21.11 Fabric 对应 **`1.5.1`**，不是 1.21.1 / 26.x 的别的发布线；
 - **First Aid New**：1.21.11 Fabric 要看 **legacy** 线，即 **`1.2.5+fabric1.21.11-legacy.jar`**；
-- **Pillager’s Gun (Unofficial Port)**：1.21.11 Fabric 对应 **`3.2.2`**；`3.3.x` 是后续 26.x/更高线，**不属于本分支的 1.21.11 目标版本**。
+- **Pillager’s Gun (Unofficial Port)**：1.21.11 Fabric 对应线为 3.2.x；`3.3.x` 是后续 26.x/更高线，**不属于本分支的 1.21.11 目标版本**。
 
 这些范围已与 `fabric.mod.json` 的 `suggests` / `breaks` 同步。
 
@@ -96,23 +139,29 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 # 示例包：build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 ```
 
+发布产物 jar 内包含 `META-INF/LICENSE_tacztweaks` 与 `META-INF/THIRD_PARTY_NOTICES_tacztweaks.md`。
+本分支运行 Loom remap 模式（`fabric-loom-remap` + Mojang mappings），`checkJarContents` 门禁
+检查的是 **remapped release jar**（`remapJar` 任务产物）；在没有 `remapJar` 的环境中会自动
+回退检查普通 `jar` 输出。
+
 可用的发布前门禁：
 
 ```bash
+python3 scripts/check_release_consistency.py
 python3 scripts/check_mod_icon.py
 python3 scripts/audit_port.py --strict \
-  --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar \
+  --tacz-jar <path-to-tacz-jar> \
   --minecraft-named-jar <1.21.11 named jar> \
   --minecraft-intermediary-jar <1.21.11 intermediary jar> \
   --refmap build/resources/main/tacztweaks.refmap.json
 python3 scripts/check_server_log.py <dedicated-server-latest.log>
 ```
 
-> `libs/` 下的 `TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar`（compileOnly / testRuntimeOnly）
-> 与 `yacl-fabric.jar` 需要按 BUILD.md 手动下载。若已先执行 `build`，audit 也会自动尝试发现默认输出位置的 refmap。
+> TaCZ 和 YACL 通过 CurseMaven / Modrinth Maven 自动解析，不存放在 `libs/` 下。
+> 依赖记录在 [`LICENSES.md`](LICENSES.md) 与 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
 图标门禁同时进入静态审计和 Gradle `check` / `build` 生命周期，用于锁定 `fabric.mod.json`
-路径、有效 IHDR、512×512 尺寸、批准的 SHA-256 与第三方许可记录。
+路径、有效 IHDR、512×512 尺寸、批准的 SHA-256 与第三方许可记录。`checkJarContents` 也接入 `check` / `build`。
 
 ## 许可
 

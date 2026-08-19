@@ -35,7 +35,9 @@ repositories {
     mavenCentral()
     maven { url = uri("https://maven.fabricmc.net/") }
     maven { url = uri("https://maven.terraformersmc.com/releases/") }
-    flatDir { dirs("libs") }
+    // TaCZ via CurseMaven, YACL via Modrinth Maven — no more flatDir libs/
+    maven { url = uri("https://cursemaven.com") }
+    maven { url = uri("https://api.modrinth.com/maven") }
 }
 
 val compatStubClassesDir = layout.buildDirectory.dir("generated/compat-stubs/classes")
@@ -61,11 +63,12 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
 
-    modImplementation(files("libs/yacl-fabric.jar"))
+    // TaCZ from CurseForge via CurseMaven (project 1627909, file 8660664 for 1.21.11 R2)
+    modCompileOnly("curse.maven:unofficial-tacz-refabricated-1627909:8660664")
+    testRuntimeOnly("curse.maven:unofficial-tacz-refabricated-1627909:8660664")
 
-    val taczJar = files("libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar")
-    modCompileOnly(taczJar)
-    testRuntimeOnly(taczJar)
+    // YACL from Modrinth Maven (3.8.2+1.21.11-fabric)
+    modImplementation("maven.modrinth:yacl:3.8.2+1.21.11-fabric")
 
     compileOnly(files(compatStubJar.flatMap { it.archiveFile }))
 
@@ -271,92 +274,6 @@ val checkModIcon by tasks.registering {
     }
 }
 
-val checkVendoredDependencies by tasks.registering {
-    group = "verification"
-    description = "Verifies vendored binary dependencies against RESOURCE_IMPORT_MANIFEST.tsv."
-
-    val manifest = layout.projectDirectory.file("RESOURCE_IMPORT_MANIFEST.tsv")
-    inputs.file(manifest)
-    inputs.dir(layout.projectDirectory.dir("libs"))
-
-    doLast {
-        val rows = manifest.asFile.readLines(Charsets.UTF_8)
-            .filter { it.isNotBlank() && !it.startsWith("#") }
-        check(rows.isNotEmpty()) { "RESOURCE_IMPORT_MANIFEST.tsv is empty" }
-        val headers = rows.first().split('\t')
-        val pathIndex = headers.indexOf("path")
-        val shaIndex = headers.indexOf("sha256")
-        val bundledIndex = headers.indexOf("bundled_in_release_jar")
-        check(pathIndex >= 0 && shaIndex >= 0 && bundledIndex >= 0) {
-            "RESOURCE_IMPORT_MANIFEST.tsv must contain path, sha256 and bundled_in_release_jar columns"
-        }
-        rows.drop(1).forEach { row ->
-            val columns = row.split('\t')
-            val relativePath = columns.getOrNull(pathIndex).orEmpty()
-            val expectedSha = columns.getOrNull(shaIndex).orEmpty()
-            check(relativePath.isNotBlank()) { "Malformed dependency manifest row: $row" }
-            check(expectedSha.matches(Regex("[0-9a-f]{64}"))) {
-                "SHA-256 for $relativePath is not pinned (got '$expectedSha'). " +
-                    "Either run `./gradlew pinVendoredChecksums` to auto-compute (" +
-                    "requires the file to already exist in libs/), or run " +
-                    "scripts/download_dependencies.py on a machine with network access."
-            }
-            val file = layout.projectDirectory.file(relativePath).asFile
-            check(file.isFile) { "Manifest dependency is missing: $relativePath" }
-            val actualSha = MessageDigest.getInstance("SHA-256")
-                .digest(file.readBytes())
-                .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
-            check(actualSha == expectedSha) {
-                "SHA-256 mismatch for $relativePath: expected $expectedSha, got $actualSha"
-            }
-        }
-        logger.lifecycle("VENDORED DEPENDENCIES: OK (${rows.size - 1} files)")
-    }
-}
-
-val pinVendoredChecksums by tasks.registering {
-    group = "verification"
-    description = "Reads libs/*.jar, computes SHA-256, and writes them into RESOURCE_IMPORT_MANIFEST.tsv. " +
-        "Run this after downloading the jars instead of manually copying checksums."
-
-    doLast {
-        val mf = layout.projectDirectory.file("RESOURCE_IMPORT_MANIFEST.tsv").asFile
-        val lines = mf.readLines(Charsets.UTF_8)
-        val headerLines = lines.takeWhile { it.startsWith("#") }
-        val headerRow = lines.drop(headerLines.size).firstOrNull()
-            ?: throw GradleException("RESOURCE_IMPORT_MANIFEST.tsv has no header row")
-        val header = headerRow.split('\t')
-        val pathIdx = header.indexOf("path")
-        val shaIdx = header.indexOf("sha256")
-        check(pathIdx >= 0 && shaIdx >= 0) { "Manifest missing path or sha256 column" }
-
-        val out = mutableListOf<String>()
-        out.addAll(headerLines)
-        out.add(headerRow)
-
-        lines.drop(headerLines.size + 1).forEach { row ->
-            if (row.isBlank()) { out.add(row); return@forEach }
-            val cols = row.split('\t')
-            val relPath = cols.getOrNull(pathIdx) ?: ""
-            if (relPath.isBlank()) { out.add(row); return@forEach }
-            val jf = layout.projectDirectory.file(relPath).asFile
-            if (!jf.isFile) {
-                logger.warn("Skipping $relPath — file not found")
-                out.add(row); return@forEach
-            }
-            val computed = MessageDigest.getInstance("SHA-256")
-                .digest(jf.readBytes())
-                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
-            val newCols = cols.toMutableList()
-            newCols[shaIdx] = computed
-            out.add(newCols.joinToString("\t"))
-            logger.lifecycle("  Pinned $relPath -> $computed")
-        }
-
-        mf.writeText(out.joinToString("\n") + "\n", Charsets.UTF_8)
-        logger.lifecycle("pinVendoredChecksums: DONE — ${out.size - headerLines.size - 1} row(s) updated")    }
-}
-
 tasks.named<Jar>("jar") {
     from(layout.projectDirectory.file("LICENSE")) {
         into("META-INF")
@@ -407,9 +324,7 @@ val checkJarContents by tasks.registering {
                 name.startsWith("fixtures/") ||
                     name.startsWith("src/test/") ||
                     name.endsWith(".log") ||
-                    name.startsWith("libs/") ||
-                    name == "yacl-fabric.jar" ||
-                    name.startsWith("TACZ-Refabricated-")
+                    name.startsWith("libs/")
             }.toList()
             check(forbidden.isEmpty()) { "Release jar contains forbidden entries: $forbidden" }
         }
@@ -418,7 +333,7 @@ val checkJarContents by tasks.registering {
 }
 
 tasks.named("check") {
-    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents)
+    dependsOn(checkModIcon, checkJarContents)
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {

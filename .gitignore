@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+*.class
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+*.launch
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor swap
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+hs_err_*.log
+replay_*.log
+
+# Environment
+.env
+*.env.local

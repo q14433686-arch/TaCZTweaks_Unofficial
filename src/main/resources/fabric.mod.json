@@ -5,9 +5,16 @@
   "name": "TaCZ Tweaks (Refabricated)",
   "description": "A Fabric port of TaCZ Tweaks (by MUKSC) for the unofficial TaCZ Fabric port (TaCZ_Refabricated_Unofficial). Adds configurable gameplay, gun movement, balance and QoL tweaks to Timeless & Classics: Zero.",
   "authors": [
-    "MUKSC (original author)"
+    "MUKSC"
   ],
-  "contact": {},
+  "contributors": [
+    "q14433686-arch (unofficial Fabric port maintainer)"
+  ],
+  "contact": {
+    "homepage": "https://github.com/q14433686-arch/TaCZTweaks_Unofficial",
+    "sources": "https://github.com/q14433686-arch/TaCZTweaks_Unofficial",
+    "issues": "https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues"
+  },
   "license": "GPL-3.0",
   "icon": "icon.png",
   "environment": "*",
@@ -35,6 +42,7 @@
     "yet_another_config_lib_v3": "*"
   },
   "suggests": {
+    "modmenu": "*",
     "sound_physics_remastered": ">=1.5.1 <1.6.0",
     "firstaid": ">=1.2.5 <1.3.0",
     "pillagers_gun": ">=3.2.2 <3.3.0"

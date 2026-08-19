@@ -86,6 +86,11 @@ libs/
 └── yacl-fabric.jar
 ```
 
+两个依赖通过 Maven 自动解析：
+- TaCZ 来自 CurseForge（CurseMaven，project `1627909`，file `8660664`）
+- YACL 来自 Modrinth Maven（`maven.modrinth:yacl:3.8.2+1.21.11-fabric`）
+校验和由 Gradle / Maven 元数据自动处理；不需要手动下载 jar 到 `libs/`。
+
 ---
 
 ## 4. 构建
@@ -106,13 +111,18 @@ build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 
 ### 测试与门禁
 
-`check` / `build` 生命周期包含 `checkModIcon`：它会校验 `fabric.mod.json` 的图标路径、
-带有效 IHDR 的 512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的
-固定来源、作者、使用路径与 GPL-3.0 声明。也可在 Gradle 之外单独运行检查器。
+`check` / `build` 生命周期包含以下门禁：
+
+- `checkModIcon`：校验 `fabric.mod.json` 的图标路径、带有效 IHDR 的 512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的固定来源、作者、使用路径与 GPL-3.0 声明；
+- `checkVendoredDependencies`：按 `RESOURCE_IMPORT_MANIFEST.tsv` 校验 `libs/` 内每个 jar 的 SHA-256 与 `bundled_in_release_jar` 声明；
+- `checkJarContents`：检查发布 jar（本分支为 Loom remap 模式，检查 `remapJar` 产物；无 `remapJar` 的环境自动回退到 `jar`）包含 `fabric.mod.json`、`icon.png`、`tacztweaks.mixins.json`、`META-INF/LICENSE_tacztweaks`、`META-INF/THIRD_PARTY_NOTICES_tacztweaks.md`，且不含日志、`libs/`、test fixtures 等禁止条目。
+
+也可在 Gradle 之外单独运行检查器：
 
 ```powershell
 # Windows（Linux/macOS 将 `py -3` 换成 `python3`）
 py -3 scripts/check_mod_icon.py
+py -3 scripts/check_release_consistency.py
 py -3 scripts/audit_port.py --strict `
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar `
   --minecraft-named-jar <named-jar> `
@@ -127,6 +137,9 @@ py -3 scripts/check_server_log.py run/logs/latest.log
 
 `--refmap` 指向构建后生成的 `tacztweaks.refmap.json`；如果你已经先执行过 `build`，
 脚本也会自动尝试从默认输出目录发现它。
+
+> 两个硬依赖现在通过 CurseMaven 和 Modrinth Maven 自动解析，不再需要手动下载 jar。
+> Gradle 缓存处理解决缓存和校验和验证。
 
 ### 可选兼容版本（1.21.11 线已核实）
 
