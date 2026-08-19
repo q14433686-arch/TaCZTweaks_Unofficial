@@ -120,18 +120,76 @@ tasks.named<org.gradle.api.tasks.testing.Test>("test") {
     }
 }
 
-val checkModIcon by tasks.registering(Exec::class) {
+val checkModIcon by tasks.registering {
     group = "verification"
     description = "Verifies the mod icon checksum, metadata path, dimensions, and license notice."
-    val checker = layout.projectDirectory.file("scripts/check_mod_icon.py")
-    inputs.file(checker)
-    inputs.file(layout.projectDirectory.file("src/main/resources/fabric.mod.json"))
-    inputs.file(layout.projectDirectory.file("src/main/resources/icon.png"))
-    inputs.file(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md"))
-    commandLine(
-        if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "python" else "python3",
-        checker.asFile.absolutePath,
-    )
+
+    val metadataFile = layout.projectDirectory.file("src/main/resources/fabric.mod.json")
+    val iconFile = layout.projectDirectory.file("src/main/resources/icon.png")
+    val noticeFile = layout.projectDirectory.file("THIRD_PARTY_NOTICES.md")
+    inputs.files(metadataFile, iconFile, noticeFile)
+
+    doLast {
+        val expectedIconPath = "icon.png"
+        val expectedSha256 = "c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d"
+        val rejectedPlaceholderSha256 = "5e1272a625af1b0b4d866d0fb468e1cea0a9258411f16a7d06d31a84e8953ac8"
+        val upstreamCommit = "74ba2412a6149a1d91788c3663497c4c81992983"
+        val modrinthSource = "https://cdn.modrinth.com/data/H8peNuJG/0c9fcf0f40ec59d591b7cc17452c63a843df122e.png"
+
+        val metadata = metadataFile.asFile.readText(Charsets.UTF_8)
+        val configuredIcon = Regex(""""icon"\s*:\s*"([^"]+)"""")
+            .find(metadata)?.groupValues?.get(1)
+        check(configuredIcon == expectedIconPath) {
+            "fabric.mod.json icon must be '$expectedIconPath', not '$configuredIcon'"
+        }
+
+        val raw = iconFile.asFile.readBytes()
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(raw)
+            .joinToString("") { "%02x".format(it) }
+        check(digest != rejectedPlaceholderSha256) {
+            "mod icon is the known dark-grey/orange placeholder"
+        }
+        check(digest == expectedSha256) {
+            "mod icon SHA-256 drifted: expected $expectedSha256, got $digest"
+        }
+
+        val pngSignature = byteArrayOf(
+            0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+        )
+        check(raw.size >= 24 && raw.copyOfRange(0, 8).contentEquals(pngSignature)) {
+            "mod icon is not a PNG with a valid signature"
+        }
+        check(raw.copyOfRange(12, 16).contentEquals("IHDR".toByteArray(Charsets.US_ASCII))) {
+            "mod icon does not have a leading IHDR chunk"
+        }
+
+        fun pngInt(offset: Int): Int =
+            ((raw[offset].toInt() and 0xff) shl 24) or
+                ((raw[offset + 1].toInt() and 0xff) shl 16) or
+                ((raw[offset + 2].toInt() and 0xff) shl 8) or
+                (raw[offset + 3].toInt() and 0xff)
+
+        val width = pngInt(16)
+        val height = pngInt(20)
+        check(width == 512 && height == 512) {
+            "mod icon must be 512x512, got ${width}x${height}"
+        }
+
+        val notice = noticeFile.asFile.readText(Charsets.UTF_8)
+        mapOf(
+            "Modrinth icon source" to modrinthSource,
+            "immutable upstream revision" to upstreamCommit,
+            "approved icon checksum" to expectedSha256,
+            "icon license" to "GPL-3.0",
+        ).forEach { (label, value) ->
+            check(value in notice) {
+                "THIRD_PARTY_NOTICES.md is missing $label: $value"
+            }
+        }
+
+        logger.lifecycle("MOD ICON: OK (512x512, SHA-256 $expectedSha256)")
+    }
 }
 
 tasks.named("check") {
