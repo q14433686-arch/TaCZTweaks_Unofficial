@@ -24,6 +24,30 @@ GPL-3.0 text is included as [`LICENSE`](LICENSE).
 
 The full GPL-3.0 text is included as [`LICENSE`](LICENSE).
 
+## Vendored compile/runtime input jars and dependencies
+
+The following dependencies are used by this checkout to build and test against fixed Fabric
+26.1.2 targets. Checksums and download URLs for local binary inputs are pinned in
+[`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
+
+### TaCZ Refabricated Unofficial 1.1.8+fabric.26.1.2.R2
+
+- File: `libs/TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar`
+- Project: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial>
+- Release: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.1.2_R2>
+- License declared by its `fabric.mod.json`: `GPL3 / CC BY-NC-ND 4.0`
+- SHA-256: `fcfdfe6e6356ae5f33c7a6a439ed656f2b9f1034d09cd850a2666c7399febf6f`
+- Use here: compile-only and test-runtime API/mixin target dependency. It is not nested into
+  this project's published jar; users must install the TaCZ Refabricated mod separately.
+
+### YetAnotherConfigLib 3.9.6+26.1-fabric
+
+- Project: <https://github.com/isXander/YetAnotherConfigLib>
+- Modrinth version id: `svTkvBec` (`3.9.6+26.1-fabric`)
+- License declared by its `fabric.mod.json`: `LGPL-3.0-or-later`
+- Use here: runtime configuration library expected as a separate installed mod (resolved via Maven
+  `maven.modrinth:1eAoo2KR:svTkvBec`). It is not nested into this project's published jar.
+
 ## MixinExtras 0.5.4
 
 - Project: <https://github.com/LlamaLad7/MixinExtras>

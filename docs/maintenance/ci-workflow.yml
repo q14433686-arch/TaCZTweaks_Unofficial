@@ -1,0 +1,118 @@
+# Proposed GitHub Actions workflow.
+# NOTE: Arena/GitHub App credentials in this session cannot push files under .github/workflows.
+# Move this file to .github/workflows/ci.yml with a token that has workflow permission to activate it.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux audit and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Check vendored dependency checksums
+        run: python3 scripts/download_dependencies.py --check-only
+
+      - name: Static port audit
+        run: python3 scripts/audit_port.py --strict
+
+      - name: Icon provenance check
+        run: python3 scripts/check_mod_icon.py
+
+      - name: Release consistency check
+        run: python3 scripts/check_release_consistency.py
+
+      - name: Build and test
+        run: ./gradlew clean build --stacktrace
+
+      - name: Check clean working tree
+        run: |
+          git status --short
+          test -z "$(git status --short)"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tacztweaks-linux-artifacts
+          if-no-files-found: warn
+          path: |
+            build/libs/*.jar
+            build/distributions/*.zip
+
+  windows:
+    name: Windows Gradle build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Disable autocrlf for reproducible generated resources
+        run: git config --global core.autocrlf false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Check vendored dependency checksums
+        run: python scripts/download_dependencies.py --check-only
+
+      - name: Release consistency check
+        run: python scripts/check_release_consistency.py
+
+      - name: Build and test
+        run: .\gradlew.bat clean build --stacktrace
+
+      - name: Check clean working tree
+        shell: bash
+        run: |
+          git status --short
+          test -z "$(git status --short)"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tacztweaks-windows-artifacts
+          if-no-files-found: warn
+          path: |
+            build/libs/*.jar
+            build/distributions/*.zip

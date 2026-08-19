@@ -5,6 +5,9 @@
 ## 玩家与服务器管理员
 
 - [安装、依赖与构建](../BUILD.md)
+- [配置项参考](CONFIGURATION.md)
+- [兼容矩阵](COMPATIBILITY.md)
+- [已知问题](KNOWN_ISSUES.md)
 - [问题排查与 Bug 提交流程](SUPPORT.md)
 - [示例扩展包](../tacz-tweaks-example-pack/)
 
@@ -14,10 +17,12 @@
 
 仓库中的 `tacz-tweaks-example-pack/` 是可重载示例，包含以下系统的实际目录和 schema 示例：
 
-- `bullet_interactions`
-- `bullet_sounds`
-- `bullet_particles`
-- `melee_interactions`
+- [选择器通用格式](data/SELECTORS.md)
+- [bullet_interactions](data/BULLET_INTERACTIONS.md)
+- [bullet_sounds](data/BULLET_SOUNDS.md)
+- [bullet_particles](data/BULLET_PARTICLES.md)
+- [melee_interactions](data/MELEE_INTERACTIONS.md)
+- [迁移说明](data/MIGRATION.md)
 
 修改或分发示例中的第三方音频前，请同时阅读 [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)。兼容某个第三方枪包、资源包或模组，不代表本项目拥有、转授或改变该内容的许可。
 
@@ -27,7 +32,9 @@
 - [Modrinth 文案](publish/Modrinth.md)
 - [CurseForge 文案](publish/CurseForge.md)
 - [项目许可](../LICENSE)
+- [许可证总览](../LICENSES.md)
 - [第三方来源与许可](../THIRD_PARTY_NOTICES.md)
+- [依赖清单](../RESOURCE_IMPORT_MANIFEST.tsv)
 
 ## 移植与审计
 
