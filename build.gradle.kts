@@ -121,6 +121,24 @@ tasks.named<org.gradle.api.tasks.testing.Test>("test") {
     }
 }
 
+val checkModIcon by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Verifies the mod icon checksum, metadata path, dimensions, and license notice."
+    val checker = layout.projectDirectory.file("scripts/check_mod_icon.py")
+    inputs.file(checker)
+    inputs.file(layout.projectDirectory.file("src/main/resources/fabric.mod.json"))
+    inputs.file(layout.projectDirectory.file("src/main/resources/icon.png"))
+    inputs.file(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md"))
+    commandLine(
+        if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "python" else "python3",
+        checker.asFile.absolutePath,
+    )
+}
+
+tasks.named("check") {
+    dependsOn(checkModIcon)
+}
+
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
     group = "distribution"
     description = "Packages the reloadable TaCZ Tweaks example gun pack."

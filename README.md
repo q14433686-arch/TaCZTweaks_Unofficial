@@ -9,6 +9,10 @@
 
 当前测试版本：**Beta-1**（`2.14.2+fabric.26.1.2.Beta-1`）。
 
+[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
+
+> 本项目是非官方社区移植。请先按支持文档完成最小环境对照测试；本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
+
 ## 功能状态
 
 ### 枪械、移动与配置
@@ -89,12 +93,22 @@ python3 scripts/audit_port.py --strict
 # build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1.jar
 ```
 
-`scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性和
-MixinExtras 最低版本。可再传 `--minecraft-jar <loom生成的26.1.2.jar>` 做原版类方法审计，或传
-`--upstream-root <TaCZTweaks-v2.14.2>` 输出上游差异清单。
+`scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、
+MixinExtras 最低版本，以及模组图标的元数据路径、尺寸、SHA-256 与许可声明。`./gradlew build`
+也会通过 `checkModIcon` 执行图标回归门禁。可再传 `--minecraft-jar <loom生成的26.1.2.jar>` 做原版
+类方法审计，或传 `--upstream-root <TaCZTweaks-v2.14.2>` 输出上游差异清单。
 
 ## 许可
 
 - 代码：GPL-3.0（继承原项目 MUKSC/TaCZTweaks）
 - 原作者：MUKSC
-- 嵌入依赖和示例包音频来源/许可证：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- 原版图标、嵌入依赖和示例包音频来源/许可证：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+
+## 问题反馈
+
+提交前请阅读[支持范围与问题反馈](docs/SUPPORT.md)，搜索 open/closed issues，并使用对应表单：
+
+- [Bug 报告](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues/new?template=bug_report.yml)
+- [内容包 / 兼容性问题](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues/new?template=compat_report.yml)
+
+报告必须包含完整版本、完整日志、最小复现步骤、出现环境、相关配置和第三方内容。仅写“最新版”、仅贴截图或单行报错无法用于定位。
