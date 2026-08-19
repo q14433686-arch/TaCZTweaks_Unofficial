@@ -937,7 +937,7 @@ def audit_tacz_artifact(path: Path) -> list[str]:
     expected_version = "1.1.8+fabric.26.1.2.R2"
     errors: list[str] = []
     if not path.is_file():
-        return []
+        return [f"TaCZ audit artifact is missing: {path}"]
     if path.name != expected_name:
         errors.append(f"TaCZ audit artifact must use the exact release filename {expected_name}")
     try:
