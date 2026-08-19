@@ -886,6 +886,21 @@ def audit_release_guards() -> list[str]:
     if "tacztweaks$monoCache" not in mono_source:
         errors.append("mono and stereo complete buffers no longer have separate caches")
 
+    removed_config_options = {
+        "thirdPersonGunRenderingFix",  # fixed natively by the target TaCZ port
+        "lsoCompat",                  # no supported Fabric target
+        "mtsFix",                     # no supported Fabric target
+        "vsCollisionCompat",          # no supported Fabric target
+        "vsExplosionCompat",          # no supported Fabric target
+    }
+    for language_file in sorted((SOURCE_ROOT / "resources/assets/tacztweaks/lang").glob("*.json")):
+        language = language_file.read_text(encoding="utf-8")
+        for option in sorted(removed_config_options):
+            if f".{option}." in language:
+                errors.append(
+                    f"{language_file.name} retains stale text for removed config option {option}"
+                )
+
     for name in ("README.md", "AUDIT.md", "AGENTS.md"):
         text = (ROOT / name).read_text(encoding="utf-8")
         if "`Identifier` 是 record" in text or "record `Identifier`" in text:
