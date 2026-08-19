@@ -1,15 +1,25 @@
 # TaCZ Tweaks (Refabricated) — 1.21.11
 
-**Fabric 移植版 TaCZ Tweaks**，适配非官方 Fabric 移植
+**English:** an unofficial Fabric 1.21.11 community port of
+[`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks) v2.14.2 for
+[`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial).
+It is not affiliated with or endorsed by MUKSC, the TACZ Dev Team, or optional compatibility
+mod authors. This branch targets **obfuscated Minecraft 1.21.11** with Loom remap and
+`tacztweaks.refmap.json`. Install the exact dependencies listed below before filing issues.
+Start with [documentation](docs/README.md), [configuration](docs/CONFIGURATION.md),
+[compatibility](docs/COMPATIBILITY.md), [known issues](docs/KNOWN_ISSUES.md), and
+[support requirements](docs/SUPPORT.md).
+
+**中文：Fabric 移植版 TaCZ Tweaks**，适配非官方 Fabric 移植
 [`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial) 的
 Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 原项目：**[MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks)**（Forge 1.20.1 / TaCZ 1.1.8），
-代码遵循 **GPL-3.0** 发布。
+代码遵循 **GPL-3.0** 发布。本项目与 MUKSC、TACZ Dev Team 无从属或背书关系。
 
 当前测试版本：**Beta-1**（`2.14.2+fabric.1.21.11.Beta-1`）。
 
-[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
+[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
 
 > **这是非官方社区移植。** 提交问题前必须完成最小环境测试，并移除本模组做相同条件的对照测试。本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
 
@@ -66,11 +76,11 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 | 类别 | 依赖 | 版本 / 说明 |
 |---|---|---|
-| 必需 | Minecraft | `1.21.11` |
-| 必需 | Fabric Loader | `>=0.19.3` |
-| 必需 | Fabric API | `0.141.6+1.21.11` |
+| 必需 | Minecraft | `=1.21.11` |
+| 必需 | Fabric Loader | `>=0.19.3 <0.20.0` |
+| 必需 | Fabric API | `>=0.141.6+1.21.11 <0.143.0` |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | **`1.1.8+fabric.1.21.11.R2`**（运行时精确验证 friendly string） |
-| 必需 | Fabric Language Kotlin | `1.13.13+kotlin.2.4.10` |
+| 必需 | Fabric Language Kotlin | `>=1.13.13 <1.14.0` |
 | 必需 | YetAnotherConfigLib (YACL) | **`3.8.2+1.21.11-fabric`** |
 | 必需 | Java | `>=21` |
 | 可选兼容 | Sound Physics Remastered | `>=1.5.1 <1.6.0`；1.21.11 Fabric 已核实对应 `fabric-1.21.11-1.5.1` |
@@ -80,7 +90,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 ### 可选兼容版本说明（已按 1.21.11 真实发布线核实）
 
 - **Sound Physics Remastered**：1.21.11 Fabric 对应 **`1.5.1`**，不是 1.21.1 / 26.x 的别的发布线；
-- **First Aid New**：1.21.11 Fabric 要看 **legacy** 线，即 **`1.2.5+fabric1.21.11-legacy.jar`**；
+- **First Aid New**：1.21.11 Fabric 要看 **legacy** 线，即 **`firstaid-1.2.5+fabric1.21.11-legacy.jar`**；
 - **Pillager’s Gun (Unofficial Port)**：1.21.11 Fabric 对应 **`3.2.2`**；`3.3.x` 是后续 26.x/更高线，**不属于本分支的 1.21.11 目标版本**。
 
 这些范围已与 `fabric.mod.json` 的 `suggests` / `breaks` 同步。
@@ -91,10 +101,14 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 
 ```bash
 # 需要 JDK 21
+python3 scripts/download_dependencies.py --check-only
+python3 scripts/check_release_consistency.py
 ./gradlew build
 # 产物：build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1.jar
 # 示例包：build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 ```
+
+本分支的发布产物是 Loom **remapJar**（混淆环境），不是 26.x 的未 remap jar。
 
 可用的发布前门禁：
 
@@ -109,7 +123,7 @@ python3 scripts/check_server_log.py <dedicated-server-latest.log>
 ```
 
 > `libs/` 下的 `TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar`（compileOnly / testRuntimeOnly）
-> 与 `yacl-fabric.jar` 需要按 BUILD.md 手动下载。若已先执行 `build`，audit 也会自动尝试发现默认输出位置的 refmap。
+> 与 `yacl-fabric.jar` 需要按 BUILD.md 或 `scripts/download_dependencies.py` 下载。若已先执行 `build`，audit 也会自动尝试发现默认输出位置的 refmap。
 
 图标门禁同时进入静态审计和 Gradle `check` / `build` 生命周期，用于锁定 `fabric.mod.json`
 路径、有效 IHDR、512×512 尺寸、批准的 SHA-256 与第三方许可记录。
@@ -118,7 +132,9 @@ python3 scripts/check_server_log.py <dedicated-server-latest.log>
 
 - 代码：GPL-3.0（继承原项目 MUKSC/TaCZTweaks）
 - 原作者：MUKSC
-- 原版图标、嵌入组件与其他第三方来源/许可：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- 许可证总览：[`LICENSES.md`](LICENSES.md)
+- 原版图标、嵌入组件、本地二进制输入来源/许可：[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- 本地二进制依赖来源和校验和：[`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv)
 
 ## 问题反馈
 
