@@ -10,6 +10,9 @@ public abstract class LivingEntityMixin implements SlideDataHolder {
     @Unique
     private boolean tacztweaks$shouldSlide = false;
 
+    @Unique
+    private int tacztweaks$slideRequestExpiry = 0;
+
     @Override
     public boolean tacztweaks$getShouldSlide() {
         return tacztweaks$shouldSlide;
@@ -18,5 +21,15 @@ public abstract class LivingEntityMixin implements SlideDataHolder {
     @Override
     public void tacztweaks$setShouldSlide(boolean shouldSlide) {
         tacztweaks$shouldSlide = shouldSlide;
+    }
+
+    @Override
+    public int tacztweaks$getSlideRequestExpiry() {
+        return tacztweaks$slideRequestExpiry;
+    }
+
+    @Override
+    public void tacztweaks$setSlideRequestExpiry(int tick) {
+        tacztweaks$slideRequestExpiry = tick;
     }
 }

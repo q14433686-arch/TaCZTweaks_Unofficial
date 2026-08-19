@@ -1,0 +1,67 @@
+package me.muksc.tacztweaks.data.old
+
+import me.muksc.tacztweaks.blockInput
+import me.muksc.tacztweaks.data.BulletInteraction
+import me.muksc.tacztweaks.data.core.Target
+import me.muksc.tacztweaks.data.core.ValueRange
+import net.minecraft.world.level.block.Blocks
+import java.util.Optional
+import me.muksc.tacztweaks.data.old.BulletInteraction as OldBulletInteraction
+
+/** Converts the old v2 schema to the current block interaction format at load time. */
+fun OldBulletInteraction.convert(): BulletInteraction.Block = BulletInteraction.Block(
+    target = if (guns.isEmpty()) emptyList() else listOf(Target.Gun(guns)),
+    blocks = blocks,
+    blockBreak = when (blockBreak) {
+        is OldBulletInteraction.BlockBreak.Never -> BulletInteraction.Block.BlockBreak.Never
+        is OldBulletInteraction.BlockBreak.Count -> BulletInteraction.Block.BlockBreak.Count(
+            count = blockBreak.count,
+            replaceWith = Blocks.AIR.defaultBlockState().blockInput(),
+            hardness = ValueRange.DEFAULT,
+            tier = Optional.empty(),
+            drop = drop
+        )
+        is OldBulletInteraction.BlockBreak.FixedDamage -> BulletInteraction.Block.BlockBreak.FixedDamage(
+            damage = blockBreak.damage,
+            accumulate = blockBreak.accumulate,
+            replaceWith = Blocks.AIR.defaultBlockState().blockInput(),
+            hardness = ValueRange.DEFAULT,
+            tier = Optional.empty(),
+            drop = drop
+        )
+        is OldBulletInteraction.BlockBreak.DynamicDamage -> BulletInteraction.Block.BlockBreak.DynamicDamage(
+            modifier = blockBreak.modifier,
+            multiplier = blockBreak.multiplier,
+            accumulate = blockBreak.accumulate,
+            replaceWith = Blocks.AIR.defaultBlockState().blockInput(),
+            hardness = ValueRange.DEFAULT,
+            tier = Optional.empty(),
+            drop = drop
+        )
+    },
+    pierce = when (pierce) {
+        is OldBulletInteraction.Pierce.Never -> BulletInteraction.Pierce.Never
+        is OldBulletInteraction.Pierce.Count -> BulletInteraction.Pierce.Count(
+            count = pierce.count,
+            conditional = pierce.condition == OldBulletInteraction.Pierce.ECondition.ON_BREAK,
+            damageFalloff = pierce.damageFalloff,
+            damageMultiplier = pierce.damageMultiplier,
+            renderBulletHole = false
+        )
+        is OldBulletInteraction.Pierce.Damage -> BulletInteraction.Pierce.Damage(
+            conditional = pierce.condition == OldBulletInteraction.Pierce.ECondition.ON_BREAK,
+            damageFalloff = pierce.damageFalloff,
+            damageMultiplier = pierce.damageMultiplier,
+            renderBulletHole = false
+        )
+    },
+    gunPierce = BulletInteraction.GunPierce(
+        required = when (pierce) {
+            is OldBulletInteraction.Pierce.Never -> false
+            is OldBulletInteraction.Pierce.Count -> pierce.requireGunPierce
+            is OldBulletInteraction.Pierce.Damage -> pierce.requireGunPierce
+        },
+        consume = false
+    ),
+    priority = 0
+)

@@ -65,8 +65,6 @@
   "tacztweaks.config.gun.shootWhileSprinting.name": "奔跑时射击",
   "tacztweaks.config.gun.sprintWhileReloading.description": "允许在奔跑时换弹。",
   "tacztweaks.config.gun.sprintWhileReloading.name": "奔跑时换弹",
-  "tacztweaks.config.gun.thirdPersonGunRenderingFix.description": "修复 TaCZ 的一个 bug：快捷栏的枪械只在手持物品时才渲染。",
-  "tacztweaks.config.gun.thirdPersonGunRenderingFix.name": "第三人称枪械渲染修复",
   "tacztweaks.config.gun.tiltGunKeyCancelsSprint.description": "让\"倾斜枪械\"键取消奔跑。",
   "tacztweaks.config.gun.tiltGunKeyCancelsSprint.name": "倾斜枪械键取消奔跑",
   "tacztweaks.config.gun.tiltGunKeyTriggersReduceSensitivity.description": "让\"倾斜枪械\"键触发\"降低灵敏度\"键的功能。",

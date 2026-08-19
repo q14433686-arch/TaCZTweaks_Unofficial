@@ -15,36 +15,81 @@ import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
-class ClientMessageSyncConfig private constructor(private val buf: FriendlyByteBuf) : CustomPacketPayload {
+class ClientMessageSyncConfig private constructor(private val payload: ByteArray) : CustomPacketPayload {
+    constructor(buf: FriendlyByteBuf) : this(readPayload(buf))
+
     fun write(out: FriendlyByteBuf) {
-        out.writeInt(buf.writerIndex())
-        out.writeBytes(buf)
+        out.writeInt(payload.size)
+        out.writeBytes(payload)
     }
 
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
 
     companion object {
+        private const val MAX_BYTES = 1 shl 20
+
         val TYPE = CustomPacketPayload.Type<ClientMessageSyncConfig>(
             Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "client_sync_config")
         )
         val CODEC: StreamCodec<FriendlyByteBuf, ClientMessageSyncConfig> = StreamCodec.ofMember(
             ClientMessageSyncConfig::write,
-            { buf -> ClientMessageSyncConfig(FriendlyByteBuf(buf.readBytes(buf.readInt()))) }
+            { buf -> ClientMessageSyncConfig(buf) }
         )
 
         fun create(): ClientMessageSyncConfig =
-            ClientMessageSyncConfig(FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) })
+            ClientMessageSyncConfig(encodeConfigSnapshot())
 
         @Suppress("UnstableApiUsage")
         fun handle(msg: ClientMessageSyncConfig, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
-            if (player == null) return
-            if (!ConfigManager.canUpdateServerConfig(player)) return
-            Config.decode(msg.buf)
-            Config.sync(ESyncDirection.CLIENT_TO_SERVER)
-            Config.saveToFile()
+            server.execute {
+                if (player == null || !ConfigManager.canUpdateServerConfig(player)) return@execute
+                val backup = encodeConfigSnapshot()
+                val incoming = FriendlyByteBuf(Unpooled.wrappedBuffer(msg.payload))
+                try {
+                    Config.decode(incoming)
+                    Config.sync(ESyncDirection.CLIENT_TO_SERVER)
+                    Config.saveToFile()
+                } catch (t: Throwable) {
+                    restoreSnapshot(backup)
+                    TaCZTweaks.LOGGER.warn("Rejected invalid synced config payload from {}: {}", player.scoreboardName, t.message)
+                    return@execute
+                } finally {
+                    incoming.release()
+                }
 
-            AttachmentPropertyManager.postChangeEvent(player, player.mainHandItem)
-            NetworkHandler.sendSyncConfigAll(server)
+                AttachmentPropertyManager.postChangeEvent(player, player.mainHandItem)
+                NetworkHandler.sendSyncConfigAll(server)
+            }
+        }
+
+        private fun readPayload(buf: FriendlyByteBuf): ByteArray {
+            val size = buf.readInt()
+            require(size in 0..MAX_BYTES) { "config payload exceeds $MAX_BYTES bytes: $size" }
+            val bytes = ByteArray(size)
+            buf.readBytes(bytes)
+            return bytes
+        }
+
+        private fun encodeConfigSnapshot(): ByteArray {
+            val buf = FriendlyByteBuf(Unpooled.buffer())
+            return try {
+                Config.encode(buf)
+                val size = buf.writerIndex()
+                require(size in 0..MAX_BYTES) { "encoded config exceeds $MAX_BYTES bytes: $size" }
+                ByteArray(size).also { buf.getBytes(0, it) }
+            } finally {
+                buf.release()
+            }
+        }
+
+        private fun restoreSnapshot(snapshot: ByteArray) {
+            val restore = FriendlyByteBuf(Unpooled.wrappedBuffer(snapshot))
+            try {
+                Config.decode(restore)
+                Config.sync(ESyncDirection.CLIENT_TO_SERVER)
+            } finally {
+                restore.release()
+            }
         }
     }
 }

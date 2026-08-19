@@ -7,6 +7,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.tacz.guns.GunMod;
 import com.tacz.guns.client.sound.GunSoundInstance;
 import com.tacz.guns.client.sound.SoundPlayManager;
+import me.muksc.tacztweaks.client.sound.MonoConversion;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.network.NetworkHandler;
 import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound;
@@ -15,6 +16,8 @@ import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Sound tweaks:
@@ -121,6 +124,11 @@ public abstract class SoundPlayManagerMixin {
     @WrapOperation(method = "playMeleeStockSound", at = @At(value = "INVOKE", target = PC5, remap = true))
     private static GunSoundInstance tacztweaks$playMeleeStockSound$broadcast(Entity entity, Identifier name, float volume, float pitch, int distance, Operation<GunSoundInstance> original) {
         return tacztweaks$broadcastSound(entity, name, volume, pitch, distance, original);
+    }
+
+    @Inject(method = "clearSoundResourceCache", at = @At("TAIL"))
+    private static void tacztweaks$clearSoundResourceCache$clearMonoRequests(CallbackInfo ci) {
+        MonoConversion.INSTANCE.clear();
     }
 
     @Unique

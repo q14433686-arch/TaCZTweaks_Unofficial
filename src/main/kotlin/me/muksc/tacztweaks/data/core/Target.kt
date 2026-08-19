@@ -11,7 +11,11 @@ import it.unimi.dsi.fastutil.Pair
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.data.codec.strictOptionalFieldOf
+import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
+import net.minecraft.advancements.criterion.EntityPredicate
+import net.minecraft.advancements.criterion.MinMaxBounds
 import net.minecraft.resources.Identifier
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.StringRepresentable
 import net.minecraft.world.entity.LivingEntity
 import java.util.Locale
@@ -20,12 +24,6 @@ import kotlin.jvm.optionals.getOrNull
 /**
  * "When does this interaction apply" matcher, evaluated against the bullet (or null for
  * melee) plus the weapon id and bullet damage.
- *
- * 26.2 notes:
- * - `predicate` (EntityPredicate), `burst_index` and `pellet_index` (MinMaxBounds +
- *   EntityKineticBulletExtension) are dropped — the first no longer exists in 26.2, the
- *   latter two belong to the behavior layer.
- * - EntityKineticBullet fields are private in 26.2, so accessors are used.
  */
 sealed class Target(
     val type: ETargetType
@@ -43,9 +41,12 @@ sealed class Target(
         CATEGORY("category", { Category.CODEC }),
         AMMO("ammo", { Ammo.CODEC }),
         REGEX("regex", { RegexPattern.CODEC }),
+        PREDICATE("predicate", { Predicate.CODEC }),
         DAMAGE("damage", { Damage.CODEC }),
         SPEED("speed", { Speed.CODEC }),
         SILENCED("silenced", { Silenced.CODEC }),
+        BURST_INDEX("burst_index", { BurstIndex.CODEC }),
+        PELLET_INDEX("pellet_index", { PelletIndex.CODEC }),
         RANDOM_CHANCE("random_chance", { RandomChance.CODEC });
 
         companion object {
@@ -134,16 +135,30 @@ sealed class Target(
             }
         }
 
-        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean = regex.matches(when (match) {
-            EMatchType.GUN -> weaponId.toString()
-            EMatchType.AMMO -> entity?.getAmmoId()?.toString() ?: ""
-        })
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean = regex.matches(
+            when (match) {
+                EMatchType.GUN -> weaponId.toString()
+                EMatchType.AMMO -> entity?.getAmmoId()?.toString() ?: ""
+            }
+        )
 
         companion object {
             val CODEC: Codec<RegexPattern> = RecordCodecBuilder.create<RegexPattern> { it.group(
                 EMatchType.CODEC.fieldOf("match").forGetter(RegexPattern::match),
                 Codec.STRING.xmap(::Regex, Regex::pattern).fieldOf("regex").forGetter(RegexPattern::regex)
             ).apply(it, ::RegexPattern) }
+        }
+    }
+
+    class Predicate(val predicate: EntityPredicate) : Target(ETargetType.PREDICATE) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
+            entity != null && entity.level() is ServerLevel &&
+                predicate.matches(entity.level() as ServerLevel, entity.position(), entity)
+
+        companion object {
+            val CODEC: Codec<Predicate> = RecordCodecBuilder.create<Predicate> { it.group(
+                EntityPredicate.CODEC.fieldOf("predicate").forGetter(Predicate::predicate)
+            ).apply(it, ::Predicate) }
         }
     }
 
@@ -160,7 +175,7 @@ sealed class Target(
 
     class Speed(val values: List<ValueRange>) : Target(ETargetType.SPEED) {
         override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
-            entity != null && values.any { it.contains(entity.getDeltaMovement().length() * 10) }
+            entity != null && values.any { it.contains(entity.deltaMovement.length() * 10) }
 
         companion object {
             val CODEC: Codec<Speed> = RecordCodecBuilder.create<Speed> { it.group(
@@ -171,7 +186,7 @@ sealed class Target(
 
     object Silenced : Target(ETargetType.SILENCED) {
         override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
-            val owner = entity?.getOwner() as? LivingEntity ?: return false
+            val owner = entity?.owner as? LivingEntity ?: return false
             val operator = IGunOperator.fromLivingEntity(owner)
             val silence = operator.getCacheProperty()?.getCache<Pair<Int, Boolean>>(SilenceModifier.ID) ?: return false
             return silence.right()
@@ -180,13 +195,35 @@ sealed class Target(
         val CODEC: Codec<Silenced> = MapCodec.unitCodec(Silenced)
     }
 
+    class BurstIndex(val index: MinMaxBounds.Ints) : Target(ETargetType.BURST_INDEX) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
+            (entity as? EntityKineticBulletExtension)?.let { index.matches(it.`tacztweaks$getBurstIndex`()) } ?: false
+
+        companion object {
+            val CODEC: Codec<BurstIndex> = RecordCodecBuilder.create<BurstIndex> { it.group(
+                MinMaxBounds.Ints.CODEC.fieldOf("index").forGetter(BurstIndex::index)
+            ).apply(it, ::BurstIndex) }
+        }
+    }
+
+    class PelletIndex(val index: MinMaxBounds.Ints) : Target(ETargetType.PELLET_INDEX) {
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
+            (entity as? EntityKineticBulletExtension)?.let { index.matches(it.`tacztweaks$getPelletIndex`()) } ?: false
+
+        companion object {
+            val CODEC: Codec<PelletIndex> = RecordCodecBuilder.create<PelletIndex> { it.group(
+                MinMaxBounds.Ints.CODEC.fieldOf("index").forGetter(PelletIndex::index)
+            ).apply(it, ::PelletIndex) }
+        }
+    }
+
     class RandomChance(val chance: Float) : Target(ETargetType.RANDOM_CHANCE) {
         override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
             entity != null && entity.level().random.nextFloat() < chance
 
         companion object {
             val CODEC: Codec<RandomChance> = RecordCodecBuilder.create<RandomChance> { it.group(
-                Codec.FLOAT.fieldOf("chance").forGetter(RandomChance::chance)
+                Codec.floatRange(0.0F, 1.0F).fieldOf("chance").forGetter(RandomChance::chance)
             ).apply(it, ::RandomChance) }
         }
     }

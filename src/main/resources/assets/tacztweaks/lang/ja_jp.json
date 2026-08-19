@@ -44,8 +44,6 @@
   "tacztweaks.config.gun.cancelInspection.description": "3秒以内にキーを再度押すと、アニメーションを最初から再生するのではなくキャンセルできるようにします。\n注: ガンパックのスクリプティング機能の柔軟性から、一部の銃ではうまく動作しない可能性があります。",
   "tacztweaks.config.gun.disableBulletCulling.name": "弾のカリングを無効化",
   "tacztweaks.config.gun.disableBulletCulling.description": "カリング（レンダリングの間引き処理）を無効化することで、近距離での弾のレンダリングの正確性を向上させます。\nマルチプレイでの大規模な銃撃戦など、一部の環境ではパフォーマンスに影響を与える可能性があります。",
-  "tacztweaks.config.gun.thirdPersonGunRenderingFix.name": "三人称の銃レンダリングを修正",
-  "tacztweaks.config.gun.thirdPersonGunRenderingFix.description": "手にアイテムを持っていないとホットバーの銃がレンダリングされないTaCZのバグを修正します。",
   "tacztweaks.config.modifier.addend.name": "加数",
   "tacztweaks.config.modifier.addend.description": "この値を追加します。",
   "tacztweaks.config.modifier.multiplier.name": "乗数",

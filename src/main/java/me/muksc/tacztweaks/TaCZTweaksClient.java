@@ -1,8 +1,11 @@
 package me.muksc.tacztweaks;
 
+import me.muksc.tacztweaks.client.CrawlPitchController;
 import me.muksc.tacztweaks.client.input.ReduceSensitivityKey;
 import me.muksc.tacztweaks.client.input.TiltGunKey;
 import me.muksc.tacztweaks.client.input.UnloadKey;
+import me.muksc.tacztweaks.client.sound.MonoConversion;
+import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.config.ConfigManager;
 import me.muksc.tacztweaks.config.sync.ESyncDirection;
@@ -29,11 +32,15 @@ public class TaCZTweaksClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             UnloadKey.onClientTick();
             TiltGunKey.onClientTick();
+            CrawlPitchController.apply(client.player);
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ConfigManager.INSTANCE.setSyncedWithServer(false);
             Config.INSTANCE.sync(ESyncDirection.RESET);
+            MonoConversion.INSTANCE.clear();
+            SoundPhysicsCompat.INSTANCE.clearAll();
+            CrawlPitchController.reset();
         });
     }
 }
