@@ -33,12 +33,43 @@ MIXIN_DIR = SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin"
 DEFAULT_TACZ_JAR = ROOT / "libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar"
 ALLOWLIST = ROOT / "scripts/upstream_omissions.json"
 
+OPTIONAL_DEPENDENCIES: dict[str, dict[str, object]] = {
+    "sound_physics_remastered": {
+        "display": "Sound Physics Remastered",
+        "range": ">=1.5.1 <1.6.0",
+        "breaks": ["<1.5.1", ">=1.6.0"],
+        "readme_markers": [">=1.5.1 <1.6.0", "fabric-1.21.11-1.5.1"],
+        "build_markers": ["fabric-1.21.11-1.5.1"],
+    },
+    "firstaid": {
+        "display": "First Aid New",
+        "range": ">=1.2.5 <1.3.0",
+        "breaks": ["<1.2.5", ">=1.3.0"],
+        "readme_markers": [">=1.2.5 <1.3.0", "firstaid-1.2.5+fabric1.21.11-legacy.jar"],
+        "build_markers": ["firstaid-1.2.5+fabric1.21.11-legacy.jar"],
+    },
+    "pillagers_gun": {
+        "display": "Pillager’s Gun (Unofficial Port)",
+        "range": ">=3.2.2 <3.3.0",
+        "breaks": ["<3.2.2", ">=3.3.0"],
+        "readme_markers": [">=3.2.2 <3.3.0", "pillagers_gun-3.2.2 fabric 1.21.11.jar"],
+        "build_markers": ["pillagers_gun-3.2.2 fabric 1.21.11.jar"],
+    },
+}
+
 KNOWN_DORMANT_OPTIONS: dict[str, str] = {
     "Compat.lsoCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.mtsFix": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsCollisionCompat": "No verified 1.21.11 Fabric target is wired yet.",
     "Compat.vsExplosionCompat": "No verified 1.21.11 Fabric target is wired yet.",
-    "Tweaks.betterMonoConversion": "Mono conversion helper/test code is present, but runtime hook selection still awaits final 1.21.11 target verification.",
+}
+
+KNOWN_SYNTHETIC_TARGET_EXCEPTIONS: dict[str, str] = {
+    "me.muksc.tacztweaks.mixin.tweaks.SoundBufferLibraryMixin": (
+        "1.21.11 source verification: SoundBufferLibrary decodes complete buffers inside "
+        "lambda$getCompleteBuffer$1(Identifier) before constructing SoundBuffer. Keep this "
+        "exception narrow and rely on strict jar verification for final confirmation."
+    ),
 }
 
 INJECTOR_ANNOTATIONS = (
@@ -478,7 +509,7 @@ def audit_vanilla_remap_safety(source: SourceMixin) -> list[str]:
             resolved = resolve_annotation_value(method_match.group(1), constants)
             raw_values = [resolved] if resolved else []
         for raw in raw_values:
-            if "Lnet/minecraft/" in raw and "class_" not in raw:
+            if "Lnet/minecraft/" in raw and "class_" not in raw and "remap = true" not in body and "remap=true" not in body:
                 errors.append(
                     f"remap=false mixin uses named vanilla descriptor in method=: {source.path.relative_to(ROOT)} -> {raw}"
                 )
@@ -635,19 +666,51 @@ def audit_versions(config: dict) -> tuple[list[str], list[str]]:
         errors.append(f"MixinExtras {bundled} is lower than mixin JSON minimum {required}")
 
     mod_version = properties.get("mod_version", "")
-    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.1\.21\.11\.R\d+", mod_version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.1\.21\.11\.(?:R\d+|Beta-\d+)", mod_version):
         errors.append(f"unexpected mod_version format: {mod_version}")
-    for doc in (ROOT / "README.md", ROOT / "BUILD.md"):
-        text = doc.read_text(encoding="utf-8")
+
+    readme_text = (ROOT / "README.md").read_text(encoding="utf-8")
+    build_text = (ROOT / "BUILD.md").read_text(encoding="utf-8")
+    for name, text in (("README.md", readme_text), ("BUILD.md", build_text)):
         if mod_version and mod_version not in text:
-            errors.append(f"{doc.name} does not mention current version {mod_version}")
+            errors.append(f"{name} does not mention current version {mod_version}")
+
     wrapper = (ROOT / "gradle/wrapper/gradle-wrapper.properties").read_text(encoding="utf-8")
     expected_gradle_sum = "bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f"
     if f"distributionSha256Sum={expected_gradle_sum}" not in wrapper:
         errors.append("Gradle 9.5.1 distribution checksum is missing or incorrect")
+
     mod_json = json.loads((SOURCE_ROOT / "resources/fabric.mod.json").read_text(encoding="utf-8"))
     if mod_json.get("depends", {}).get("tacz") != "=1.1.8+fabric.1.21.11.R2":
         errors.append("fabric.mod.json must require the exact TaCZ 1.21.11 R2 hook surface")
+
+    suggests = mod_json.get("suggests", {})
+    breaks = mod_json.get("breaks", {})
+    for mod_id, spec in OPTIONAL_DEPENDENCIES.items():
+        expected_range = spec["range"]
+        expected_breaks = spec["breaks"]
+        display = spec["display"]
+        if suggests.get(mod_id) != expected_range:
+            errors.append(
+                f"fabric.mod.json suggests[{mod_id!r}] drifted from verified {display} range {expected_range}"
+            )
+        if breaks.get(mod_id) != expected_breaks:
+            errors.append(
+                f"fabric.mod.json breaks[{mod_id!r}] drifted from verified {display} guard rails {expected_breaks}"
+            )
+        for marker in spec["readme_markers"]:
+            if marker not in readme_text:
+                errors.append(f"README.md is missing verified {display} marker: {marker}")
+        for marker in spec["build_markers"]:
+            if marker not in build_text:
+                errors.append(f"BUILD.md is missing verified {display} marker: {marker}")
+
+    if "--refmap build/resources/main/tacztweaks.refmap.json" not in readme_text:
+        errors.append("README.md strict audit example must mention the generated refmap path")
+    if "--refmap build/resources/main/tacztweaks.refmap.json" not in build_text:
+        errors.append("BUILD.md strict audit example must mention the generated refmap path")
+    if "suggests` / `breaks`" not in readme_text:
+        warnings.append("README.md does not explicitly note that optional compat ranges are synced with fabric.mod.json suggests/breaks")
     if not (ROOT / "scripts/check_server_log.py").is_file():
         errors.append("missing dedicated-server log gate")
     return errors, warnings
@@ -681,8 +744,11 @@ def audit_mixins(
         if source.target is None:
             warnings.append(f"could not resolve @Mixin target for {source.path.relative_to(ROOT)}")
             continue
-        if source.target.startswith("net.minecraft.") and "lambda$" in source.text:
+        synthetic_exception = KNOWN_SYNTHETIC_TARGET_EXCEPTIONS.get(source.fqcn)
+        if source.target.startswith("net.minecraft.") and "lambda$" in source.text and synthetic_exception is None:
             errors.append(f"vanilla mixin uses lambda$ synthetic names: {source.path.relative_to(ROOT)}")
+        elif synthetic_exception is not None:
+            warnings.append(f"synthetic target exception in use: {source.path.relative_to(ROOT)} — {synthetic_exception}")
 
         jar = choose_jar(source.target, named, intermediary, tacz)
         info = jar.class_info(source.target)

@@ -6,7 +6,7 @@
 
 > 其余两个分支（26.2 / 26.1.2，未混淆版）用 **JDK 25**；**本 1.21.11 分支必须用 JDK 21**。
 >
-> 仓库源码已使用 **R4** 版本号：`2.14.2+fabric.1.21.11.R4`
+> 当前测试版本统一对齐为 **Beta-1**：`2.14.2+fabric.1.21.11.Beta-1`
 
 ---
 
@@ -35,7 +35,7 @@
 
 ## 2. 拿到源码
 
-- **下载 zip**：从 Release 页下载 `tacztweaks-2.14.2+fabric.1.21.11.R4-src.zip`，解压；
+- **下载 zip**：从 Release 页下载 `tacztweaks-2.14.2+fabric.1.21.11.Beta-1-src.zip`，解压；
 - **git clone**：
   ```powershell
   git clone https://github.com/q14433686-arch/TaCZTweaks_Unofficial.git
@@ -84,8 +84,8 @@ gradlew.bat build
 成功后产物：
 
 ```text
-build/libs/tacztweaks-2.14.2+fabric.1.21.11.R4.jar
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.R4.zip
+build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1.jar
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 ```
 
 ### 测试与门禁
@@ -94,13 +94,27 @@ build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.R4.zip
 python scripts/audit_port.py --strict `
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar `
   --minecraft-named-jar <named-jar> `
-  --minecraft-intermediary-jar <intermediary-jar>
+  --minecraft-intermediary-jar <intermediary-jar> `
+  --refmap build/resources/main/tacztweaks.refmap.json
 ./gradlew test
 python scripts/check_server_log.py run/logs/latest.log
 ```
 
 `test` 任务会把运行时 classpath staging 到 ASCII-only `GRADLE_USER_HOME`，
 以绕开 Windows 中文路径上的 Gradle test worker args-file 编码问题。
+
+`--refmap` 指向构建后生成的 `tacztweaks.refmap.json`；如果你已经先执行过 `build`，
+脚本也会自动尝试从默认输出目录发现它。
+
+### 可选兼容版本（1.21.11 线已核实）
+
+这些不是编译必需依赖，但做联机/实机兼容验证时应按 **1.21.11 对应发布线** 准备：
+
+| 模组 | 1.21.11 Fabric 线 |
+|---|---|
+| Sound Physics Remastered | `fabric-1.21.11-1.5.1` |
+| First Aid New | `firstaid-1.2.5+fabric1.21.11-legacy.jar` |
+| Pillager’s Gun (Unofficial Port) | `pillagers_gun-3.2.2 fabric 1.21.11.jar` |
 
 ---
 
@@ -112,6 +126,7 @@ python scripts/check_server_log.py run/logs/latest.log
 | `Could not resolve ... yacl ...` | `libs/yacl-fabric.jar` 缺失 |
 | `UnsupportedClassVersionError` / `invalid source release 21` | JDK 版本不对，换成 JDK 21 |
 | `MixinApplyError` / `InvalidInjectionException` | 不要只看 Gradle 退出码，先跑 `scripts/audit_port.py` 与 `scripts/check_server_log.py` |
+| `Out of space in CodeCache for adapters` | 先执行 `gradlew.bat --stop`，再重跑 `gradlew.bat build`，确保新的 `gradle.properties` JVM 参数已生效 |
 | Daemon 内存不足 | 调整 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` |
 
 ---
