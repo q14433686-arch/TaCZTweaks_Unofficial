@@ -24,6 +24,32 @@ GPL-3.0 text is included as [`LICENSE`](LICENSE).
 
 The full GPL-3.0 text is included as [`LICENSE`](LICENSE).
 
+## Vendored compile/runtime input jars
+
+The following local jars are tracked under `libs/` to make this checkout build and test
+against fixed Fabric 26.2 targets. Their source URLs, versions, checksums and release-jar
+inclusion status are pinned in [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
+
+### TaCZ Refabricated Unofficial 1.1.8+fabric.26.2.R2
+
+- File: `libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`
+- Project: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial>
+- Release: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2>
+- License declared by its `fabric.mod.json`: `GPL3 / CC BY-NC-ND 4.0`
+- SHA-256: `6c0584ca457acb8403816e61a83260d68639f9bda4b3fc0717038f932325d5b5`
+- Use here: compile-only and test-runtime API/mixin target dependency. It is not nested into
+  this project's published jar; users must install the TaCZ Refabricated mod separately.
+
+### YetAnotherConfigLib 3.9.6+26.2-fabric
+
+- File: `libs/yacl-fabric.jar`
+- Project: <https://github.com/isXander/YetAnotherConfigLib>
+- Modrinth file: <https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar>
+- License declared by its `fabric.mod.json`: `LGPL-3.0-or-later`
+- SHA-256: `829396c3b3e7d1801ae0e9e2921d0454c5a3078afdb6c6dda6b3d1819dfa0e3f`
+- Use here: runtime configuration library expected as a separate installed mod. It is not
+  nested into this project's published jar.
+
 ## MixinExtras 0.5.4
 
 - Project: <https://github.com/LlamaLad7/MixinExtras>

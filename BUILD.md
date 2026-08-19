@@ -48,7 +48,7 @@
 
 ## 3. 放两个「编译期依赖」到 libs/ 目录
 
-这两个大 jar 是通过 `flatDir` 引用的，**必须手动下载**（其余依赖会自动从 Maven 拉）。
+这两个大 jar 是通过 `flatDir` / `files(...)` 引用的。仓库会用 `RESOURCE_IMPORT_MANIFEST.tsv` 固定来源、许可证和 SHA-256；其余依赖会自动从 Maven 拉。
 
 进入项目根目录下的 `libs/` 文件夹，放入这两个文件（**文件名要完全一致**）：
 
@@ -68,12 +68,25 @@ https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_
 ```
 保存为：`yacl-fabric.jar`（约 1MB）
 
+也可以直接让脚本按 manifest 下载并校验：
+
+```powershell
+python scripts/download_dependencies.py
+# Linux/macOS 可用 python3 scripts/download_dependencies.py
+```
+
 放好之后 `libs/` 里应该是：
 ```
 libs/
 ├── README.txt
 ├── TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar
 └── yacl-fabric.jar
+```
+
+发布前必须校验哈希：
+
+```powershell
+python scripts/download_dependencies.py --check-only
 ```
 
 ---
@@ -91,8 +104,8 @@ gradlew.bat build
 ```
 
 - **首次构建**会下载 Gradle 9.5.1、Minecraft 26.2、Fabric API 等，视网速可能要几分钟到十几分钟；
-- `build` 包含 `checkModIcon` 门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`（Linux/macOS 使用 `python3`）；
+- `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
+- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
 - 成功后输出：
   ```
   BUILD SUCCESSFUL
