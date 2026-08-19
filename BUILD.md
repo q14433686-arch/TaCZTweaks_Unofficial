@@ -15,7 +15,7 @@
 | 项目 | 要求 |
 |---|---|
 | JDK | **Java 21** |
-| Python | **Python 3.8+**（仅使用标准库；供图标与静态审计门禁使用） |
+| Python | 可选；手动运行 `scripts/*.py` 时需要 **Python 3.8+**，普通 Gradle 构建有 JVM 图标校验后备 |
 | 网络 | 首次构建要从 Maven 下载依赖 |
 | 磁盘 | 约 1GB（Minecraft 1.21.11 + Fabric API + Loom remap 产物） |
 
@@ -32,15 +32,16 @@
   ```
   应显示 `openjdk version "21.0.x"`。构建时 Gradle 优先使用 `JAVA_HOME`。
 
-图标和静态审计门禁还需要 **Python 3.8+**。Gradle 会依次探测 Windows 的
-`py -3`、`python3` 和 `python`，避免 Microsoft Store 的失效 `python.exe` 别名
-以退出码 9009 中断构建。安装后验证：
+手动运行图标检查、静态审计或日志脚本需要 **Python 3.8+**。安装后可验证：
 
 ```powershell
 py -3 --version
 ```
 
-也可设置 `PYTHON` 环境变量，或在构建时显式指定解释器路径：
+普通 `gradlew.bat build` **不强制要求 Python**：`checkModIcon` 会优先探测 Windows
+的 `py -3`、`python3` 和 `python` 并运行标准库检查器；如果都不可用，则自动使用
+内置的等价 JVM 校验，不会因为 Microsoft Store 的失效 `python.exe` 别名或退出码
+9009 跳过门禁或中断构建。需要固定解释器时，可设置 `PYTHON`，或显式传入：
 
 ```powershell
 gradlew.bat build -Ptacztweaks.python=C:\Python312\python.exe
@@ -146,7 +147,7 @@ py -3 scripts/check_server_log.py run/logs/latest.log
 | `Could not resolve ... TACZ-Refabricated ...` | `libs/` 里 TaCZ jar 缺失或文件名不对 |
 | `Could not resolve ... yacl ...` | `libs/yacl-fabric.jar` 缺失 |
 | `UnsupportedClassVersionError` / `invalid source release 21` | JDK 版本不对，换成 JDK 21 |
-| `checkModIcon` / Python 退出码 `9009` | 安装 Python 3.8+ 并确认 `py -3 --version`；也可用 `-Ptacztweaks.python=<解释器路径>` |
+| 旧版 `checkModIcon` 报 Python 退出码 `9009` | 更新到包含 JVM 后备校验的版本；当前构建不强制要求 Python |
 | `MixinApplyError` / `InvalidInjectionException` | 不要只看 Gradle 退出码，先跑 `scripts/audit_port.py` 与 `scripts/check_server_log.py` |
 | `Out of space in CodeCache for adapters` | 先执行 `gradlew.bat --stop`，再重跑 `gradlew.bat build`，确保新的 `gradle.properties` JVM 参数已生效 |
 | Daemon 内存不足 | 调整 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` |

@@ -1,4 +1,7 @@
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.util.zip.CRC32
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -132,17 +135,20 @@ tasks.named<org.gradle.api.tasks.testing.Test>("test") {
     }
 }
 
-val checkModIcon by tasks.registering(org.gradle.api.tasks.Exec::class) {
+val checkModIcon by tasks.registering {
     group = "verification"
     description = "Verifies the mod icon checksum, metadata path, dimensions, and license notice."
 
     val checker = layout.projectDirectory.file("scripts/check_mod_icon.py")
+    val metadataFile = layout.projectDirectory.file("src/main/resources/fabric.mod.json")
+    val iconFile = layout.projectDirectory.file("src/main/resources/icon.png")
+    val noticeFile = layout.projectDirectory.file("THIRD_PARTY_NOTICES.md")
     inputs.file(checker)
-    inputs.file(layout.projectDirectory.file("src/main/resources/fabric.mod.json"))
-    inputs.file(layout.projectDirectory.file("src/main/resources/icon.png"))
-    inputs.file(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md"))
+    inputs.file(metadataFile)
+    inputs.file(iconFile)
+    inputs.file(noticeFile)
 
-    doFirst {
+    doLast {
         fun supportsPython3(command: List<String>): Boolean = try {
             val probe = ProcessBuilder(
                 command + listOf(
@@ -170,15 +176,98 @@ val checkModIcon by tasks.registering(org.gradle.api.tasks.Exec::class) {
             add(listOf("python"))
         }.distinct()
         val python = candidates.firstOrNull(::supportsPython3)
-            ?: throw GradleException(
-                "checkModIcon requires Python 3.8 or newer. Tried: " +
-                    candidates.joinToString { it.joinToString(" ") } +
-                    ". Install Python 3 (the Windows 'py' launcher is supported), set PYTHON, " +
-                    "or pass -Ptacztweaks.python=<path-to-python>."
-            )
+        if (python != null) {
+            logger.lifecycle("checkModIcon: using ${python.joinToString(" ")}")
+            val process = ProcessBuilder(python + checker.asFile.absolutePath)
+                .inheritIO()
+                .start()
+            if (process.waitFor() != 0) {
+                throw GradleException("scripts/check_mod_icon.py rejected the distributed mod icon")
+            }
+            return@doLast
+        }
 
-        logger.lifecycle("checkModIcon: using ${python.joinToString(" ")}")
-        commandLine(*(python + checker.asFile.absolutePath).toTypedArray())
+        logger.lifecycle("checkModIcon: Python 3 unavailable; using the equivalent JVM validator")
+        val errors = mutableListOf<String>()
+        val expectedSha256 = "c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d"
+        val placeholderSha256 = "5e1272a625af1b0b4d866d0fb468e1cea0a9258411f16a7d06d31a84e8953ac8"
+
+        try {
+            val metadata = JsonSlurper().parseText(metadataFile.asFile.readText(Charsets.UTF_8))
+            val configuredIcon = (metadata as? Map<*, *>)?.get("icon")
+            if (configuredIcon != "icon.png") {
+                errors += "fabric.mod.json icon must be 'icon.png', not $configuredIcon"
+            }
+        } catch (exception: Exception) {
+            errors += "cannot parse fabric.mod.json: ${exception.message}"
+        }
+
+        if (!iconFile.asFile.isFile) {
+            errors += "cannot read src/main/resources/icon.png: file does not exist"
+        } else {
+            val raw = iconFile.asFile.readBytes()
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest(raw)
+                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            when (digest) {
+                placeholderSha256 -> errors += "mod icon is the known dark-grey/orange placeholder"
+                expectedSha256 -> Unit
+                else -> errors += "mod icon SHA-256 drifted: expected $expectedSha256, got $digest"
+            }
+
+            val signature = byteArrayOf(
+                0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+            )
+            val ihdrType = byteArrayOf(0x49, 0x48, 0x44, 0x52)
+            fun readUnsignedInt(offset: Int): Long =
+                ((raw[offset].toLong() and 0xff) shl 24) or
+                    ((raw[offset + 1].toLong() and 0xff) shl 16) or
+                    ((raw[offset + 2].toLong() and 0xff) shl 8) or
+                    (raw[offset + 3].toLong() and 0xff)
+
+            if (
+                raw.size < 33 ||
+                !raw.copyOfRange(0, 8).contentEquals(signature) ||
+                readUnsignedInt(8) != 13L ||
+                !raw.copyOfRange(12, 16).contentEquals(ihdrType)
+            ) {
+                errors += "mod icon is not a PNG with a valid leading IHDR chunk"
+            } else {
+                val crc = CRC32().apply { update(raw, 12, 17) }.value
+                if (readUnsignedInt(29) != crc) {
+                    errors += "mod icon has an invalid leading IHDR CRC"
+                }
+                val width = readUnsignedInt(16)
+                val height = readUnsignedInt(20)
+                if (width != 512L || height != 512L) {
+                    errors += "mod icon must be 512x512, got ${width}x${height}"
+                }
+            }
+        }
+
+        try {
+            val notice = noticeFile.asFile.readText(Charsets.UTF_8)
+            val requiredNoticeValues = listOf(
+                "https://github.com/MUKSC/TaCZTweaks",
+                "74ba2412a6149a1d91788c3663497c4c81992983",
+                "https://github.com/MUKSC/TaCZTweaks/blob/74ba2412a6149a1d91788c3663497c4c81992983/src/main/resources/icon.png",
+                "https://cdn.modrinth.com/data/H8peNuJG/0c9fcf0f40ec59d591b7cc17452c63a843df122e.png",
+                "MUKSC",
+                "GPL-3.0",
+                expectedSha256,
+                "src/main/resources/icon.png",
+            )
+            requiredNoticeValues.filterNot { notice.contains(it) }.forEach {
+                errors += "THIRD_PARTY_NOTICES.md is missing required icon provenance: $it"
+            }
+        } catch (exception: Exception) {
+            errors += "cannot read THIRD_PARTY_NOTICES.md: ${exception.message}"
+        }
+
+        if (errors.isNotEmpty()) {
+            throw GradleException("MOD ICON: ${errors.size} error(s)\n" + errors.joinToString("\n") { "ERROR: $it" })
+        }
+        logger.lifecycle("MOD ICON: OK (512x512, SHA-256 $expectedSha256; JVM validator)")
     }
 }
 
