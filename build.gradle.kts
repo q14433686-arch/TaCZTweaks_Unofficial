@@ -2,6 +2,7 @@ import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
+import java.util.zip.ZipFile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -9,7 +10,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("net.fabricmc.fabric-loom-remap")
     kotlin("jvm") version "2.4.10"
-    id("maven-publish")
 }
 
 val modVersion = providers.gradleProperty("mod_version").get()
@@ -271,8 +271,154 @@ val checkModIcon by tasks.registering {
     }
 }
 
+val checkVendoredDependencies by tasks.registering {
+    group = "verification"
+    description = "Verifies vendored binary dependencies against RESOURCE_IMPORT_MANIFEST.tsv."
+
+    val manifest = layout.projectDirectory.file("RESOURCE_IMPORT_MANIFEST.tsv")
+    inputs.file(manifest)
+    inputs.dir(layout.projectDirectory.dir("libs"))
+
+    doLast {
+        val rows = manifest.asFile.readLines(Charsets.UTF_8)
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+        check(rows.isNotEmpty()) { "RESOURCE_IMPORT_MANIFEST.tsv is empty" }
+        val headers = rows.first().split('\t')
+        val pathIndex = headers.indexOf("path")
+        val shaIndex = headers.indexOf("sha256")
+        val bundledIndex = headers.indexOf("bundled_in_release_jar")
+        check(pathIndex >= 0 && shaIndex >= 0 && bundledIndex >= 0) {
+            "RESOURCE_IMPORT_MANIFEST.tsv must contain path, sha256 and bundled_in_release_jar columns"
+        }
+        rows.drop(1).forEach { row ->
+            val columns = row.split('\t')
+            val relativePath = columns.getOrNull(pathIndex).orEmpty()
+            val expectedSha = columns.getOrNull(shaIndex).orEmpty()
+            check(relativePath.isNotBlank()) { "Malformed dependency manifest row: $row" }
+            check(expectedSha.matches(Regex("[0-9a-f]{64}"))) {
+                "SHA-256 for $relativePath is not pinned (got '$expectedSha'). " +
+                    "Either run `./gradlew pinVendoredChecksums` to auto-compute (" +
+                    "requires the file to already exist in libs/), or run " +
+                    "scripts/download_dependencies.py on a machine with network access."
+            }
+            val file = layout.projectDirectory.file(relativePath).asFile
+            check(file.isFile) { "Manifest dependency is missing: $relativePath" }
+            val actualSha = MessageDigest.getInstance("SHA-256")
+                .digest(file.readBytes())
+                .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+            check(actualSha == expectedSha) {
+                "SHA-256 mismatch for $relativePath: expected $expectedSha, got $actualSha"
+            }
+        }
+        logger.lifecycle("VENDORED DEPENDENCIES: OK (${rows.size - 1} files)")
+    }
+}
+
+val pinVendoredChecksums by tasks.registering {
+    group = "verification"
+    description = "Reads libs/*.jar, computes SHA-256, and writes them into RESOURCE_IMPORT_MANIFEST.tsv. " +
+        "Run this after downloading the jars instead of manually copying checksums."
+
+    doLast {
+        val mf = layout.projectDirectory.file("RESOURCE_IMPORT_MANIFEST.tsv").asFile
+        val lines = mf.readLines(Charsets.UTF_8)
+        val headerLines = lines.takeWhile { it.startsWith("#") }
+        val headerRow = lines.drop(headerLines.size).firstOrNull()
+            ?: throw GradleException("RESOURCE_IMPORT_MANIFEST.tsv has no header row")
+        val header = headerRow.split('\t')
+        val pathIdx = header.indexOf("path")
+        val shaIdx = header.indexOf("sha256")
+        check(pathIdx >= 0 && shaIdx >= 0) { "Manifest missing path or sha256 column" }
+
+        val out = mutableListOf<String>()
+        out.addAll(headerLines)
+        out.add(headerRow)
+
+        lines.drop(headerLines.size + 1).forEach { row ->
+            if (row.isBlank()) { out.add(row); return@forEach }
+            val cols = row.split('\t')
+            val relPath = cols.getOrNull(pathIdx) ?: ""
+            if (relPath.isBlank()) { out.add(row); return@forEach }
+            val jf = layout.projectDirectory.file(relPath).asFile
+            if (!jf.isFile) {
+                logger.warn("Skipping $relPath — file not found")
+                out.add(row); return@forEach
+            }
+            val computed = MessageDigest.getInstance("SHA-256")
+                .digest(jf.readBytes())
+                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            val newCols = cols.toMutableList()
+            newCols[shaIdx] = computed
+            out.add(newCols.joinToString("\t"))
+            logger.lifecycle("  Pinned $relPath -> $computed")
+        }
+
+        mf.writeText(out.joinToString("\n") + "\n", Charsets.UTF_8)
+        logger.lifecycle("pinVendoredChecksums: DONE — ${out.size - headerLines.size - 1} row(s) updated")    }
+}
+
+tasks.named<Jar>("jar") {
+    from(layout.projectDirectory.file("LICENSE")) {
+        into("META-INF")
+        rename { "LICENSE_tacztweaks" }
+    }
+    from(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md")) {
+        into("META-INF")
+        rename { "THIRD_PARTY_NOTICES_tacztweaks.md" }
+    }
+}
+
+val checkJarContents by tasks.registering {
+    group = "verification"
+    description = "Verifies required release jar metadata and rejects accidental bundled fixtures/local jars."
+
+    // This branch runs Loom in remap mode (fabric-loom-remap + official Mojang mappings,
+    // Minecraft 1.21.11 is obfuscated), so the publishable artifact is the remapped jar
+    // produced by the remapJar task. Fall back to the plain jar only for unobfuscated
+    // environments (or plugin setups) that do not create a remapJar task.
+    val remapJarTask = tasks.findByName("remapJar") as? org.gradle.jvm.tasks.Jar
+    val releaseJarTask: org.gradle.jvm.tasks.Jar =
+        remapJarTask ?: tasks.named<org.gradle.jvm.tasks.Jar>("jar").get()
+    dependsOn(releaseJarTask)
+
+    doLast {
+        val jarFile = releaseJarTask.archiveFile.get().asFile
+        check(jarFile.isFile) { "Expected release jar does not exist: $jarFile" }
+        ZipFile(jarFile).use { zip ->
+            fun requireEntry(name: String) {
+                check(zip.getEntry(name) != null) { "Release jar is missing $name" }
+            }
+            requireEntry("fabric.mod.json")
+            requireEntry("icon.png")
+            requireEntry("tacztweaks.mixins.json")
+            requireEntry("META-INF/LICENSE_tacztweaks")
+            requireEntry("META-INF/THIRD_PARTY_NOTICES_tacztweaks.md")
+
+            val metadata = zip.getInputStream(zip.getEntry("fabric.mod.json")).reader(Charsets.UTF_8).readText()
+            check("\${version}" !in metadata) { "fabric.mod.json version placeholder was not expanded" }
+            check("\"$modVersion\"" in metadata) {
+                "fabric.mod.json does not contain expanded version $modVersion"
+            }
+            check("\"contact\"" in metadata && "TaCZTweaks_Unofficial/issues" in metadata) {
+                "fabric.mod.json contact metadata is incomplete"
+            }
+
+            val forbidden = zip.entries().asSequence().map { it.name }.filter { name ->
+                name.startsWith("fixtures/") ||
+                    name.startsWith("src/test/") ||
+                    name.endsWith(".log") ||
+                    name.startsWith("libs/") ||
+                    name == "yacl-fabric.jar" ||
+                    name.startsWith("TACZ-Refabricated-")
+            }.toList()
+            check(forbidden.isEmpty()) { "Release jar contains forbidden entries: $forbidden" }
+        }
+        logger.lifecycle("JAR CONTENTS: OK (${releaseJarTask.name} -> $jarFile)")
+    }
+}
+
 tasks.named("check") {
-    dependsOn(checkModIcon)
+    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents)
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
