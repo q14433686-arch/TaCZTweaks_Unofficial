@@ -15,6 +15,7 @@
 | 项目 | 要求 |
 |---|---|
 | JDK | **Java 21** |
+| Python | 可选；手动运行 `scripts/*.py` 时需要 **Python 3.8+**，普通 Gradle 构建有 JVM 图标校验后备 |
 | 网络 | 首次构建要从 Maven 下载依赖 |
 | 磁盘 | 约 1GB（Minecraft 1.21.11 + Fabric API + Loom remap 产物） |
 
@@ -30,6 +31,21 @@
   java -version
   ```
   应显示 `openjdk version "21.0.x"`。构建时 Gradle 优先使用 `JAVA_HOME`。
+
+手动运行图标检查、静态审计或日志脚本需要 **Python 3.8+**。安装后可验证：
+
+```powershell
+py -3 --version
+```
+
+普通 `gradlew.bat build` **不强制要求 Python**：`checkModIcon` 会优先探测 Windows
+的 `py -3`、`python3` 和 `python` 并运行标准库检查器；如果都不可用，则自动使用
+内置的等价 JVM 校验，不会因为 Microsoft Store 的失效 `python.exe` 别名或退出码
+9009 跳过门禁或中断构建。需要固定解释器时，可设置 `PYTHON`，或显式传入：
+
+```powershell
+gradlew.bat build -Ptacztweaks.python=C:\Python312\python.exe
+```
 
 ---
 
@@ -90,14 +106,20 @@ build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
 
 ### 测试与门禁
 
+`check` / `build` 生命周期包含 `checkModIcon`：它会校验 `fabric.mod.json` 的图标路径、
+带有效 IHDR 的 512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的
+固定来源、作者、使用路径与 GPL-3.0 声明。也可在 Gradle 之外单独运行检查器。
+
 ```powershell
-python scripts/audit_port.py --strict `
+# Windows（Linux/macOS 将 `py -3` 换成 `python3`）
+py -3 scripts/check_mod_icon.py
+py -3 scripts/audit_port.py --strict `
   --tacz-jar libs/TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar `
   --minecraft-named-jar <named-jar> `
   --minecraft-intermediary-jar <intermediary-jar> `
   --refmap build/resources/main/tacztweaks.refmap.json
-./gradlew test
-python scripts/check_server_log.py run/logs/latest.log
+gradlew.bat test
+py -3 scripts/check_server_log.py run/logs/latest.log
 ```
 
 `test` 任务会把运行时 classpath staging 到 ASCII-only `GRADLE_USER_HOME`，
@@ -125,6 +147,7 @@ python scripts/check_server_log.py run/logs/latest.log
 | `Could not resolve ... TACZ-Refabricated ...` | `libs/` 里 TaCZ jar 缺失或文件名不对 |
 | `Could not resolve ... yacl ...` | `libs/yacl-fabric.jar` 缺失 |
 | `UnsupportedClassVersionError` / `invalid source release 21` | JDK 版本不对，换成 JDK 21 |
+| 旧版 `checkModIcon` 报 Python 退出码 `9009` | 更新到包含 JVM 后备校验的版本；当前构建不强制要求 Python |
 | `MixinApplyError` / `InvalidInjectionException` | 不要只看 Gradle 退出码，先跑 `scripts/audit_port.py` 与 `scripts/check_server_log.py` |
 | `Out of space in CodeCache for adapters` | 先执行 `gradlew.bat --stop`，再重跑 `gradlew.bat build`，确保新的 `gradle.properties` JVM 参数已生效 |
 | Daemon 内存不足 | 调整 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` |

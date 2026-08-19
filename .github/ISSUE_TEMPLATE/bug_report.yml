@@ -1,0 +1,139 @@
+name: 🐞 Bug 反馈 / Bug report
+description: 崩溃、启动失败、配置同步错误或功能异常 / Crashes, startup failures, sync errors, or broken features
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 提交前请确认 / Before submitting
+
+        本仓库只处理 **TaCZ Tweaks (Refabricated)** 移植本身的问题。请先搜索 open 和 closed issues，并阅读[支持文档](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/HEAD/docs/SUPPORT.md)。本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
+
+        所有版本必须填写完整值；“最新版”或 “latest” 不是有效答案。截图、启动器摘要或单行报错不能代替完整日志。中文或 English 均可。
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前检查 / Pre-submit checklist
+      options:
+        - label: 我已搜索 open 和 closed issues，没有找到相同问题 / I searched open and closed issues for duplicates.
+          required: true
+        - label: 我的文件来自本项目维护者标识的正式发布页（包括[本仓库 Releases](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases) 或本项目的平台页面），不是自行编译或第三方转载文件 / My file came from an official project release page, not a self-built or third-party copy.
+          required: true
+        - label: 我已移除 TaCZ Tweaks (Refabricated) 做对照，并确认问题不是仅安装底层 TaCZ 时也会发生 / I removed this port for a control test and confirmed the problem does not occur with underlying TaCZ alone.
+          required: true
+
+  - type: input
+    id: game_version
+    attributes:
+      label: Minecraft 完整版本 / Exact Minecraft version
+      description: 请填写完整值，不要写“最新版” / Give the exact value, never “latest”.
+    validations:
+      required: true
+
+  - type: input
+    id: mod_version
+    attributes:
+      label: 本模组完整版本 / Exact mod version
+      description: 从文件名或模组列表复制完整版本号，不要写“最新版” / Copy the complete value; never “latest”.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependency_versions
+    attributes:
+      label: Fabric Loader、Java 与全部必需依赖版本 / Fabric Loader, Java, and all required dependency versions
+      description: 每行填写一个准确名称和完整版本，包括 Fabric API、Fabric Language Kotlin、TaCZ Refabricated Unofficial 与 YACL。不要写“最新版” / One exact name and full version per line; never “latest”.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: side
+    attributes:
+      label: 出现环境 / Environment
+      options:
+        - 单人游戏 / Single-player
+        - 局域网联机 / LAN
+        - 多人服务器（客户端异常） / Multiplayer client
+        - 多人服务器（服务端异常） / Dedicated/multiplayer server
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 实际表现与预期表现 / Actual and expected behavior
+      description: 分开说明实际发生了什么，以及你预期发生什么 / Describe actual and expected behavior separately.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 最小复现步骤 / Minimal reproduction steps
+      description: 从新建存档或测试服务器开始，列出每一步和所用枪械、配件、配置 / Start from a new world or test server and list each relevant item and setting.
+      placeholder: |
+        1. 使用默认配置启动最小环境
+        2. 新建存档或测试服务器并获取……
+        3. 执行……
+        4. 观察到……
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: 复现概率 / Reproduction frequency
+      options:
+        - 每次必现 / Always
+        - 经常出现 / Often
+        - 偶尔出现 / Sometimes
+        - 只出现过一次 / Once
+    validations:
+      required: true
+
+  - type: dropdown
+    id: minimal_environment
+    attributes:
+      label: 是否在最小环境复现？ / Reproduced in a minimal environment?
+      description: 最小环境仅包含本模组和 fabric.mod.json 声明的硬依赖 / Use only this mod and the hard dependencies declared by fabric.mod.json.
+      options:
+        - 是 / Yes
+        - 否，只在加入其他内容后出现 / No, only with additional content
+        - 尚未测试 / Not tested
+    validations:
+      required: true
+
+  - type: input
+    id: log_link
+    attributes:
+      label: 完整 latest.log 或 crash report 链接 / Full latest.log or crash-report link
+      description: 上传完整文本到 mclo.gs、GitHub Gist 等服务；崩溃时请提供完整 crash report。截图和单行错误不能替代完整日志 / Upload the complete text; for crashes include the full crash report.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: 相关配置 / Relevant configuration
+      description: 列出修改过的相关选项或附上配置文件；若使用默认配置请明确写出 / List changed options or attach the config; state clearly if defaults are used.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_content
+    attributes:
+      label: 枪包、可选兼容模组及其他模组 / Gun packs, optional integrations, and other mods
+      description: 每行填写准确名称与完整版本；没有则写“无”。不要写“最新版” / Give exact names and full versions, or “none”; never “latest”.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充材料 / Additional evidence
+      description: 可附截图、录屏、存档或自制最小数据包。请先移除隐私信息，不要上传无权再分发的第三方内容 / Attach optional evidence after removing private or unlicensed material.
