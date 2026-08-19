@@ -7,6 +7,8 @@
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
+当前测试版本：**Beta-1**（`2.14.2+fabric.26.1.2.Beta-1`）。
+
 ## 功能状态
 
 ### 枪械、移动与配置
@@ -84,7 +86,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 # 需要 JDK 25
 python3 scripts/audit_port.py --strict
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.1.2.R2.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性和

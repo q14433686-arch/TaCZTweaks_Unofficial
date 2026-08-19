@@ -40,7 +40,7 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 ## 3. 版本一致性
 
 修改 `gradle.properties` 的 `mod_version`、Minecraft/Fabric/Kotlin/MixinExtras 版本时，必须在同一
-工作分支同步 README、BUILD 和依赖表。`scripts/audit_port.py` 会校验当前 R 版本唯一一致。
+工作分支同步 README、BUILD 和依赖表。`scripts/audit_port.py` 会校验当前版本标识唯一一致。
 
 ## 4. 不得夸大
 

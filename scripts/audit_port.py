@@ -718,12 +718,13 @@ def audit_versions(config: dict) -> list[str]:
     if not mod_version:
         errors.append("gradle.properties is missing mod_version")
         return errors
-    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.26\.1\.2\.R\d+", mod_version):
+    version_pattern = r"\d+\.\d+\.\d+\+fabric\.26\.1\.2\.(?:R\d+|Beta-\d+)"
+    if not re.fullmatch(version_pattern, mod_version):
         errors.append(f"mod_version has an unexpected 26.1.2 format: {mod_version}")
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     documented = {
-        value for value in re.findall(r"\d+\.\d+\.\d+\+fabric\.26\.1\.2\.R\d+", readme)
+        value for value in re.findall(version_pattern, readme)
         if value.startswith(mod_version.split("+", 1)[0] + "+")
     }
     if documented != {mod_version}:
