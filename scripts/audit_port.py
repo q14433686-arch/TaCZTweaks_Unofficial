@@ -9,6 +9,7 @@ Gradle in CI.  It catches the easy-to-miss failures that compilation alone does 
 * common mixins aimed at @Environment(CLIENT) methods stripped on dedicated servers;
 * config switches which are persisted/synchronised but never read by behaviour code;
 * language-file drift;
+* mod-icon content, metadata, dimensions, and license-provenance drift;
 * a bundled MixinExtras version lower than the mixin config's declared minimum.
 
 Pass --minecraft-jar after Loom has prepared Minecraft to validate vanilla mixin
@@ -30,6 +31,8 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+from check_mod_icon import validate_icon
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src/main"
@@ -774,6 +777,37 @@ def audit_release_guards() -> list[str]:
     if f"distributionSha256Sum={expected_gradle_sum}" not in wrapper:
         errors.append("Gradle 9.5.1 distribution checksum is missing or incorrect")
 
+    required_support_files = {
+        ".github/ISSUE_TEMPLATE/bug_report.yml",
+        ".github/ISSUE_TEMPLATE/compat_report.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        "docs/README.md",
+        "docs/SUPPORT.md",
+        "docs/publish/README.md",
+        "docs/publish/Modrinth.md",
+        "docs/publish/CurseForge.md",
+    }
+    for name in sorted(required_support_files):
+        if not (ROOT / name).is_file():
+            errors.append(f"missing support or publication document: {name}")
+
+    publication_text = "\n".join(
+        (ROOT / name).read_text(encoding="utf-8")
+        for name in sorted(required_support_files)
+        if name.startswith("docs/publish/") and (ROOT / name).is_file()
+    )
+    gradle_properties = {}
+    for line in (ROOT / "gradle.properties").read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, value = line.split("=", 1)
+            gradle_properties[key.strip()] = value.strip()
+    for key in ("minecraft_version", "mod_version"):
+        value = gradle_properties.get(key)
+        if value and value in publication_text:
+            errors.append(f"publication copy must not embed current {key}: {value}")
+    if re.search(r"(?i)\b(?:alpha|beta|release[ -]candidate)[ -]?\d+\b", publication_text):
+        errors.append("publication copy must not embed a numbered release stage")
+
     required_tests = {
         "src/test/kotlin/me/muksc/tacztweaks/core/SafeMathTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/core/StackSplitterTest.kt",
@@ -931,6 +965,7 @@ def main() -> int:
     errors.extend(audit_firstaid_shader_overrides())
     errors.extend(audit_versions(config))
     errors.extend(audit_release_guards())
+    errors.extend(validate_icon())
 
     if args.upstream_root:
         errors.extend(compare_upstream(args.upstream_root))
