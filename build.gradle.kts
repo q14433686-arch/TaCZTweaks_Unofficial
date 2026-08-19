@@ -35,9 +35,32 @@ repositories {
     mavenCentral()
     maven { url = uri("https://maven.fabricmc.net/") }
     maven { url = uri("https://maven.terraformersmc.com/releases/") }
-    // TaCZ via CurseMaven, YACL via Modrinth Maven — no more flatDir libs/
-    maven { url = uri("https://cursemaven.com") }
+    // TaCZ jar is downloaded from GitHub Releases to libs/ by the downloadTaczJar task.
+    // YACL is resolved from Modrinth Maven.
+    flatDir { dirs("libs") }
     maven { url = uri("https://api.modrinth.com/maven") }
+}
+
+// TaCZ download URL and local file name
+val taczDownloadUrl = "https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/download/1.21.11_R2/TACZ-Refabricated-1.21.11-1.1.8%2Bfabric.1.21.11.R2.jar"
+val taczLocalName = "TACZ-Refabricated-1.21.11-1.1.8+fabric.1.21.11.R2.jar"
+val taczLocalFile = layout.projectDirectory.file("libs/$taczLocalName")
+
+// Downloads the TaCZ jar from GitHub Release to libs/ before compilation.
+// Upgrade: change taczDownloadUrl and taczLocalName for the new GitHub release.
+val downloadTaczJar by tasks.registering {
+    description = "Downloads TaCZ Refabricated jar from GitHub Releases to libs/"
+    outputs.file(taczLocalFile)
+    doLast {
+        taczLocalFile.asFile.parentFile.mkdirs()
+        logger.lifecycle("Downloading TaCZ jar from $taczDownloadUrl...")
+        java.net.URL(taczDownloadUrl).openStream().use { input ->
+            taczLocalFile.asFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        logger.lifecycle("Downloaded $taczLocalName")
+    }
 }
 
 val compatStubClassesDir = layout.buildDirectory.dir("generated/compat-stubs/classes")
@@ -63,9 +86,9 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
 
-    // TaCZ from CurseForge via CurseMaven (project 1627909, file 8660664 for 1.21.11 R2)
-    modCompileOnly("curse.maven:unofficial-tacz-refabricated-1627909:8660664")
-    testRuntimeOnly("curse.maven:unofficial-tacz-refabricated-1627909:8660664")
+    // TaCZ — downloaded from GitHub Releases to libs/ by downloadTaczJar
+    modCompileOnly(files(taczLocalFile).builtBy(downloadTaczJar))
+    testRuntimeOnly(files(taczLocalFile).builtBy(downloadTaczJar))
 
     // YACL from Modrinth Maven (3.8.2+1.21.11-fabric)
     modImplementation("maven.modrinth:yacl:3.8.2+1.21.11-fabric")
