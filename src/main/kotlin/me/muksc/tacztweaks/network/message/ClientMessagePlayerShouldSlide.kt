@@ -5,13 +5,12 @@ import com.tacz.guns.api.item.IGun
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.mixininterface.gun.SlideDataHolder
-import net.fabricmc.fabric.api.networking.v1.PacketSender
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 class ClientMessagePlayerShouldSlide private constructor(private val shouldSlide: Boolean) : CustomPacketPayload {
     constructor(buf: FriendlyByteBuf) : this(buf.readBoolean())
@@ -36,9 +35,9 @@ class ClientMessagePlayerShouldSlide private constructor(private val shouldSlide
 
         private const val REQUEST_TIMEOUT_TICKS = 40
 
-        fun handle(msg: ClientMessagePlayerShouldSlide, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
-            server.execute {
-                if (player == null) return@execute
+        fun handle(msg: ClientMessagePlayerShouldSlide, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                val player = ctx.player() as? ServerPlayer ?: return@enqueueWork
                 val holder = player as SlideDataHolder
                 val accepted = msg.shouldSlide && canRequestSlide(player)
                 holder.`tacztweaks$setShouldSlide`(accepted)

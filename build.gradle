@@ -1,0 +1,232 @@
+import java.security.MessageDigest
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.144'
+    id 'org.jetbrains.kotlin.jvm' version '2.4.10'
+    id 'idea'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Mojang ships Java 25 to end users in 26.1.2, so this port targets Java 25 —
+// same toolchain as TaCZ_Renovated's 26.1.2 branch.
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+kotlin {
+    jvmToolchain(25)
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+// ---------------------------------------------------------------------------
+// Local binary dependencies.
+//
+// They are NOT committed to Git (see .gitignore); fetch them with
+//   python3 scripts/download_dependencies.py
+// and verify with
+//   python3 scripts/download_dependencies.py --check-only
+// Sources and SHA-256 digests live in RESOURCE_IMPORT_MANIFEST.tsv.
+// ---------------------------------------------------------------------------
+ext.taczJar = file("libs/tacz-1.1.8+neoforge.26.1.2.R1.jar")
+ext.yaclJar = file("libs/yet-another-config-lib-v3-3.9.6+26.1-neoforge.jar")
+ext.soundPhysicsJar = file("libs/sound-physics-remastered-neoforge-1.5.1+26.1.2.jar")
+ext.firstAidJar = file("libs/firstaid-1.2.8+neoforge26.1.jar")
+ext.pillagersGunJar = file("libs/pillagers_gun-3.2.2-neoforge-26.1.2.jar")
+ext.commonsMathJar = file("libs/commons-math3-3.6.1.jar")
+
+neoForge {
+    // ModDevGradle 2.x settings object. disableRecompilation skips Vineflower
+    // (-Xmx4g by default), which OOMs low-memory build machines/CI sandboxes.
+    // Set it back to false on a dev box to get Minecraft sources in the IDE.
+    enable {
+        version = project.neo_version
+        disableRecompilation = true
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+            jvmArguments.addAll '-Xms128M', '-Xmx2G'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    // NeoForge has no Fabric Language Kotlin equivalent: the stdlib has to ship with us.
+    jarJar "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+
+    // TaCZ: Renovated (unofficial NeoForge port) is the mixin/API target.
+    compileOnly files(taczJar)
+    localRuntime files(taczJar)
+
+    // Required client-side config screen library.
+    compileOnly files(yaclJar)
+    localRuntime files(yaclJar)
+
+    // Optional integrations — compile against them, gate every use at runtime.
+    compileOnly files(soundPhysicsJar)
+    compileOnly files(firstAidJar)
+    compileOnly files(pillagersGunJar)
+
+    // commons-math3 is bundled inside the TaCZ jar; compile-time only for us.
+    compileOnly files(commonsMathJar)
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Pure-JDK unit tests only (version gate, codecs that need no Minecraft classes).
+    // The test source set is not fed through ModDevGradle.
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    jvmArgs '-Xmx512m', '-XX:ReservedCodeCacheSize=128m'
+}
+
+// ---------------------------------------------------------------------------
+// neoforge.mods.toml templating (mod_version etc.)
+// ---------------------------------------------------------------------------
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+// ---------------------------------------------------------------------------
+// Release gates
+// ---------------------------------------------------------------------------
+def runPythonScript = { String script, List<String> extraArgs ->
+    def commands = System.getProperty('os.name', '').toLowerCase().startsWith('windows')
+            ? ['py', 'python', 'python3']
+            : ['python3', 'python']
+    for (String cmd : commands) {
+        try {
+            def process = new ProcessBuilder([cmd, file(script).absolutePath] + extraArgs)
+                    .directory(rootDir)
+                    .inheritIO()
+                    .start()
+            int exit = process.waitFor()
+            if (exit != 0) throw new GradleException("${script} failed with exit code ${exit}")
+            return true
+        } catch (IOException ignored) {
+            // interpreter not found, try the next candidate
+        }
+    }
+    return false
+}
+
+var checkModIcon = tasks.register("checkModIcon") {
+    group = 'verification'
+    description = 'Verifies the mod icon checksum, metadata path, dimensions, and license notice.'
+    inputs.file(file('scripts/check_mod_icon.py'))
+    inputs.file(file('src/main/templates/META-INF/neoforge.mods.toml'))
+    inputs.file(file('src/main/resources/icon.png'))
+    inputs.file(file('THIRD_PARTY_NOTICES.md'))
+    doLast {
+        if (!runPythonScript('scripts/check_mod_icon.py', [])) {
+            // Fallback when no Python interpreter is available: hash-only check.
+            def bytes = file('src/main/resources/icon.png').bytes
+            def digest = MessageDigest.getInstance('SHA-256').digest(bytes)
+                    .collect { String.format('%02x', it) }.join()
+            def expected = 'c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d'
+            if (digest != expected) {
+                throw new GradleException("mod icon SHA-256 drifted: expected ${expected}, got ${digest}")
+            }
+            logger.lifecycle('checkModIcon: python unavailable, ran the hash-only fallback check')
+        }
+    }
+}
+
+var checkVendoredDependencies = tasks.register("checkVendoredDependencies") {
+    group = 'verification'
+    description = 'Verifies that every libs/ dependency is present and matches its recorded SHA-256.'
+    inputs.file(file('RESOURCE_IMPORT_MANIFEST.tsv'))
+    doLast {
+        if (!runPythonScript('scripts/download_dependencies.py', ['--check-only'])) {
+            logger.warn('checkVendoredDependencies: no Python interpreter found, skipping digest verification')
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn checkModIcon, checkVendoredDependencies
+}
+
+var examplePackZip = tasks.register("examplePackZip", Zip) {
+    group = 'build'
+    description = 'Packages the data-driven example pack.'
+    archiveFileName = "tacz-tweaks-example-pack-${mod_version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('example-pack')
+    from layout.projectDirectory.dir('tacz-tweaks-example-pack')
+}
+
+tasks.named('assemble') {
+    dependsOn examplePackZip
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

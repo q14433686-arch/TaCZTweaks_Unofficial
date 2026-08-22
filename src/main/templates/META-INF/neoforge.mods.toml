@@ -1,0 +1,80 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="${mod_license}"
+issueTrackerURL="https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+logoFile="icon.png"
+logoBlur=false
+displayURL="https://github.com/q14433686-arch/TaCZTweaks_Unofficial"
+credits="TaCZ Tweaks by MUKSC (Forge 1.20.1). Unofficial ports: q14433686-arch."
+authors="MUKSC (original); q14433686-arch (unofficial NeoForge 26.1.2 port)"
+description='''
+TaCZ Tweaks (unofficial NeoForge 26.1.2 port) — configurable gunplay, movement, balance,
+sound, bullet interactions and data-driven systems for TaCZ.
+
+THIS IS UNOFFICIAL. Do not report bugs here to MUKSC, the TACZ Dev Team, or the authors of
+any optional compatibility mod.
+
+Requires TaCZ: Renovated (modId "tacz") 1.1.8+neoforge.26.1.2.R1 or a later R<n> build of the
+same release family, on Minecraft 26.1.2 + NeoForge 26.1.2.x.
+Optional: Yet Another Config Lib (config screen), Sound Physics Remastered, First Aid New,
+Pillager's Gun (Unofficial Port).
+'''
+
+[[mixins]]
+config="tacztweaks.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# The precise release-family check (core version + loader family + revision >= R1) runs in
+# TaczVersionSupport during mod construction; the loader range can only be coarse here.
+[[dependencies.${mod_id}]]
+    modId="tacz"
+    type="required"
+    versionRange="[1.1.8,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="yet_another_config_lib_v3"
+    type="required"
+    versionRange="[3.9.6,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="sound_physics_remastered"
+    type="optional"
+    versionRange="[1.5.1,1.6.0)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="firstaid"
+    type="optional"
+    versionRange="[1.2.8,1.3.0)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="pillagers_gun"
+    type="optional"
+    versionRange="[3.2.2,3.3.0)"
+    ordering="NONE"
+    side="BOTH"

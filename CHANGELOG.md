@@ -1,8 +1,46 @@
 # Changelog
 
-All notable changes to this unofficial Fabric port are tracked here. Release entries should
-be user-facing and concise; keep detailed process notes in `docs/maintenance/` or the
-handoff/audit documents.
+All notable changes to this unofficial port are tracked here. Release entries should
+be user-facing and concise; keep detailed process notes in `docs/records/`,
+`docs/maintenance/` or the handoff/audit documents.
+
+## 2.14.2+neoforge.26.1.2.Beta-1 - Unreleased (source port, not yet built or tested)
+
+Loader port of the Fabric `26.1.2` branch (`2.14.2+fabric.26.1.2.Beta-1-hotfix`) to
+NeoForge 26.1.2.97 / Java 25, targeting
+[TaCZ: Renovated](https://github.com/q14433686-arch/TaCZ_Renovated) `1.1.8+neoforge.26.1.2.R1`.
+
+### Changed
+
+- Build: Fabric Loom -> ModDevGradle 2.0.144 (`build.gradle`, Groovy), Java 25 toolchain,
+  kotlin-stdlib embedded via `jarJar` (NeoForge has no Fabric Language Kotlin).
+- Metadata: `fabric.mod.json` -> `src/main/templates/META-INF/neoforge.mods.toml`.
+- Entrypoint: `ModInitializer`/`ClientModInitializer` -> `@Mod` constructor plus a
+  `Dist.CLIENT`-gated client bootstrap.
+- Events: server tick / stop / login / logout / block break / `GunShootEvent` now run on the
+  NeoForge event bus; data-pack reload uses `AddServerReloadListenersEvent`.
+- Networking: three-stage Fabric registration collapsed into one
+  `RegisterPayloadHandlersEvent`; handlers take `IPayloadContext` and use `enqueueWork`.
+- Registries: mob effect registration moved to `DeferredRegister`.
+- Config screen: Mod Menu entrypoint replaced by the `IConfigScreenFactory` extension point.
+- Version gate: new strict `TaczVersionSupport` accepting `1.1.8+neoforge.26.1.2.R<n>` (n >= 1).
+- Mixin config: `compatibilityLevel` raised to `JAVA_25`; the mixin plugin now queries the
+  NeoForge loading mod list.
+- Audit/consistency scripts retargeted at the NeoForge metadata, jar and build script.
+
+### Removed
+
+- Fabric-only sources and gates: `ModMenuApiImpl`, `fabric.mod.json`, Loom build scripts, and
+  the unit tests that required a bootstrapped Minecraft (codec / example-pack smoke tests).
+
+### Known gaps
+
+- Not compiled, not smoke-tested on a dedicated server, not tested in game.
+- `libs/` dependency digests are still `pending` in `RESOURCE_IMPORT_MANIFEST.tsv`.
+- Block-break protection is a semantic downgrade: NeoForge has no
+  `PlayerBlockBreakEvents.CANCELED/AFTER` equivalent.
+- Optional-mod compatibility (Sound Physics, First Aid, Pillager's Gun, LRTactical) is wired
+  but has not been checked against the real NeoForge jars.
 
 ## 2.14.2+fabric.26.1.2.Beta-1-hotfix - Unreleased
 

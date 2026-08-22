@@ -12,6 +12,7 @@ import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 class ServerMessageSyncConfig private constructor(private val buf: FriendlyByteBuf) : CustomPacketPayload {
     fun write(out: FriendlyByteBuf) {
@@ -42,8 +43,9 @@ class ServerMessageSyncConfig private constructor(private val buf: FriendlyByteB
         fun create(): ServerMessageSyncConfig =
             ServerMessageSyncConfig(FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) })
 
-        fun handle(msg: ServerMessageSyncConfig, client: Minecraft) {
-            client.execute {
+        fun handle(msg: ServerMessageSyncConfig, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                val client = Minecraft.getInstance()
                 val backup = FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) }
                 try {
                     Config.decode(msg.buf)

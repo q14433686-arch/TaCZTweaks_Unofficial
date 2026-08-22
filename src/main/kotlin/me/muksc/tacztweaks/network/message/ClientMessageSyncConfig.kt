@@ -8,13 +8,13 @@ import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.config.ConfigManager
 import me.muksc.tacztweaks.config.sync.ESyncDirection
 import me.muksc.tacztweaks.network.NetworkHandler
-import net.fabricmc.fabric.api.networking.v1.PacketSender
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.neoforged.neoforge.network.handling.IPayloadContext
+import net.neoforged.neoforge.server.ServerLifecycleHooks
 
 class ClientMessageSyncConfig private constructor(private val buf: FriendlyByteBuf) : CustomPacketPayload {
     fun write(out: FriendlyByteBuf) {
@@ -47,11 +47,13 @@ class ClientMessageSyncConfig private constructor(private val buf: FriendlyByteB
             ClientMessageSyncConfig(FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) })
 
         @Suppress("UnstableApiUsage")
-        fun handle(msg: ClientMessageSyncConfig, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
-            server.execute {
-                if (player == null || !ConfigManager.canUpdateServerConfig(player)) {
+        fun handle(msg: ClientMessageSyncConfig, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                val player = ctx.player() as? ServerPlayer
+                val server = ServerLifecycleHooks.getCurrentServer()
+                if (player == null || server == null || !ConfigManager.canUpdateServerConfig(player)) {
                     msg.buf.release()
-                    return@execute
+                    return@enqueueWork
                 }
                 val backup = FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) }
                 try {

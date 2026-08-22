@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 object ServerMessageSoundPhysicsRequired : CustomPacketPayload {
     val TYPE = CustomPacketPayload.Type<ServerMessageSoundPhysicsRequired>(
@@ -17,9 +18,10 @@ object ServerMessageSoundPhysicsRequired : CustomPacketPayload {
     val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageSoundPhysicsRequired> =
         StreamCodec.unit(ServerMessageSoundPhysicsRequired)
 
-    fun handle(msg: ServerMessageSoundPhysicsRequired, client: Minecraft) {
+    fun handle(msg: ServerMessageSoundPhysicsRequired, ctx: IPayloadContext) {
         if (SoundPhysicsCompat.isEnabled()) return
-        client.execute {
+        ctx.enqueueWork {
+            val client = Minecraft.getInstance()
             // 26.1.2: Gui#chat and LocalPlayer#displayClientMessage are gone.
             // TaCZ itself uses Player#sendSystemMessage(Component) on the client.
             client.player?.sendSystemMessage(

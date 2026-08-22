@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Static audit for the Fabric 26.1.2 TaCZ Tweaks port.
+"""Static audit for the NeoForge 26.1.2 TaCZ Tweaks port.
 
 The script deliberately uses only the Python standard library so it can run before
 Gradle in CI.  It catches the easy-to-miss failures that compilation alone does not:
 
 * mixin classes omitted from (or misspelled in) the mixin JSON;
 * mixins aimed at methods absent from the bundled TaCZ/LRTactical jar;
- * common mixins aimed at @Environment(CLIENT) methods stripped on dedicated servers;
+ * common mixins aimed at @OnlyIn(Dist.CLIENT) methods stripped on dedicated servers;
  * config switches which are persisted/synchronised but never read by behaviour code;
  * language-file drift;
  * mod-icon content, metadata, dimensions, and license-provenance drift;
  * a bundled MixinExtras version lower than the mixin config's declared minimum.
 
-Pass --minecraft-jar after Loom has prepared Minecraft to validate vanilla mixin
-method names too. Pass --upstream-root with a TaCZTweaks v2.14.2 checkout to print a
+Pass --minecraft-jar (the ModDevGradle-produced Minecraft artifact) to validate vanilla
+mixin method names too. Pass --upstream-root with a TaCZTweaks v2.14.2 checkout to print a
 source inventory comparison; that report is informational because many upstream
 mixins were intentionally merged or redesigned in this port.
 """
@@ -39,7 +39,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src/main"
 MIXIN_ROOT = SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin"
 MIXIN_JSON = SOURCE_ROOT / "resources/tacztweaks.mixins.json"
-TA_CZ_JAR = ROOT / "libs/TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar"
+TA_CZ_JAR = ROOT / "libs/tacz-1.1.8+neoforge.26.1.2.R1.jar"
+MOD_METADATA = ROOT / "src/main/templates/META-INF/neoforge.mods.toml"
 CONFIG = SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt"
 
 # Any intentionally persisted but dormant legacy fields must be justified here. The
@@ -182,9 +183,9 @@ def read_class_info(raw: bytes) -> ClassInfo:
         try:
             for _ in range(read_u2()):
                 annotation_type, values = read_annotation()
-                if annotation_type != "Lnet/fabricmc/api/Environment;":
+                if annotation_type != "Lnet/neoforged/api/distmarker/OnlyIn;":
                     continue
-                if ("Lnet/fabricmc/api/EnvType;", "CLIENT") in values:
+                if ("Lnet/neoforged/api/distmarker/Dist;", "CLIENT") in values:
                     return True
         except (IndexError, struct.error, ValueError):
             return False
@@ -713,6 +714,8 @@ def audit_versions(config: dict) -> list[str]:
         if "=" in line and not line.lstrip().startswith("#"):
             key, value = line.split("=", 1)
             properties[key.strip()] = value.strip()
+    # NeoForge ships MixinExtras itself, so there is no bundled version property to compare
+    # against; the mixin JSON minimum is only informational on this loader.
     required = config.get("mixinextras", {}).get("minVersion")
     bundled = properties.get("mixinextras_version")
     if required and bundled and version_tuple(bundled) < version_tuple(required):
@@ -722,7 +725,7 @@ def audit_versions(config: dict) -> list[str]:
     if not mod_version:
         errors.append("gradle.properties is missing mod_version")
         return errors
-    version_pattern = r"\d+\.\d+\.\d+\+fabric\.26\.1\.2\.(?:R\d+|Beta-\d+)(?:-[A-Za-z0-9]+)?"
+    version_pattern = r"\d+\.\d+\.\d+\+neoforge\.26\.1\.2\.(?:R\d+|Beta-\d+)(?:-[A-Za-z0-9]+)?"
     if not re.fullmatch(version_pattern, mod_version):
         errors.append(f"mod_version has an unexpected 26.1.2 format: {mod_version}")
 
@@ -743,15 +746,18 @@ def audit_versions(config: dict) -> list[str]:
 
 def audit_release_guards() -> list[str]:
     errors: list[str] = []
-    metadata = json.loads((SOURCE_ROOT / "resources/fabric.mod.json").read_text(encoding="utf-8"))
-    dependencies = metadata.get("depends", {})
-    if dependencies.get("tacz") != "=1.1.8+fabric.26.1.2.R2":
-        errors.append("fabric.mod.json must require the exact TaCZ R2 hook surface")
-    if metadata.get("suggests", {}).get("firstaid") != ">=1.2.8 <1.3.0":
+    metadata = MOD_METADATA.read_text(encoding="utf-8")
+    if 'modId="tacz"' not in metadata:
+        errors.append("neoforge.mods.toml does not declare the required tacz dependency")
+    if 'versionRange="[1.2.8,1.3.0)"' not in metadata:
         errors.append("First Aid compatibility is not constrained to the verified 1.2.8 range")
-    firstaid_breaks = set(metadata.get("breaks", {}).get("firstaid", []))
-    if firstaid_breaks != {"<1.2.8", ">=1.3.0"}:
-        errors.append("unsupported First Aid versions are not blocked from compatibility hooks")
+    if 'versionRange="[1.5.1,1.6.0)"' not in metadata:
+        errors.append("Sound Physics compatibility is not constrained to the verified 1.5.1 range")
+    # The exact TaCZ release family gate cannot be expressed in the toml range; it lives in
+    # TaczVersionSupport and must stay in sync with the shipped dependency.
+    gate = (SOURCE_ROOT / "java/me/muksc/tacztweaks/TaczVersionSupport.java").read_text(encoding="utf-8")
+    if 'EXPECTED_FAMILY = "neoforge.26.1.2"' not in gate or "MIN_REVISION = 1" not in gate:
+        errors.append("TaczVersionSupport no longer pins the NeoForge 26.1.2 R1+ release family")
 
     wrapper = (ROOT / "gradle/wrapper/gradle-wrapper.properties").read_text(encoding="utf-8")
     expected_gradle_sum = "bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f"
@@ -789,14 +795,14 @@ def audit_release_guards() -> list[str]:
     if re.search(r"(?i)\b(?:alpha|beta|release[ -]candidate)[ -]?\d+\b", publication_text):
         errors.append("publication copy must not embed a numbered release stage")
 
+    # The NeoForge test source set is not fed through ModDevGradle, so only tests that need
+    # no Minecraft classes survive (the Minecraft-bootstrapping codec/example-pack tests were
+    # dropped with the Fabric build; see docs/records/NEOFORGE_26_1_2_PORT_PLAN.md).
     required_tests = {
         "src/test/kotlin/me/muksc/tacztweaks/core/SafeMathTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/core/StackSplitterTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/core/ProjectileIndexAllocatorTest.kt",
-        "src/test/kotlin/me/muksc/tacztweaks/client/sound/MonoConversionTest.kt",
-        "src/test/kotlin/me/muksc/tacztweaks/data/CodecSmokeTest.kt",
-        "src/test/kotlin/me/muksc/tacztweaks/data/ExamplePackTest.kt",
-        "src/test/kotlin/me/muksc/tacztweaks/TaCZTweaksVersionTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/TaczVersionSupportTest.kt",
     }
     for name in sorted(required_tests):
         if not (ROOT / name).is_file():
@@ -808,41 +814,24 @@ def audit_release_guards() -> list[str]:
         "tacz-tweaks-example-pack/assets/tacztweaks/sounds/whizz/near1.ogg",
         "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
         "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
-        "src/test/resources/fixtures/schema_smoke.json",
-        "src/test/resources/fixtures/airspace.json",
     }
     for name in sorted(required_fixtures):
         if not (ROOT / name).is_file():
             errors.append(f"missing restored-schema smoke fixture: {name}")
 
-    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+    build_script = (ROOT / "build.gradle").read_text(encoding="utf-8")
     if "examplePackZip" not in build_script:
         errors.append("build does not package the example pack")
-    if 'implementation("maven.modrinth:1eAoo2KR:svTkvBec")' not in build_script:
-        errors.append("YACL 3.9.6+26.1-fabric is not pinned to its verified Modrinth artifact")
-    if 'implementation(files("libs/yacl-fabric.jar"))' in build_script:
-        errors.append("build still requires an undocumented local YACL jar")
-    if "languageVersion.set(JavaLanguageVersion.of(25))" not in build_script:
+    if "net.neoforged.moddev" not in build_script:
+        errors.append("build no longer applies ModDevGradle")
+    if "fabric-loom" in build_script:
+        errors.append("build still applies Fabric Loom")
+    if "JavaLanguageVersion.of(25)" not in build_script:
         errors.append("Gradle Java toolchain is not pinned to JDK 25")
-    if "stagedTestRuntimeDir" not in build_script or "gradle.gradleUserHomeDir" not in build_script:
-        errors.append("Gradle test worker runtime is not staged away from non-ASCII project paths")
-    fixture_pairs = (
-        (
-            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
-            ROOT / "src/test/resources/fixtures/schema_smoke.json",
-        ),
-        (
-            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
-            ROOT / "src/test/resources/fixtures/airspace.json",
-        ),
-        (
-            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/tags/block/metal.json",
-            ROOT / "src/test/resources/fixtures/metal_tag.json",
-        ),
-    )
-    for example, test_fixture in fixture_pairs:
-        if example.read_bytes() != test_fixture.read_bytes():
-            errors.append(f"test fixture has drifted from example pack: {test_fixture.relative_to(ROOT)}")
+    if "jarJar \"org.jetbrains.kotlin:kotlin-stdlib" not in build_script:
+        errors.append("kotlin-stdlib is not embedded (NeoForge has no Fabric Language Kotlin)")
+    if "checkVendoredDependencies" not in build_script:
+        errors.append("build does not verify the libs/ dependency digests")
     if not (ROOT / "scripts/check_server_log.py").is_file():
         errors.append("missing dedicated-server log gate")
     if not (ROOT / "THIRD_PARTY_NOTICES.md").is_file():
@@ -948,24 +937,29 @@ def find_minecraft_jars(explicit: list[str]) -> list[Path]:
     return paths
 
 
+TACZ_VERSION_PATTERN = re.compile(
+    r"^1\.1\.8\+neoforge\.26\.1\.2\.[rR](?:0|[1-9][0-9]*)(?:-[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)*$"
+)
+
+
 def audit_tacz_artifact(path: Path) -> list[str]:
     """Reject a similarly-shaped jar from another Minecraft branch or TaCZ revision."""
-    expected_name = "TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar"
-    expected_version = "1.1.8+fabric.26.1.2.R2"
     errors: list[str] = []
     if not path.is_file():
-        return [f"TaCZ audit artifact is missing: {path}"]
-    if path.name != expected_name:
-        errors.append(f"TaCZ audit artifact must use the exact release filename {expected_name}")
+        return [f"TaCZ audit artifact is missing: {path} (see libs/README.txt)"]
     try:
         with zipfile.ZipFile(path) as jar:
-            metadata = json.loads(jar.read("fabric.mod.json"))
-    except (OSError, KeyError, zipfile.BadZipFile, json.JSONDecodeError) as error:
-        return [*errors, f"cannot read TaCZ fabric.mod.json from {path}: {error}"]
-    if metadata.get("id") != "tacz" or metadata.get("version") != expected_version:
+            metadata = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
+    except (OSError, KeyError, zipfile.BadZipFile, UnicodeDecodeError) as error:
+        return [*errors, f"cannot read TaCZ neoforge.mods.toml from {path}: {error}"]
+    mod_id = re.search(r'^modId\s*=\s*"([^"]+)"', metadata, re.MULTILINE)
+    version = re.search(r'^version\s*=\s*"([^"]+)"', metadata, re.MULTILINE)
+    mod_id_value = mod_id.group(1) if mod_id else None
+    version_value = version.group(1) if version else None
+    if mod_id_value != "tacz" or not (version_value and TACZ_VERSION_PATTERN.match(version_value)):
         errors.append(
-            f"TaCZ audit artifact metadata is not exact R2: "
-            f"id={metadata.get('id')!r}, version={metadata.get('version')!r}"
+            "TaCZ audit artifact is not a NeoForge 26.1.2 TaCZ build: "
+            f"modId={mod_id_value!r}, version={version_value!r}"
         )
     return errors
 
