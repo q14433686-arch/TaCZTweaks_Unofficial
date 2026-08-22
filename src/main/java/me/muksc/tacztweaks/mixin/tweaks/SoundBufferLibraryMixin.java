@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 public abstract class SoundBufferLibraryMixin {
     @SuppressWarnings("target")
     @ModifyArg(
-        method = "lambda$getCompleteBuffer$1(Lnet/minecraft/resources/Identifier;)Lcom/mojang/blaze3d/audio/SoundBuffer;",
+        method = "lambda$getCompleteBuffer$*",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/audio/SoundBuffer;<init>(Ljava/nio/ByteBuffer;Ljavax/sound/sampled/AudioFormat;)V"
@@ -34,7 +34,7 @@ public abstract class SoundBufferLibraryMixin {
 
     @SuppressWarnings("target")
     @ModifyArg(
-        method = "lambda$getCompleteBuffer$1(Lnet/minecraft/resources/Identifier;)Lcom/mojang/blaze3d/audio/SoundBuffer;",
+        method = "lambda$getCompleteBuffer$*",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/audio/SoundBuffer;<init>(Ljava/nio/ByteBuffer;Ljavax/sound/sampled/AudioFormat;)V"
