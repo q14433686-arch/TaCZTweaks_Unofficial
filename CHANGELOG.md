@@ -4,7 +4,7 @@ All notable changes to this unofficial Fabric port are tracked here. Release ent
 be user-facing and concise; keep detailed process notes in `docs/maintenance/` or the
 handoff/audit documents.
 
-## 2.14.2+fabric.26.2.Beta-1 - Unreleased
+## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
 
 ### Added
 

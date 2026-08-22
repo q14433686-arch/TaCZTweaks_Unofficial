@@ -44,7 +44,7 @@ public class TaCZTweaks implements ModInitializer {
     private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(2);
     private static final Pattern SUPPORTED_TACZ_VERSION_PATTERN = Pattern.compile(
         "^" + Pattern.quote(SUPPORTED_TACZ_VERSION_PREFIX)
-            + "(\\d+)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$"
+            + "(\\d+)(?:-[0-9A-Za-z]+)*$"
     );
     public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
