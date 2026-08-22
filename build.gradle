@@ -1,5 +1,3 @@
-import java.security.MessageDigest
-
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -85,21 +83,30 @@ dependencies {
     jarJar "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
     compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
 
+    // --- Required on the compile classpath (see checkRequiredDependencies) ---
     // TaCZ: Renovated (unofficial NeoForge port) is the mixin/API target.
     compileOnly files(taczJar)
     localRuntime files(taczJar)
 
-    // Required client-side config screen library.
+    // Config screen library (dev.isxander.yacl3.*).
     compileOnly files(yaclJar)
     localRuntime files(yaclJar)
 
-    // Optional integrations — compile against them, gate every use at runtime.
+    // Sound Physics Remastered: optional at runtime, but the compat mixin/bridge references
+    // com.sonicether.soundphysics.* directly, so the jar is needed to compile.
     compileOnly files(soundPhysicsJar)
-    compileOnly files(firstAidJar)
-    compileOnly files(pillagersGunJar)
 
     // commons-math3 is bundled inside the TaCZ jar; compile-time only for us.
     compileOnly files(commonsMathJar)
+
+    // --- Truly optional: First Aid and Pillager's Gun are reached through reflection and
+    // string-target mixins, so they are only added when the jar happens to be present. ---
+    if (firstAidJar.exists()) {
+        compileOnly files(firstAidJar)
+    }
+    if (pillagersGunJar.exists()) {
+        compileOnly files(pillagersGunJar)
+    }
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
@@ -145,57 +152,130 @@ sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
 // ---------------------------------------------------------------------------
-// Release gates
+// Release gates (pure Gradle/Groovy: no Python interpreter required)
 // ---------------------------------------------------------------------------
-def runPythonScript = { String script, List<String> extraArgs ->
-    def commands = System.getProperty('os.name', '').toLowerCase().startsWith('windows')
-            ? ['py', 'python', 'python3']
-            : ['python3', 'python']
-    for (String cmd : commands) {
-        try {
-            def process = new ProcessBuilder([cmd, file(script).absolutePath] + extraArgs)
-                    .directory(rootDir)
-                    .inheritIO()
-                    .start()
-            int exit = process.waitFor()
-            if (exit != 0) throw new GradleException("${script} failed with exit code ${exit}")
-            return true
-        } catch (IOException ignored) {
-            // interpreter not found, try the next candidate
+def sha256Of = { File f ->
+    java.security.MessageDigest.getInstance('SHA-256')
+            .digest(f.bytes).collect { String.format('%02x', it) }.join()
+}
+
+/** Required compile-time jars, with a human-readable source for the error message. */
+ext.requiredLocalDependencies = [
+        (taczJar)        : 'https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.1.2_R1',
+        (yaclJar)        : 'CurseForge / Modrinth: YetAnotherConfigLib "3.9.6 for neoforge 26.1"',
+        (soundPhysicsJar): 'CurseForge: Sound Physics Remastered "[NEOFORGE][26.1.2] 1.5.1+26.1.2"',
+        (commonsMathJar) : 'https://repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar',
+]
+
+var checkRequiredDependencies = tasks.register("checkRequiredDependencies") {
+    group = 'verification'
+    description = 'Fails early with a readable message when a required libs/ jar is missing.'
+    doLast {
+        def missing = requiredLocalDependencies.findAll { file, source -> !file.exists() }
+        if (missing) {
+            def lines = missing.collect { file, source ->
+                "  - libs/${file.name}\n      source: ${source}"
+            }.join('\n')
+            throw new GradleException(
+                    "Missing required compile dependencies. Put these jars in libs/ (they are not\n" +
+                    "committed to Git; see libs/README.txt and RESOURCE_IMPORT_MANIFEST.tsv):\n" +
+                    lines + "\n" +
+                    "Without them the Kotlin/Java compile fails with hundreds of\n" +
+                    "'Unresolved reference: tacz / dev / com.sonicether' errors.")
         }
     }
-    return false
 }
+
+tasks.named('compileJava') { dependsOn checkRequiredDependencies }
+tasks.named('compileKotlin') { dependsOn checkRequiredDependencies }
 
 var checkModIcon = tasks.register("checkModIcon") {
     group = 'verification'
     description = 'Verifies the mod icon checksum, metadata path, dimensions, and license notice.'
-    inputs.file(file('scripts/check_mod_icon.py'))
-    inputs.file(file('src/main/templates/META-INF/neoforge.mods.toml'))
-    inputs.file(file('src/main/resources/icon.png'))
-    inputs.file(file('THIRD_PARTY_NOTICES.md'))
+    def metadataFile = file('src/main/templates/META-INF/neoforge.mods.toml')
+    def iconFile = file('src/main/resources/icon.png')
+    def noticeFile = file('THIRD_PARTY_NOTICES.md')
+    inputs.file(metadataFile)
+    inputs.file(iconFile)
+    inputs.file(noticeFile)
     doLast {
-        if (!runPythonScript('scripts/check_mod_icon.py', [])) {
-            // Fallback when no Python interpreter is available: hash-only check.
-            def bytes = file('src/main/resources/icon.png').bytes
-            def digest = MessageDigest.getInstance('SHA-256').digest(bytes)
-                    .collect { String.format('%02x', it) }.join()
-            def expected = 'c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d'
-            if (digest != expected) {
-                throw new GradleException("mod icon SHA-256 drifted: expected ${expected}, got ${digest}")
-            }
-            logger.lifecycle('checkModIcon: python unavailable, ran the hash-only fallback check')
+        def expectedSha = 'c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d'
+        def rejectedSha = '5e1272a625af1b0b4d866d0fb468e1cea0a9258411f16a7d06d31a84e8953ac8'
+        def errors = []
+
+        def logo = (metadataFile.text =~ /(?m)^logoFile\s*=\s*"([^"]+)"/)
+        if (!logo.find() || logo.group(1) != 'icon.png') {
+            errors << 'neoforge.mods.toml logoFile must be "icon.png"'
         }
+
+        def bytes = iconFile.bytes
+        def digest = sha256Of(iconFile)
+        if (digest == rejectedSha) {
+            errors << 'mod icon is the known dark-grey/orange placeholder'
+        } else if (digest != expectedSha) {
+            errors << "mod icon SHA-256 drifted: expected ${expectedSha}, got ${digest}"
+        }
+
+        // PNG signature (0x89 'P' 'N' 'G') + IHDR chunk type, compared as unsigned ints.
+        def octet = { int index -> bytes[index] & 0xFF }
+        if (bytes.length < 24 || octet(0) != 0x89 || octet(1) != 0x50
+                || octet(2) != 0x4E || octet(3) != 0x47
+                || octet(12) != 0x49 || octet(13) != 0x48
+                || octet(14) != 0x44 || octet(15) != 0x52) {
+            errors << 'mod icon is not a PNG with a valid leading IHDR chunk'
+        } else {
+            def readInt = { int off ->
+                (octet(off) << 24) | (octet(off + 1) << 16) |
+                        (octet(off + 2) << 8) | octet(off + 3)
+            }
+            int width = readInt(16)
+            int height = readInt(20)
+            if (width != 512 || height != 512) {
+                errors << "mod icon must be 512x512, got ${width}x${height}"
+            }
+        }
+
+        def notice = noticeFile.text
+        if (!notice.contains(expectedSha)) {
+            errors << 'THIRD_PARTY_NOTICES.md does not record the current icon SHA-256'
+        }
+
+        if (errors) {
+            throw new GradleException("MOD ICON: ${errors.size()} error(s)\n  " + errors.join('\n  '))
+        }
+        logger.lifecycle("checkModIcon: OK (512x512, SHA-256 ${digest})")
     }
 }
 
 var checkVendoredDependencies = tasks.register("checkVendoredDependencies") {
     group = 'verification'
-    description = 'Verifies that every libs/ dependency is present and matches its recorded SHA-256.'
-    inputs.file(file('RESOURCE_IMPORT_MANIFEST.tsv'))
+    description = 'Verifies that present libs/ dependencies match their recorded SHA-256.'
+    def manifestFile = file('RESOURCE_IMPORT_MANIFEST.tsv')
+    inputs.file(manifestFile)
     doLast {
-        if (!runPythonScript('scripts/download_dependencies.py', ['--check-only'])) {
-            logger.warn('checkVendoredDependencies: no Python interpreter found, skipping digest verification')
+        def lines = manifestFile.readLines('UTF-8').findAll { it.trim() && !it.startsWith('#') }
+        def header = lines.remove(0).split('\t') as List
+        int pathIdx = header.indexOf('path')
+        int shaIdx = header.indexOf('sha256')
+        def errors = []
+        lines.each { line ->
+            def cols = line.split('\t') as List
+            if (cols.size() <= Math.max(pathIdx, shaIdx)) return
+            def entry = file(cols[pathIdx])
+            def expected = cols[shaIdx].trim().toLowerCase()
+            if (!entry.exists()) {
+                logger.lifecycle("checkVendoredDependencies: NOTE ${cols[pathIdx]} is not present locally")
+                return
+            }
+            def actual = sha256Of(entry)
+            if (expected in ['', 'pending', 'tbd']) {
+                logger.lifecycle("checkVendoredDependencies: NOTE ${cols[pathIdx]} has no recorded digest yet, observed ${actual}")
+            } else if (actual != expected) {
+                errors << "${cols[pathIdx]}: expected ${expected}, got ${actual}"
+            }
+        }
+        if (errors) {
+            throw new GradleException("Vendored dependency digest mismatch:\n  " + errors.join('\n  '))
         }
     }
 }

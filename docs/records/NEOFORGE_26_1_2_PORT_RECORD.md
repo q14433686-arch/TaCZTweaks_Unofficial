@@ -107,6 +107,26 @@ python3 scripts/audit_port.py                -> 1 error / 63 warning
 那 1 个 error 与 63 个 warning 全部源于同一件事：`libs/tacz-1.1.8+neoforge.26.1.2.R1.jar`
 不在沙箱内，导致目标类检查无法进行。放入 jar 后必须复跑 `--strict` 并要求 0 error / 0 warning。
 
+## 4.1 首次本地构建反馈（2026-08-23，维护者 Windows / JDK 25）
+
+第一次 `gradlew build` 的两个失败点及处置：
+
+1. **`compileKotlin` 数百条 `Unresolved reference 'tacz' / 'dev' / 'xjqsh'`**
+   —— 根因是 `libs/` 里没有任何 jar（Gradle 只给出 6 条 `Specified Dependency Does Not Exist`
+   警告后继续编译）。处置：新增 `checkRequiredDependencies` 任务并让 `compileJava` /
+   `compileKotlin` 依赖它，缺件时直接给出"缺哪个文件 + 去哪下"的报错。
+   同时确认 **First Aid 与 Pillager's Gun 的 jar 编译期并不需要**（前者走 `Class.forName` 反射，
+   两者的 mixin 分别是 `targets=` 字符串与 tacz 自己的类），已改为"存在才加入 classpath"；
+   编译必需的是 tacz / YACL / Sound Physics / commons-math3 四个。
+2. **`checkModIcon` 以退出码 112 失败** —— 该任务原本 fork `py`/`python`/`python3` 调用
+   `scripts/check_mod_icon.py`，Windows 上解释器缺失/Store 占位程序会返回非 0，而原实现把任何
+   非 0 都当成校验失败。处置：`checkModIcon` 与 `checkVendoredDependencies` 改为**纯 Groovy 实现**
+   （自己算 SHA-256、解析 PNG IHDR 尺寸、读 `neoforge.mods.toml` 的 `logoFile`、核对
+   `THIRD_PARTY_NOTICES.md`），构建不再依赖 Python；Python 脚本仅作为 CI/命令行工具保留。
+
+**仍未验证**：补齐 jar 之后的实际编译结果。第一轮构建只证明了 MDG/NeoForge 26.1.2 环境本身能
+起来（`createMinecraftArtifacts` 成功）以及 Kotlin 2.4.10 + JDK 25 工具链可用。
+
 ## 5. 未来提交者注意
 
 1. 源码里仍有若干注释描述的是 **Refabricated**（Fabric 目标端）的方法/lambda 命名由来；

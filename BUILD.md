@@ -49,21 +49,25 @@ git checkout 26.1.2-neoforge
 本分支的编译期依赖都以本地文件引用（`libs/*.jar` 不进 Git）。清单、来源、许可证见
 `RESOURCE_IMPORT_MANIFEST.tsv` 与 `libs/README.txt`。
 
-必需：
+**编译必需**（缺任何一个，`./gradlew build` 会在 `checkRequiredDependencies` 阶段直接报错，
+而不是抛出几百条 `Unresolved reference: tacz / dev / com.sonicether`）：
 
 ```
 libs/tacz-1.1.8+neoforge.26.1.2.R1.jar                  # https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.1.2_R1
-libs/yet-another-config-lib-v3-3.9.6+26.1-neoforge.jar  # CurseForge YACL «3.9.6 for neoforge 26.1»
-libs/commons-math3-3.6.1.jar                            # Maven Central
+libs/yet-another-config-lib-v3-3.9.6+26.1-neoforge.jar  # CurseForge YACL «3.9.6 for neoforge 26.1»（配置屏 dev.isxander.yacl3.*）
+libs/sound-physics-remastered-neoforge-1.5.1+26.1.2.jar # CurseForge «[NEOFORGE][26.1.2] 1.5.1+26.1.2»（运行期可选，但兼容层直接引用 com.sonicether.*，编译必需）
+libs/commons-math3-3.6.1.jar                            # https://repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar
 ```
 
-可选（只影响对应兼容层的编译与核对）：
+**可选**（First Aid / Pillager's Gun 只通过反射与字符串目标 mixin 接入，编译不需要；放进来只是
+方便核对类名，构建脚本检测到才会加入 classpath）：
 
 ```
-libs/sound-physics-remastered-neoforge-1.5.1+26.1.2.jar
 libs/firstaid-1.2.8+neoforge26.1.jar
 libs/pillagers_gun-3.2.2-neoforge-26.1.2.jar
 ```
+
+> **文件名必须完全一致**（含 `+` 号）。下载后如被浏览器改名，请手动改回上面的名字。
 
 校验：
 
@@ -88,7 +92,7 @@ gradlew.bat build
 
 - 首次构建会下载 Gradle、NeoForge 26.1.2.97 与 Minecraft 26.1.2；
 - `build` 会附带跑 `checkModIcon`（图标 SHA-256/尺寸/许可声明）与
-  `checkVendoredDependencies`（libs 依赖存在性与摘要）；
+  `checkVendoredDependencies`（libs 依赖摘要）；两者是**纯 Gradle 实现，不需要 Python**；
 - 单元测试只覆盖不依赖 Minecraft 的纯 JDK 逻辑（版本门、数学、拆栈）：`./gradlew test`。
 
 ### 产物位置
@@ -133,7 +137,8 @@ python scripts/check_server_log.py run/logs/latest.log
 
 | 现象 | 解决 |
 |---|---|
-| `Could not find ... libs/tacz-1.1.8+neoforge.26.1.2.R1.jar` | 依赖未放好，见第 3 步 |
+| `Missing required compile dependencies ...` | 依赖未放好或文件名不对，见第 3 步 |
+| 大量 `Unresolved reference 'tacz' / 'dev' / 'xjqsh'` | 同上：`libs/` 里缺 jar；补齐后重新构建 |
 | 启动即抛 `TaCZ Tweaks requires TaCZ 1.1.8+neoforge.26.1.2.R<n>` | 安装的 TaCZ 不是 NeoForge 26.1.2 线（可能是 Fabric 版或 1.21.11/26.2 版） |
 | `invalid source release 25` / `UnsupportedClassVersionError` | Gradle daemon 用了旧 JDK：`gradlew --stop`，确认 `gradlew --version` 的 JVM 为 25 |
 | Vineflower/反编译 OOM | 构建脚本已 `disableRecompilation = true`；如需 IDE 源码请在大内存机器上改回 false |
