@@ -1,7 +1,7 @@
 package me.muksc.tacztweaks;
 
-import com.tacz.guns.api.event.common.GunShootEvent;
 import com.tacz.guns.api.entity.IGunOperator;
+import com.tacz.guns.api.event.common.GunShootEvent;
 import com.tacz.guns.resource.pojo.data.gun.InaccuracyType;
 import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired;
 import me.muksc.tacztweaks.config.Config;
@@ -16,36 +16,55 @@ import me.muksc.tacztweaks.network.NetworkHandler;
 import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound;
 import me.muksc.tacztweaks.network.message.ClientMessagePlayerShouldSlide;
 import me.muksc.tacztweaks.registry.ModStatusEffects;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class TaCZTweaks implements ModInitializer {
+/**
+ * TaCZ Tweaks — unofficial NeoForge 26.2 port.
+ *
+ * <p>Gameplay semantics come from the sibling Fabric {@code 26.2} branch of this repository;
+ * only the loader surface (entrypoint, events, networking, registries, reload listeners) is
+ * rewritten here. The dependency is
+ * <a href="https://github.com/q14433686-arch/TaCZ_Renovated">TaCZ: Renovated</a>, modId {@code tacz}.
+ */
+@Mod(TaCZTweaks.MOD_ID)
+public class TaCZTweaks {
     public static final String MOD_ID = "tacztweaks";
-    public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.2.R2";
-    private static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+fabric.26.2.R";
-    private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(2);
-    private static final Pattern SUPPORTED_TACZ_VERSION_PATTERN = Pattern.compile(
-        "^" + Pattern.quote(SUPPORTED_TACZ_VERSION_PREFIX)
-            + "(\\d+)(?:-[0-9A-Za-z]+)*$"
-    );
+
+    /**
+     * Display-only baseline. The authoritative check is
+     * {@link TaczVersionSupport#isSupportedTaczVersion(String)}, which validates the whole
+     * release family and compares the revision numerically.
+     */
+    public static final String SUPPORTED_TACZ_VERSION =
+            TaczVersionSupport.EXPECTED_CORE_VERSION + "+" + TaczVersionSupport.EXPECTED_FAMILY + ".R1";
+
     public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
     public static Identifier id(String path) {
@@ -56,86 +75,116 @@ public class TaCZTweaks implements ModInitializer {
         return Component.translatable("%s.%s".formatted(MOD_ID, key), args);
     }
 
-    static boolean isSupportedTaczVersion(String version) {
-        if (version == null) return false;
-        Matcher matcher = SUPPORTED_TACZ_VERSION_PATTERN.matcher(version);
-        if (!matcher.matches()) return false;
-        return new BigInteger(matcher.group(1)).compareTo(MIN_SUPPORTED_TACZ_REVISION) >= 0;
+    public TaCZTweaks(IEventBus modEventBus, ModContainer modContainer) {
+        ModContainer tacz = ModList.get().getModContainerById("tacz")
+                .orElseThrow(() -> new IllegalStateException("TaCZ is required"));
+        String taczVersion = tacz.getModInfo().getVersion().toString();
+        // Accept R1 and any later R<n> build of the NeoForge 26.2 release family; reject
+        // Fabric strings, the 1.21.11 / 26.1.2 lines, wrong core versions and malformed revisions.
+        if (!TaczVersionSupport.isSupportedTaczVersion(taczVersion)) {
+            throw new IllegalStateException(
+                    "TaCZ Tweaks requires TaCZ " + TaczVersionSupport.expectedDisplay()
+                            + ", found " + taczVersion);
+        }
+
+        ModStatusEffects.INSTANCE.EFFECTS.register(modEventBus);
+        modEventBus.addListener(NetworkHandler.INSTANCE::register);
+
+        Config.INSTANCE.initialize();
+
+        NeoForge.EVENT_BUS.register(this);
     }
 
-    @Override
-    public void onInitialize() {
-        String taczVersion = FabricLoader.getInstance().getModContainer("tacz")
-            .orElseThrow(() -> new IllegalStateException("TaCZ is required"))
-            .getMetadata().getVersion().getFriendlyString();
-        // Fabric's version predicates ignore the part after '+'. Keep the Minecraft,
-        // TaCZ core version, release family and R2 minimum strict, while accepting R2,
-        // R2-hotfix and later R<n> builds from the same release family.
-        if (!isSupportedTaczVersion(taczVersion)) {
-            throw new IllegalStateException(
-                "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION
-                    + " or a later R<n> build for Minecraft 26.2, found " + taczVersion
-            );
+    /**
+     * Data-pack reload registration. Replaces Fabric's {@code ResourceLoader} registration plus
+     * the {@code END_DATA_PACK_RELOAD} hook: the trailing listener runs after the four managers
+     * have been applied, so it can re-announce the Sound Physics requirement.
+     */
+    @SubscribeEvent
+    public void onAddServerReloadListeners(AddServerReloadListenersEvent event) {
+        event.addListener(BulletInteractionManager.INSTANCE.id(), BulletInteractionManager.INSTANCE);
+        event.addListener(BulletSoundsManager.INSTANCE.id(), BulletSoundsManager.INSTANCE);
+        event.addListener(BulletParticlesManager.INSTANCE.id(), BulletParticlesManager.INSTANCE);
+        event.addListener(MeleeInteractionManager.INSTANCE.id(), MeleeInteractionManager.INSTANCE);
+        event.addListener(id("data_reload_hook"), new SimplePreparableReloadListener<Object>() {
+            @Override
+            protected Object prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
+                return new Object();
+            }
+
+            @Override
+            protected void apply(Object object, ResourceManager resourceManager, ProfilerFiller profiler) {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server == null || !BulletSoundsManager.INSTANCE.hasAirspaceSounds()) return;
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    NetworkHandler.INSTANCE.sendS2C(player, ServerMessageSoundPhysicsRequired.INSTANCE);
+                }
+            }
+        });
+    }
+
+    /** Drives per-level state (block-breaking progress, delayed particle emitters). */
+    @SubscribeEvent
+    public void onServerTick(ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        for (ServerLevel level : server.getAllLevels()) {
+            BlockBreakingManager.INSTANCE.onLevelTick(level);
         }
-        Config.INSTANCE.initialize();
-        NetworkHandler.INSTANCE.registerServer();
-        // Force initialization of the ModStatusEffects object so the effect registers at startup.
-        net.minecraft.core.Holder<?> endlessAmmo = ModStatusEffects.INSTANCE.ENDLESS_AMMO;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            ClientMessagePlayerShouldSlide.validateServerState(player);
+        }
+        BulletParticlesManager.INSTANCE.onServerTick(server);
+    }
 
-        // Register the data-driven bullet interaction / sound / particle loaders.
-        BulletInteractionManager.INSTANCE.register();
-        BulletSoundsManager.INSTANCE.register();
-        BulletParticlesManager.INSTANCE.register();
-        MeleeInteractionManager.INSTANCE.register();
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) {
+        BlockBreakingManager.INSTANCE.clear();
+        BulletParticlesManager.INSTANCE.clear();
+        ClientMessageBroadcastSound.clearAll();
+    }
 
-        // Drive per-level state (block-breaking progress, delayed particle emitters).
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            for (ServerLevel level : server.getAllLevels()) {
-                BlockBreakingManager.INSTANCE.onLevelTick(level);
-            }
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                ClientMessagePlayerShouldSlide.validateServerState(player);
-            }
-            BulletParticlesManager.INSTANCE.onServerTick(server);
-        });
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            BlockBreakingManager.INSTANCE.clear();
-            BulletParticlesManager.INSTANCE.clear();
-            ClientMessageBroadcastSound.clearAll();
-        });
-        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
-            if (!success || !BulletSoundsManager.INSTANCE.hasAirspaceSounds()) return;
-            for (var player : server.getPlayerList().getPlayers()) {
-                NetworkHandler.INSTANCE.sendS2C(player, ServerMessageSoundPhysicsRequired.INSTANCE);
-            }
-        });
-        PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
-            if (level instanceof ServerLevel serverLevel) {
-                BlockBreakingManager.INSTANCE.onBlockBreak(serverLevel, pos);
-            }
-        });
+    /**
+     * Clears our tracked breaking progress when a player breaks that block themselves.
+     *
+     * <p>NeoForge 26.2.x replaced {@code BlockEvent.BreakEvent} with
+     * {@link BreakBlockEvent}, which fires on the <em>attempt</em> (both sides) rather than
+     * after the break. Running at {@link EventPriority#LOWEST} and skipping cancelled events
+     * gets as close to "the block is about to be removed" as this loader allows.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onBlockBreak(BreakBlockEvent event) {
+        if (event.isCanceled()) return;
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            BlockBreakingManager.INSTANCE.onBlockBreak(serverLevel, event.getPos());
+        }
+    }
 
-        // Disable shooting while underwater (server authoritative).
-        GunShootEvent.CALLBACK.register(event -> {
-            if (!Config.Gun.INSTANCE.disableUnderwater()) return;
-            if (event.getShooter().isUnderWater()) event.setCanceled(true);
-        });
+    /** Disables shooting while underwater (server authoritative). */
+    @SubscribeEvent
+    public void onGunShoot(GunShootEvent event) {
+        if (!Config.Gun.INSTANCE.disableUnderwater()) return;
+        if (event.getShooter().isUnderWater()) event.setCanceled(true);
+    }
 
-        // Push server-authoritative config to players as they join.
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            NetworkHandler.INSTANCE.sendSyncConfig(handler.getPlayer());
-            if (BulletSoundsManager.INSTANCE.hasAirspaceSounds()) {
-                NetworkHandler.INSTANCE.sendS2C(handler.getPlayer(), ServerMessageSoundPhysicsRequired.INSTANCE);
-            }
-        });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-            ClientMessageBroadcastSound.clearPlayer(handler.getPlayer().getUUID()));
+    /** Pushes server-authoritative config to players as they join. */
+    @SubscribeEvent
+    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        NetworkHandler.INSTANCE.sendSyncConfig(player);
+        if (BulletSoundsManager.INSTANCE.hasAirspaceSounds()) {
+            NetworkHandler.INSTANCE.sendS2C(player, ServerMessageSoundPhysicsRequired.INSTANCE);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
+        ClientMessageBroadcastSound.clearPlayer(event.getEntity().getUUID());
     }
 
     /**
      * Collects every inaccuracy "state" an entity is currently in, ordered by importance.
      * Mirrors the upstream TaCZ Tweaks implementation (uses {@code InaccuracyType#isMove}
-     * via an invoker since it is package-private in the refabricated port).
+     * via an invoker since it is package-private in the target port).
      */
     public static List<InaccuracyType> getInaccuracyTypes(LivingEntity entity) {
         IGunOperator operator = IGunOperator.fromLivingEntity(entity);

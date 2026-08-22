@@ -3,90 +3,61 @@
 ## Original TaCZ Tweaks mod icon
 
 - Project: <https://github.com/MUKSC/TaCZTweaks>
-- Source revision: v2.14.2 (`74ba2412a6149a1d91788c3663497c4c81992983`)
+- Immutable upstream revision: `74ba2412a6149a1d91788c3663497c4c81992983`
 - Upstream resource: <https://github.com/MUKSC/TaCZTweaks/blob/74ba2412a6149a1d91788c3663497c4c81992983/src/main/resources/icon.png>
 - Modrinth icon source: <https://cdn.modrinth.com/data/H8peNuJG/0c9fcf0f40ec59d591b7cc17452c63a843df122e.png>
 - Author: MUKSC
-- License: GPL-3.0
-- SHA-256: `c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d`
-- Use here: `src/main/resources/icon.png` (the mod icon distributed in the jar).
+- Icon license: GPL-3.0
+- Approved icon checksum (SHA-256): `c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d`
+- Use: `src/main/resources/icon.png`, distributed in this mod jar.
 
-The icon is distributed as a resource of the GPL-3.0-licensed original project. The full
-GPL-3.0 text is included as [`LICENSE`](LICENSE).
+The repository includes the complete GPL-3.0 text in [`LICENSE`](LICENSE).
 
 ## Original TaCZ Tweaks example-pack audio
 
 - Project: <https://github.com/MUKSC/TaCZTweaks>
-- Version: v2.14.2 (`74ba2412`)
+- Version/revision: v2.14.2 (`74ba2412`)
 - Author: MUKSC
 - License: GPL-3.0
-- Use here: metal-impact and whizz `.ogg` fixtures under `tacz-tweaks-example-pack/assets/`.
+- Use: metal-impact and whizz `.ogg` files under `tacz-tweaks-example-pack/assets/`.
 
-The full GPL-3.0 text is included as [`LICENSE`](LICENSE).
+## Embedded Kotlin standard library
 
-## Vendored compile/runtime input jars
+- Project: <https://github.com/JetBrains/kotlin>
+- Version: 2.4.10
+- License: Apache License 2.0
+- Use: embedded with ModDevGradle `jarJar` because this NeoForge target has no Fabric Language
+  Kotlin runtime provider.
 
-The following local jars are tracked under `libs/` to make this checkout build and test
-against fixed Fabric 26.2 targets. Their source URLs, versions, checksums and release-jar
-inclusion status are pinned in [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
+The Kotlin standard library license and notices remain part of the nested artifact. No local
+`libs/*.jar` dependency is intentionally nested into this mod jar.
 
-### TaCZ Refabricated Unofficial 1.1.8+fabric.26.2.R2
+## Local NeoForge 26.2 build/runtime inputs
 
-- File: `libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`
-- Project: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial>
-- Release: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2>
-- License declared by its `fabric.mod.json`: `GPL3 / CC BY-NC-ND 4.0`
-- SHA-256: `6c0584ca457acb8403816e61a83260d68639f9bda4b3fc0717038f932325d5b5`
-- Use here: compile-only and test-runtime API/mixin target dependency. It is not nested into
-  this project's published jar; users must install the TaCZ Refabricated mod separately.
+Exact file paths, download URLs, checksums, licenses and inclusion flags are maintained in
+[`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv). The inputs are:
 
-### YetAnotherConfigLib 3.9.6+26.2-fabric
+- TaCZ: Renovated `1.1.8+neoforge.26.2.R1` — GPL-3.0;
+- YetAnotherConfigLib `3.9.5+26.2-neoforge` — LGPL-3.0;
+- Sound Physics Remastered `1.5.1+26.2` NeoForge — GPL-3.0;
+- First Aid New `1.3.0-patched+neoforge26.2` (the separate 1.2.8 artifact is not in this port's declared range) — GPL-3.0;
+- Pillager’s Gun (Unofficial Port) `3.3.5` NeoForge 26.2 — GPL-3.0;
+- Apache Commons Math `3.6.1` — Apache-2.0.
 
-- File: `libs/yacl-fabric.jar`
-- Project: <https://github.com/isXander/YetAnotherConfigLib>
-- Modrinth file: <https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar>
-- License declared by its `fabric.mod.json`: `LGPL-3.0-or-later`
-- SHA-256: `829396c3b3e7d1801ae0e9e2921d0454c5a3078afdb6c6dda6b3d1819dfa0e3f`
-- Use here: runtime configuration library expected as a separate installed mod. It is not
-  nested into this project's published jar.
+These jars are ignored by Git and not redistributed inside TaCZ Tweaks. Users install required
+runtime mods separately.
 
-## MixinExtras 0.5.4
-
-- Project: <https://github.com/LlamaLad7/MixinExtras>
-- Version/tag commit: `a6a2a42611341b1976b8b33b9a927ff5c84424ec`
-- Author: LlamaLad7
-- License: MIT
-- Use here: `mixinextras-fabric` is embedded in the published mod jar.
-
-Copyright (c) 2022-present LlamaLad7
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-and associated documentation files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
-FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-
-## First Aid New 1.3.x shader compatibility copies
+## First Aid New shader compatibility copies
 
 - Project: <https://github.com/maoruiQa/FIrst-Aid-New>
-- Source snapshot: `8fc4dd579c02ba3d3b29b96b2d22a2e12c48a5c5`
-- License: GPL-3.0 (compatible with this project's GPL-3.0 distribution)
-- Modified files:
+- Source snapshot inspected: `8fc4dd579c02ba3d3b29b96b2d22a2e12c48a5c5`
+- License: GPL-3.0
+- Modified resources:
   - `assets/firstaid/shaders/post/pain_pulse_blur.fsh`
   - `assets/firstaid/shaders/post/saturation_boost.fsh`
-- Modification: removed the unused `minecraft:dynamictransforms.glsl` import that refers to
-  a uniform block absent from First Aid's 26.2 post chains.
+- Modification inherited from the Fabric 26.2 semantic line: remove the unused
+  `minecraft:dynamictransforms.glsl` import whose uniform block is absent from the matching First
+  Aid post chains; preserve all visual calculations.
 
-The full GPL-3.0 license is included in this repository as [`LICENSE`](LICENSE). These
-compatibility copies are constrained to First Aid `>=1.3.0,<1.4.0`; they should be removed
-once a supported upstream release contains the equivalent correction.
+These copies apply only within the declared First Aid `[1.3.0,1.4.0)` compatibility range and must
+be re-evaluated when upstream changes the shaders.

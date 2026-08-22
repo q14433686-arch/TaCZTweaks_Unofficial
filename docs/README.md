@@ -1,4 +1,4 @@
-# TaCZ Tweaks (Refabricated) 文档
+# TaCZ Tweaks (Renovated / NeoForge) 文档
 
 文档分为玩家支持、扩展包说明、发布资料和维护审计。README 只提供项目概览；遇到问题时应从本页进入对应的事实来源。
 
@@ -36,7 +36,8 @@
 
 ## 移植与审计
 
-- [当前审计结论](../AUDIT.md)
+- [NeoForge 当前移植记录](records/NEOFORGE_26_2_PORT_RECORD.md)
+- [当前业务语义审计结论](../AUDIT.md)
 - [移植笔记](../PORTING_NOTES.md)
 - [历史交接记录](../AGENT_HANDOFF_26_1_2.md)
 - [维护规则](../AGENTS.md)

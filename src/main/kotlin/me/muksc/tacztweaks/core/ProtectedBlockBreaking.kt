@@ -1,19 +1,29 @@
 package me.muksc.tacztweaks.core
 
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.state.BlockState
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent
 
-/** Shared permission/event chain for data-driven bullet and melee block destruction. */
+/**
+ * Shared permission/event chain for data-driven bullet and melee block destruction.
+ *
+ * Loader note: Fabric exposes a three-stage chain (`PlayerBlockBreakEvents.BEFORE / CANCELED /
+ * AFTER`). NeoForge 26.2.x only has the cancellable [BreakBlockEvent]
+ * (`net.neoforged.neoforge.event.level.block`, which replaced the old `BlockEvent.BreakEvent`),
+ * so player-owned breaks run `Level#mayInteract` plus that event, and there is **no**
+ * "canceled"/"after" notification for protection mods that rely on one. This is a semantic
+ * downgrade versus the Fabric build; see docs/KNOWN_ISSUES.md. Non-player projectiles still go
+ * straight through `Level#destroyBlock`.
+ *
+ * The event is posted directly rather than through `CommonHooks#fireBlockBreak`, because that
+ * helper also pre-cancels based on the held item's `canDestroyBlock` — a bullet impact is not
+ * the held item mining the block.
+ */
 object ProtectedBlockBreaking {
-    /**
-     * Attempts one server-side block break without bypassing vanilla interaction checks or
-     * Fabric protection listeners. Non-player projectiles still use Level.destroyBlock,
-     * but player-owned actions additionally run mayInteract and the complete event chain.
-     */
     fun destroy(
         level: ServerLevel,
         pos: BlockPos,
@@ -23,31 +33,13 @@ object ProtectedBlockBreaking {
         updateFlags: Int
     ): Boolean {
         val player = owner as? ServerPlayer
-        val blockEntity = level.getBlockEntity(pos)
         if (player != null) {
-            val permitted = level.mayInteract(player, pos) &&
-                PlayerBlockBreakEvents.BEFORE.invoker()
-                    .beforeBlockBreak(level, player, pos, state, blockEntity)
-            if (!permitted) {
-                PlayerBlockBreakEvents.CANCELED.invoker()
-                    .onBlockBreakCanceled(level, player, pos, state, blockEntity)
-                return false
-            }
+            if (!level.mayInteract(player, pos)) return false
+            val event = BreakBlockEvent(level, pos, state, player)
+            NeoForge.EVENT_BUS.post(event)
+            if (event.isCanceled) return false
         }
 
-        val destroyed = level.destroyBlock(pos, drop, owner, updateFlags)
-        if (!destroyed) {
-            if (player != null) {
-                PlayerBlockBreakEvents.CANCELED.invoker()
-                    .onBlockBreakCanceled(level, player, pos, state, blockEntity)
-            }
-            return false
-        }
-
-        if (player != null) {
-            PlayerBlockBreakEvents.AFTER.invoker()
-                .afterBlockBreak(level, player, pos, state, blockEntity)
-        }
-        return true
+        return level.destroyBlock(pos, drop, owner, updateFlags)
     }
 }

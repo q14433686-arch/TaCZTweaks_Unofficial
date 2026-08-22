@@ -1,6 +1,6 @@
 package me.muksc.tacztweaks.network.message
 
-import cn.sh1rocu.tacz.util.itemhandler.ItemHandlerHelper
+import net.neoforged.neoforge.items.ItemHandlerHelper
 import com.tacz.guns.api.TimelessAPI
 import com.tacz.guns.api.item.IGun
 import com.tacz.guns.api.item.builder.AmmoItemBuilder
@@ -10,13 +10,12 @@ import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.core.Context.hasInfiniteAmmo
 import me.muksc.tacztweaks.core.StackSplitter
-import net.fabricmc.fabric.api.networking.v1.PacketSender
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 /** Empty C2S action payload; StreamCodec.unit avoids a fake no-op writer/temporary buffer. */
 object ClientMessagePlayerUnload : CustomPacketPayload {
@@ -28,19 +27,20 @@ object ClientMessagePlayerUnload : CustomPacketPayload {
 
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
 
-    fun handle(msg: ClientMessagePlayerUnload, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
+    fun handle(msg: ClientMessagePlayerUnload, ctx: IPayloadContext) {
         if (!Config.Gun.allowUnload()) return
-        server.execute {
-            if (player == null || !player.isAlive || player.isRemoved) return@execute
+        ctx.enqueueWork {
+            val player = ctx.player() as? ServerPlayer ?: return@enqueueWork
+            if (!player.isAlive || player.isRemoved) return@enqueueWork
             val gunStack = player.mainHandItem
-            if (player.inventory.hasInfiniteAmmo(gunStack)) return@execute
+            if (player.inventory.hasInfiniteAmmo(gunStack)) return@enqueueWork
 
-            val gun = IGun.getIGunOrNull(gunStack) ?: return@execute
+            val gun = IGun.getIGunOrNull(gunStack) ?: return@enqueueWork
             val gunId = gun.getGunId(gunStack)
-            val index = TimelessAPI.getCommonGunIndex(gunId).orElse(null) ?: return@execute
+            val index = TimelessAPI.getCommonGunIndex(gunId).orElse(null) ?: return@enqueueWork
             val gunData = index.getGunData()
             val ammoCount = gun.getCurrentAmmoCount(gunStack)
-            if (ammoCount !in 0..StackSplitter.MAX_UNLOAD_AMMO) return@execute
+            if (ammoCount !in 0..StackSplitter.MAX_UNLOAD_AMMO) return@enqueueWork
 
             val unloadChamber = Config.Gun.unloadBulletInBarrel() &&
                 gunData.getBolt() != Bolt.OPEN_BOLT && gun.hasBulletInBarrel(gunStack)
@@ -52,7 +52,7 @@ object ClientMessagePlayerUnload : CustomPacketPayload {
             if (fuelFeed) {
                 if (!inventoryFeed && ammoCount > 0) gun.setCurrentAmmoCount(gunStack, 0)
                 if (unloadChamber) gun.setBulletInBarrel(gunStack, false)
-                return@execute
+                return@enqueueWork
             }
 
             // Dummy ammo must be returned to its virtual reserve, including the chamber.
@@ -64,16 +64,16 @@ object ClientMessagePlayerUnload : CustomPacketPayload {
                     if (magazineRounds > 0) gun.setCurrentAmmoCount(gunStack, 0)
                     if (unloadChamber) gun.setBulletInBarrel(gunStack, false)
                 }
-                return@execute
+                return@enqueueWork
             }
 
             // Inventory-feed guns do not own a magazine count, but a closed-bolt chambered
             // cartridge is still physical and can be returned.
             val physicalRounds = (if (inventoryFeed) 0 else ammoCount) + if (unloadChamber) 1 else 0
-            if (physicalRounds <= 0) return@execute
+            if (physicalRounds <= 0) return@enqueueWork
             val ammoId = gunData.getAmmoId()
-            val ammoIndex = TimelessAPI.getCommonAmmoIndex(ammoId).orElse(null) ?: return@execute
-            val chunks = StackSplitter.split(physicalRounds, ammoIndex.getStackSize()) ?: return@execute
+            val ammoIndex = TimelessAPI.getCommonAmmoIndex(ammoId).orElse(null) ?: return@enqueueWork
+            val chunks = StackSplitter.split(physicalRounds, ammoIndex.getStackSize()) ?: return@enqueueWork
 
             // Construct every stack before mutating gun state. A malformed ammo definition
             // therefore cannot clear rounds that were never returned.

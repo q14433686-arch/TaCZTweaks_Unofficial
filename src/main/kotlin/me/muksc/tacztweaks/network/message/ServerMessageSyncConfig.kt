@@ -1,19 +1,17 @@
 package me.muksc.tacztweaks.network.message
 
-import com.tacz.guns.resource.modifier.AttachmentPropertyManager
 import io.netty.buffer.Unpooled
 import io.netty.handler.codec.DecoderException
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
-import me.muksc.tacztweaks.config.ConfigManager
-import me.muksc.tacztweaks.config.sync.ESyncDirection
-import net.minecraft.client.Minecraft
+import me.muksc.tacztweaks.network.ClientPacketBridge
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
-class ServerMessageSyncConfig private constructor(private val buf: FriendlyByteBuf) : CustomPacketPayload {
+class ServerMessageSyncConfig private constructor(val buf: FriendlyByteBuf) : CustomPacketPayload {
     fun write(out: FriendlyByteBuf) {
         val length = buf.readableBytes()
         require(length <= MAX_CONFIG_BYTES) { "Config payload is too large: $length" }
@@ -42,24 +40,13 @@ class ServerMessageSyncConfig private constructor(private val buf: FriendlyByteB
         fun create(): ServerMessageSyncConfig =
             ServerMessageSyncConfig(FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) })
 
-        fun handle(msg: ServerMessageSyncConfig, client: Minecraft) {
-            client.execute {
-                val backup = FriendlyByteBuf(Unpooled.buffer()).also { Config.encode(it) }
-                try {
-                    Config.decode(msg.buf)
-                    Config.sync(ESyncDirection.SERVER_TO_CLIENT)
-                    ConfigManager.syncedWithServer = true
-                    client.player?.also { player ->
-                        AttachmentPropertyManager.postChangeEvent(player, player.mainHandItem)
-                    }
-                } catch (error: RuntimeException) {
-                    backup.readerIndex(0)
-                    Config.decode(backup)
-                    TaCZTweaks.LOGGER.error("Received an invalid config payload from the server", error)
-                } finally {
-                    backup.release()
-                    msg.buf.release()
-                }
+        fun handle(msg: ServerMessageSyncConfig, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                ClientPacketBridge.invoke(
+                    "onSyncConfig",
+                    arrayOf<Class<*>>(ServerMessageSyncConfig::class.java),
+                    msg
+                )
             }
         }
     }

@@ -30,8 +30,9 @@ Important fields:
   `damage_falloff`, `damage_multiplier`, and `render_bullet_hole`.
 - `gun_pierce`: whether TaCZ gun pierce capability is required/consumed.
 
-Player-owned block breaking checks `Level.mayInteract` and the Fabric
-`PlayerBlockBreakEvents` BEFORE/CANCELED/AFTER chain.
+On this NeoForge line, player-owned block breaking checks `Level#mayInteract` and posts the
+cancellable `BreakBlockEvent`. NeoForge has no Fabric-style BEFORE/CANCELED/AFTER chain; see
+`docs/KNOWN_ISSUES.md` before claiming protection-mod compatibility.
 
 ## Entity rule
 

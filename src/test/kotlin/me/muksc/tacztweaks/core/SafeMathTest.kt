@@ -19,8 +19,15 @@ class SafeMathTest {
     fun `zero hardness is immediate and invalid numbers fail closed`() {
         assertEquals(1.0F, SafeMath.blockBreakingDelta(0.0F, 0.0, 0.0F))
         assertEquals(0.0F, SafeMath.blockBreakingDelta(Float.NaN, 0.0, 1.0F))
+        assertEquals(0.0F, SafeMath.blockBreakingDelta(Float.POSITIVE_INFINITY, 0.0, 1.0F))
         assertEquals(0.0F, SafeMath.blockBreakingDelta(1.0F, Double.NaN, 1.0F))
+        assertEquals(0.0F, SafeMath.blockBreakingDelta(1.0F, Double.POSITIVE_INFINITY, 1.0F))
+        assertEquals(0.0F, SafeMath.blockBreakingDelta(1.0F, 0.0, Float.POSITIVE_INFINITY))
         assertEquals(0.0F, SafeMath.blockBreakingDelta(-1.0F, 0.0, 1.0F))
         assertEquals(0.0F, SafeMath.blockBreakingDelta(1.0F, 0.0, -1.0F))
+        assertEquals(
+            SafeMath.blockBreakingDelta(1.0F, 0.0, 1.0F),
+            SafeMath.blockBreakingDelta(1.0F, -1.0, 1.0F)
+        )
     }
 }

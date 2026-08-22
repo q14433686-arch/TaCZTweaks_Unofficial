@@ -1,19 +1,19 @@
 package me.muksc.tacztweaks.network.message
 
-import com.tacz.guns.client.sound.SoundPlayManager
 import me.muksc.tacztweaks.TaCZTweaks
-import net.minecraft.client.Minecraft
+import me.muksc.tacztweaks.network.ClientPacketBridge
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 class ServerMessageBroadcastSound(
-    private val entityId: Int,
-    private val soundName: Identifier,
-    private val volume: Float,
-    private val pitch: Float,
-    private val distance: Int
+    val entityId: Int,
+    val soundName: Identifier,
+    val volume: Float,
+    val pitch: Float,
+    val distance: Int
 ) : CustomPacketPayload {
     constructor(buf: FriendlyByteBuf) : this(
         buf.readInt(),
@@ -42,16 +42,12 @@ class ServerMessageBroadcastSound(
             { buf -> ServerMessageBroadcastSound(buf) }
         )
 
-        fun handle(msg: ServerMessageBroadcastSound, client: Minecraft) {
-            client.execute {
-                val entity = client.level?.getEntity(msg.entityId) ?: return@execute
-                SoundPlayManager.playClientSound(
-                    entity,
-                    msg.soundName,
-                    msg.volume,
-                    msg.pitch,
-                    msg.distance,
-                    true
+        fun handle(msg: ServerMessageBroadcastSound, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                ClientPacketBridge.invoke(
+                    "onBroadcastSound",
+                    arrayOf<Class<*>>(ServerMessageBroadcastSound::class.java),
+                    msg
                 )
             }
         }

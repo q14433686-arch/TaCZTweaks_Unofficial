@@ -9,7 +9,7 @@
 
 ## 两个平台都必须做到
 
-1. 明确说明这是非官方社区移植，未获 MUKSC、TaCZ 团队或底层 Fabric 移植维护者背书；
+1. 明确说明这是非官方社区移植，未获 MUKSC、TaCZ 团队、TaCZ: Renovated 或兼容模组维护者背书；
 2. 说明它不是原文件重传，并列出相较原版的实质性移植工作；
 3. 正确选择 GPL-3.0，并保留原作者、上游项目和第三方资产署名；
 4. 在每个文件的 metadata/Dependencies 中填写准确的游戏版本、加载器、必需依赖和可选依赖；
@@ -34,7 +34,7 @@ python3 scripts/audit_port.py --strict
 - 项目名称没有游戏版本、文件版本或发布阶段；
 - 摘要是单行纯文本；
 - 没有把可选兼容写成硬依赖；
-- 上传文件的依赖字段与 `fabric.mod.json` 一致；
+- 上传文件的依赖字段与生成后的 `META-INF/neoforge.mods.toml` 一致；
 - Source、Issues、License 和环境 metadata 均已填写；
 - 项目页没有外部 jar 下载链接。
 

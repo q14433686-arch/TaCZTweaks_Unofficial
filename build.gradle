@@ -1,0 +1,416 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.144'
+    id 'org.jetbrains.kotlin.jvm' version '2.4.10'
+    id 'idea'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Mojang ships Java 25 to end users in 26.2, so this port targets Java 25 —
+// same toolchain as TaCZ_Renovated's 26.2 branch.
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+kotlin {
+    jvmToolchain(25)
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+// ---------------------------------------------------------------------------
+// Local binary dependencies.
+//
+// They are NOT committed to Git (see .gitignore). Download them by hand (see
+// libs/README.txt and BUILD.md) or with scripts/download_dependencies.py.
+// Sources and SHA-256 digests live in RESOURCE_IMPORT_MANIFEST.tsv.
+//
+// Jars are matched by *pattern*, not by exact filename, because CurseForge /
+// Modrinth / browsers rename files (`+` -> `_`, `-v3-` dropped, etc.).
+// ---------------------------------------------------------------------------
+ext.libsDir = file('libs')
+
+/** All jars currently sitting in libs/, in stable order. */
+ext.localJars = { ->
+    def files = libsDir.listFiles()
+    files == null ? [] : files.findAll { it.isFile() && it.name.toLowerCase().endsWith('.jar') }.sort { it.name }
+}
+
+/**
+ * Normalises a file name for matching: lower case, separators removed. This makes
+ * `yet_another_config_lib_v3-3.9.5+26.2-neoforge.jar`,
+ * `yet-another-config-lib-neoforge-3.9.5+26.2.jar` and
+ * `YetAnotherConfigLib 3.9.5 (26.2 neoforge).jar` all compare equal for our tokens.
+ */
+ext.normaliseJarName = { String name -> name.toLowerCase().replaceAll('[^a-z0-9]', '') }
+
+/**
+ * Finds one jar in libs/ whose normalised name contains every token in `mustContain`
+ * and none of the tokens in `mustNotContain`. Tokens are normalised the same way, so
+ * 'config-lib', 'config_lib' and 'configlib' are interchangeable.
+ * Returns null when nothing matches.
+ */
+ext.findLocalJar = { List<String> mustContain, List<String> mustNotContain = [] ->
+    def wanted = mustContain.collect { normaliseJarName(it) }
+    def rejected = mustNotContain.collect { normaliseJarName(it) }
+    def matches = localJars().findAll { jar ->
+        def name = normaliseJarName(jar.name)
+        wanted.every { name.contains(it) } && rejected.every { !name.contains(it) }
+    }
+    if (matches.size() > 1) {
+        logger.warn("libs/: ${matches*.name} all match ${mustContain}; using ${matches[0].name}")
+    }
+    matches.isEmpty() ? null : matches[0]
+}
+
+// "fabric" is excluded everywhere so a wrong-loader download is reported as missing
+// instead of silently compiling against the Fabric API surface.
+ext.taczJar = findLocalJar(['tacz', 'neoforge', '26.2'], ['fabric'])
+// YACL ships as yet_another_config_lib_v3-*, yet-another-config-lib-*, YetAnotherConfigLib-*
+// or yacl-*, with or without a loader tag: prefer a neoforge-tagged jar, then fall back.
+ext.yaclJar = findLocalJar(['configlib', 'neoforge', '26.2'], ['fabric'])
+    ?: findLocalJar(['yacl', 'neoforge', '26.2'], ['fabric'])
+    ?: findLocalJar(['configlib', '26.2'], ['fabric'])
+    ?: findLocalJar(['yacl', '26.2'], ['fabric'])
+ext.soundPhysicsJar = findLocalJar(['soundphysics', 'neoforge', '26.2'], ['fabric'])
+ext.firstAidJar = findLocalJar(['firstaid', 'neoforge', '26.2'], ['fabric'])
+ext.pillagersGunJar = findLocalJar(['pillagersgun', 'neoforge', '26.2'], ['fabric'])
+ext.commonsMathJar = findLocalJar(['commonsmath3'])
+
+neoForge {
+    // ModDevGradle 2.x settings object. disableRecompilation skips Vineflower
+    // (-Xmx4g by default), which OOMs low-memory build machines/CI sandboxes.
+    // Set it back to false on a dev box to get Minecraft sources in the IDE.
+    enable {
+        version = project.neo_version
+        disableRecompilation = true
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+            jvmArguments.addAll '-Xms128M', '-Xmx2G'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    // NeoForge has no Fabric Language Kotlin equivalent: the stdlib has to ship with us.
+    jarJar "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+
+    // --- Required on the compile classpath (see checkRequiredDependencies) ---
+    // TaCZ: Renovated (unofficial NeoForge port) is the mixin/API target.
+    // YACL config persistence/sync and screen library (required on both physical sides).
+    // Sound Physics Remastered is optional at runtime, but the compat mixin/bridge references
+    // com.sonicether.soundphysics.* directly, so its jar is needed to compile.
+    // commons-math3 is bundled inside the TaCZ jar; compile-time only for us.
+    //
+    // First Aid and Pillager's Gun are reached through reflection and string-target mixins,
+    // so they are only added when the jar happens to be present.
+    [taczJar, yaclJar, soundPhysicsJar, commonsMathJar, firstAidJar, pillagersGunJar]
+            .findAll { it != null }
+            .each { compileOnly files(it) }
+
+    [taczJar, yaclJar].findAll { it != null }.each { localRuntime files(it) }
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // Pure-JDK unit tests only (version gate, math and stack splitting).
+    // The test source set is not fed through ModDevGradle.
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    jvmArgs '-Xmx512m', '-XX:ReservedCodeCacheSize=128m'
+}
+
+// ---------------------------------------------------------------------------
+// neoforge.mods.toml templating (mod_version etc.)
+// ---------------------------------------------------------------------------
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+// Include project licensing in the published jar; local libs/*.jar are never copied.
+tasks.named('processResources', ProcessResources) {
+    from(layout.projectDirectory.file('LICENSE')) {
+        into 'META-INF'
+        rename { 'LICENSE_tacztweaks' }
+    }
+    from(layout.projectDirectory.file('THIRD_PARTY_NOTICES.md')) {
+        into 'META-INF'
+        rename { 'THIRD_PARTY_NOTICES_tacztweaks.md' }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Release gates (pure Gradle/Groovy: no Python interpreter required)
+// ---------------------------------------------------------------------------
+def sha256Of = { File f ->
+    java.security.MessageDigest.getInstance('SHA-256')
+            .digest(f.bytes).collect { String.format('%02x', it) }.join()
+}
+
+/** Required compile-time jars: resolved file (may be null), what to look for, where to get it. */
+ext.requiredLocalDependencies = [
+        [jar: taczJar, what: 'TaCZ: Renovated (name must contain "tacz", "neoforge" and "26.2")',
+         source: 'https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.2_R1'],
+        [jar: yaclJar, what: 'YetAnotherConfigLib (name must contain "config lib" or "yacl", plus "26.2"; separators ignored)',
+         source: 'CurseForge/Modrinth: YetAnotherConfigLib "3.9.5 for neoforge 26.2"'],
+        [jar: soundPhysicsJar, what: 'Sound Physics Remastered (name must contain "sound physics", "neoforge" and "26.2")',
+         source: 'CurseForge: Sound Physics Remastered "[NEOFORGE][26.2] 1.5.1+26.2"'],
+        [jar: commonsMathJar, what: 'Apache Commons Math (name must contain "commons-math3")',
+         source: 'https://repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar'],
+]
+
+var checkRequiredDependencies = tasks.register("checkRequiredDependencies") {
+    group = 'verification'
+    description = 'Fails early with a readable message when a required libs/ jar is missing.'
+    doLast {
+        def missing = requiredLocalDependencies.findAll { it.jar == null }
+        if (missing) {
+            def wanted = missing.collect { "  - ${it.what}\n      source: ${it.source}" }.join('\n')
+            def present = localJars()
+            def found = present.isEmpty()
+                    ? '  (libs/ contains no .jar files)'
+                    : present.collect { "  - ${it.name}" }.join('\n')
+            throw new GradleException(
+                    "Missing required compile dependencies in libs/ (jars are not committed to Git;\n" +
+                    "see libs/README.txt and BUILD.md). Jars are matched by name pattern with all\n" +
+                    "separators ignored (-, _, ., spaces), so a renamed download is fine as long as\n" +
+                    "it still contains these tokens:\n" +
+                    wanted + "\n" +
+                    "Currently in libs/:\n" + found + "\n" +
+                    "Note: files whose name contains \"fabric\" are ignored on purpose.\n" +
+                    "Without these jars the Kotlin/Java compile fails with hundreds of\n" +
+                    "'Unresolved reference: tacz / dev / com.sonicether' errors.")
+        }
+        logger.lifecycle('checkRequiredDependencies: OK\n  ' +
+                requiredLocalDependencies.collect { it.jar.name }.join('\n  ') +
+                (firstAidJar ? "\n  ${firstAidJar.name} (optional)" : '') +
+                (pillagersGunJar ? "\n  ${pillagersGunJar.name} (optional)" : ''))
+    }
+}
+
+tasks.named('compileJava') { dependsOn checkRequiredDependencies }
+tasks.named('compileKotlin') { dependsOn checkRequiredDependencies }
+
+var checkModIcon = tasks.register("checkModIcon") {
+    group = 'verification'
+    description = 'Verifies the mod icon checksum, metadata path, dimensions, and license notice.'
+    def metadataFile = file('src/main/templates/META-INF/neoforge.mods.toml')
+    def iconFile = file('src/main/resources/icon.png')
+    def noticeFile = file('THIRD_PARTY_NOTICES.md')
+    inputs.file(metadataFile)
+    inputs.file(iconFile)
+    inputs.file(noticeFile)
+    doLast {
+        def expectedSha = 'c8591fdd552d0bbad05cd8a60136faf89d5e9fd6d0dab08eb96fa04439c6db9d'
+        def rejectedSha = '5e1272a625af1b0b4d866d0fb468e1cea0a9258411f16a7d06d31a84e8953ac8'
+        def errors = []
+
+        def logo = (metadataFile.text =~ /(?m)^logoFile\s*=\s*"([^"]+)"/)
+        if (!logo.find() || logo.group(1) != 'icon.png') {
+            errors << 'neoforge.mods.toml logoFile must be "icon.png"'
+        }
+
+        def bytes = iconFile.bytes
+        def digest = sha256Of(iconFile)
+        if (digest == rejectedSha) {
+            errors << 'mod icon is the known dark-grey/orange placeholder'
+        } else if (digest != expectedSha) {
+            errors << "mod icon SHA-256 drifted: expected ${expectedSha}, got ${digest}"
+        }
+
+        // PNG signature (0x89 'P' 'N' 'G') + IHDR chunk type, compared as unsigned ints.
+        def octet = { int index -> bytes[index] & 0xFF }
+        if (bytes.length < 24 || octet(0) != 0x89 || octet(1) != 0x50
+                || octet(2) != 0x4E || octet(3) != 0x47
+                || octet(12) != 0x49 || octet(13) != 0x48
+                || octet(14) != 0x44 || octet(15) != 0x52) {
+            errors << 'mod icon is not a PNG with a valid leading IHDR chunk'
+        } else {
+            def readInt = { int off ->
+                (octet(off) << 24) | (octet(off + 1) << 16) |
+                        (octet(off + 2) << 8) | octet(off + 3)
+            }
+            int width = readInt(16)
+            int height = readInt(20)
+            if (width != 512 || height != 512) {
+                errors << "mod icon must be 512x512, got ${width}x${height}"
+            }
+        }
+
+        def notice = noticeFile.text
+        if (!notice.contains(expectedSha)) {
+            errors << 'THIRD_PARTY_NOTICES.md does not record the current icon SHA-256'
+        }
+
+        if (errors) {
+            throw new GradleException("MOD ICON: ${errors.size()} error(s)\n  " + errors.join('\n  '))
+        }
+        logger.lifecycle("checkModIcon: OK (512x512, SHA-256 ${digest})")
+    }
+}
+
+var checkVendoredDependencies = tasks.register("checkVendoredDependencies") {
+    group = 'verification'
+    description = 'Verifies that present libs/ dependencies match their recorded SHA-256.'
+    def manifestFile = file('RESOURCE_IMPORT_MANIFEST.tsv')
+    inputs.file(manifestFile)
+    doLast {
+        def lines = manifestFile.readLines('UTF-8').findAll { it.trim() && !it.startsWith('#') }
+        def header = lines.remove(0).split('\t') as List
+        int pathIdx = header.indexOf('path')
+        int shaIdx = header.indexOf('sha256')
+        def errors = []
+        lines.each { line ->
+            def cols = line.split('\t') as List
+            if (cols.size() <= Math.max(pathIdx, shaIdx)) return
+            def entry = file(cols[pathIdx])
+            def expected = cols[shaIdx].trim().toLowerCase()
+            if (!entry.exists()) {
+                logger.lifecycle("checkVendoredDependencies: NOTE ${cols[pathIdx]} is not present locally")
+                return
+            }
+            def actual = sha256Of(entry)
+            if (expected in ['', 'pending', 'tbd']) {
+                logger.lifecycle("checkVendoredDependencies: NOTE ${cols[pathIdx]} has no recorded digest yet, observed ${actual}")
+            } else if (actual != expected) {
+                errors << "${cols[pathIdx]}: expected ${expected}, got ${actual}"
+            }
+        }
+        if (errors) {
+            throw new GradleException("Vendored dependency digest mismatch:\n  " + errors.join('\n  '))
+        }
+    }
+}
+
+var checkJarContents = tasks.register("checkJarContents") {
+    group = 'verification'
+    description = 'Checks release metadata/notices and rejects accidentally bundled local inputs.'
+    dependsOn tasks.named('jar')
+    doLast {
+        def jarFile = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        if (!jarFile.isFile()) {
+            throw new GradleException("Release jar does not exist: ${jarFile}")
+        }
+        def zip = new java.util.zip.ZipFile(jarFile)
+        try {
+            [
+                    'META-INF/neoforge.mods.toml',
+                    'META-INF/LICENSE_tacztweaks',
+                    'META-INF/THIRD_PARTY_NOTICES_tacztweaks.md',
+                    'icon.png',
+                    'tacztweaks.mixins.json',
+            ].each { name ->
+                if (zip.getEntry(name) == null) {
+                    throw new GradleException("Release jar is missing ${name}")
+                }
+            }
+            def metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml'))
+                    .getText('UTF-8')
+            if (!metadata.contains("version=\"${mod_version}\"")) {
+                throw new GradleException("Release metadata does not contain version ${mod_version}")
+            }
+            def forbidden = zip.entries().findAll { entry ->
+                entry.name.startsWith('fixtures/') ||
+                        entry.name.startsWith('src/test/') ||
+                        entry.name.startsWith('libs/') ||
+                        entry.name.endsWith('.log') ||
+                        entry.name.toLowerCase().contains('fabric.mod.json') ||
+                        entry.name.toLowerCase().contains('tacz-refabricated')
+            }*.name
+            if (forbidden) {
+                throw new GradleException("Release jar contains forbidden entries: ${forbidden}")
+            }
+        } finally {
+            zip.close()
+        }
+        logger.lifecycle("checkJarContents: OK (${jarFile})")
+    }
+}
+
+tasks.named('check') {
+    dependsOn checkModIcon, checkVendoredDependencies, checkJarContents
+}
+
+var examplePackZip = tasks.register("examplePackZip", Zip) {
+    group = 'build'
+    description = 'Packages the data-driven example pack.'
+    archiveFileName = "tacz-tweaks-example-pack-${mod_version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('example-pack')
+    from layout.projectDirectory.dir('tacz-tweaks-example-pack')
+}
+
+tasks.named('assemble') {
+    dependsOn examplePackZip
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

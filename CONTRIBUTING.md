@@ -1,39 +1,43 @@
 # Contributing
 
-Thank you for helping maintain this unofficial Fabric port. This repository is fixed to the
-`arena/01a018df-tacztweaks-unofficial` working branch in Arena sessions; normal GitHub work should
-use feature branches and pull requests against the maintained release branch.
+Thank you for helping maintain this unofficial NeoForge 26.2 port. Use a feature branch and pull
+request against the maintained NeoForge release line; do not mix Fabric loader APIs into this tree.
+Gameplay semantics should be compared with `26.2(main)`, while loader patterns should be compared
+with the proven 26.1.2 NeoForge port and TaCZ: Renovated 26.2.
 
 ## Development environment
 
 - JDK 25
-- Python 3
-- Gradle Wrapper from this repository
-- The exact vendored jars declared in `RESOURCE_IMPORT_MANIFEST.tsv`
-
-Useful commands:
+- Python 3 for standalone audits
+- this repository's Gradle Wrapper
+- exact local jars declared in `RESOURCE_IMPORT_MANIFEST.tsv`
 
 ```bash
 python3 scripts/download_dependencies.py --check-only
-python3 scripts/audit_port.py --strict
 python3 scripts/check_mod_icon.py
+python3 scripts/check_release_consistency.py
+python3 scripts/audit_port.py --strict
+./gradlew test
 ./gradlew clean build --stacktrace
 ```
 
+A strict audit without TaCZ/Minecraft jars is incomplete even if all Python-only checks pass.
+
 ## Pull request expectations
 
-- Do not add unlicensed assets, copied code, logs with private data, or mutable binary blobs.
-- Update `RESOURCE_IMPORT_MANIFEST.tsv`, `LICENSES.md`, and `THIRD_PARTY_NOTICES.md` when changing
-  vendored binaries, embedded libraries or redistributed resources.
-- Update docs and `CHANGELOG.md` for user-visible behavior changes.
-- Keep `fabric.mod.json`, `gradle.properties`, README dependency tables and publish docs aligned.
-- For mixins, cite the target class/method descriptors and run the strict audit.
-- Do not claim game, dedicated-server, or optional-mod validation unless you actually ran it.
-- Include or update tests for pure logic, codecs, config serialization or release packaging when
-  feasible.
+- Do not add unlicensed assets, private logs, credentials, or mutable binary blobs.
+- Keep `gradle.properties`, `neoforge.mods.toml`, README, BUILD, CHANGELOG and dependency docs aligned.
+- Update `RESOURCE_IMPORT_MANIFEST.tsv`, `LICENSES.md` and `THIRD_PARTY_NOTICES.md` when dependencies
+  or redistributed resources change.
+- Cite non-trivial APIs as class + method signature + source in `docs/records/`.
+- For every mixin, verify target side, target descriptor, `@At` owner/name/descriptor, and relevant
+  NeoForge 26.2.x patches.
+- Do not call source checks, disabled paths or a successful compile “game tested.”
+- Common/server changes require dedicated-server startup and `scripts/check_server_log.py`.
+- Client release validation requires main-menu startup and the documented gameplay smoke matrix.
 
 ## Optional compatibility evidence
 
-New compatibility code should include the exact mod name, version, loader, Minecraft version,
-source or binary inspected, test scenario, and known boundaries. If a mod has no Fabric 26.2 target,
-remove no-op switches rather than adding dormant configuration.
+Record the exact mod version, loader, Minecraft version, source or jar inspected, test scenario and
+known boundary. If no verified NeoForge 26.2 target exists, say “unsupported/not verified” and do not
+add a dormant configuration switch.

@@ -24,6 +24,6 @@ available.
 
 ## Permissions and safety
 
-Block interactions should be validated on servers with protection/claim mods. The bullet block
-path calls the Fabric block-break event chain; maintain the same discipline for melee packs and
+Block interactions should be validated on servers with protection/claim mods. The NeoForge bullet
+and melee paths use `Level#mayInteract` plus `BreakBlockEvent`, not Fabric's three-stage chain;
 never claim compatibility with a protection mod until tested.

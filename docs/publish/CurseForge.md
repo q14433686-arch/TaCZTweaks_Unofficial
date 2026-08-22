@@ -1,145 +1,60 @@
-# CurseForge 发布文案
+# CurseForge project copy
 
 ## Project name
 
-```text
-TaCZ Tweaks (Refabricated)
-```
-
-名称只保留稳定项目名，不加入 Minecraft 版本、文件版本或发布阶段。
+TaCZ Tweaks (Renovated)
 
 ## Summary
 
-```text
-An unofficial Fabric port providing configurable gunplay, movement, balance, interactions, sound, and data-driven customization for TaCZ.
-```
+Unofficial NeoForge TaCZ Tweaks port with configurable gunplay, movement, balancing, sounds,
+interactions and data-driven systems for TaCZ: Renovated.
 
 ## Description
 
-```markdown
-# Unofficial community port
+**This is an unofficial community port of TaCZ Tweaks by MUKSC.** It is not affiliated with or
+endorsed by MUKSC, the TACZ Dev Team, TaCZ: Renovated maintainers, or optional-mod authors. Problems
+introduced by this port should be reported to this project's issue tracker.
 
-**TaCZ Tweaks (Refabricated) is an unofficial Fabric port of TaCZ Tweaks by MUKSC.**
-It is designed for TaCZ Refabricated Unofficial and is not affiliated with, reviewed by,
-or endorsed by MUKSC, the TaCZ development team, or the maintainers of the underlying
-Fabric port.
+The port provides:
 
-## Overview
+- configurable reload, unload, sprint, fire-mode, aiming, crawl and tilt behavior;
+- damage, headshot, armor-ignore, projectile, spread, RPM and recoil modifiers;
+- data-driven bullet block/entity/shield interactions;
+- conditional sounds, airspace integration, particles and melee interactions;
+- a YACL configuration screen through NeoForge's mod list;
+- a documented reloadable example pack.
 
-The mod adds configurable gun handling, movement, global balance modifiers, projectile
-and melee interactions, sound and particle rules, server configuration synchronization,
-and quality-of-life controls to TaCZ.
+### Installation
 
-It is intended for players who want more control over gun behavior and for server owners
-or pack authors who need data-driven interaction rules without modifying TaCZ itself.
+Install the exact Minecraft/NeoForge build and dependency versions shown on each uploaded file.
+TaCZ: Renovated and YetAnotherConfigLib are required; YACL is required on both client and server for
+shared config persistence/sync. Kotlin stdlib is nested in the TaCZ Tweaks jar.
 
-## Features
+Sound Physics Remastered, First Aid New and Pillager’s Gun integrations are optional and constrained
+by file metadata. Do not interpret an optional relation as an unqualified gameplay-test claim.
 
-### Gunplay and movement
+### Block-protection boundary
 
-- configurable unloading, chambering, manual cycling, and reload behavior;
-- sprinting while shooting or reloading;
-- shooting-sequence reload and fire-mode controls;
-- underwater firing restrictions;
-- gun tilt, sensitivity, prone movement, hit-marker, and hit-sound settings.
+This loader lacks Fabric's BEFORE/CANCELED/AFTER block-break chain. Data-driven bullet/melee breaking
+uses the loader's cancellable break-attempt event and `mayInteract`; protection-mod compatibility
+must be tested per mod.
 
-### Balance and gameplay
+### Support requirements
 
-- global damage, player-damage, headshot, and armor-penetration modifiers;
-- projectile speed, gravity, friction, aim time, spread, fire-rate, and recoil modifiers;
-- projectile-protection enchantment support;
-- shield interaction with remaining damage, durability loss, and disable duration;
-- endless ammunition, Enderman projectile evasion, attachment restrictions, and workbench filtering.
+Reports need exact versions, full `latest.log`, crash report where applicable, minimal reproduction,
+all content packs/optional mods, and the result with TaCZ Tweaks removed. Do not send port-specific
+reports to upstream projects.
 
-### Data-driven systems
+### License
 
-Data and resource packs can define:
+GPL-3.0. Original TaCZ Tweaks by MUKSC. See the repository for source, notices and dependency
+checksums.
 
-- block, entity, and shield bullet interactions;
-- destruction progress, replacement, penetration, and damage;
-- impact, fly-by, constant, and environment-dependent sounds;
-- block and entity particles with absolute, relative, or local coordinates;
-- continuous particle emitters;
-- gun melee and compatible melee-weapon interactions;
-- selectors based on guns, categories, ammunition, predicates, damage, speed, silencer state,
-  bursts, pellets, random chance, and logical combinations.
+## File upload checklist
 
-### Configuration
-
-The port provides JSON persistence, server-to-client configuration synchronization, and an
-in-game YACL configuration screen. Mod Menu integration is optional.
-
-## How this port differs from the original
-
-This is not an unchanged copy of the original mod. The target environment requires substantial
-port-specific work, including:
-
-- replacing loader-specific events, networking, permissions, tags, and reload APIs;
-- adapting mixins to the methods exposed by the Fabric TaCZ port;
-- redesigning mutable sound-request state and cache lifecycles;
-- integrating current shield, enchantment, prone-rendering, and block-break behavior;
-- restoring data-driven managers and legacy-schema conversion;
-- synchronizing server-controlled settings;
-- adding static audits, behavior and codec tests, server-log checks, and asset-provenance gates.
-
-## Requirements
-
-Install the file matching your Minecraft and Fabric environment. Required dependencies include
-Fabric API, Fabric Language Kotlin, TaCZ Refabricated Unofficial, and YetAnotherConfigLib.
-
-Exact game, loader, Java, and dependency requirements are listed on each uploaded file. Do not
-infer compatibility from the project name or from an old screenshot.
-
-Optional integration is available for Mod Menu, Sound Physics Remastered, First Aid New, and
-Pillager's Gun when a compatible release is installed. These integrations do not grant permission
-to redistribute third-party projects or their assets.
-
-## Support and issue reports
-
-Please report only problems specific to this port. Before submitting:
-
-1. search open and closed issues;
-2. test with only this mod and its required dependencies;
-3. verify whether the problem still occurs after removing this port;
-4. collect the complete log or crash report;
-5. record exact versions, minimal reproduction steps, the affected side, configuration changes,
-   and all third-party content involved.
-
-Screenshots and isolated error lines cannot replace a complete log. Problems introduced by this
-port should not be reported to the original TaCZ Tweaks, TaCZ, or compatibility-mod authors.
-
-## Credits and license
-
-Original TaCZ Tweaks was created by MUKSC. This derivative port is distributed under the GNU
-General Public License v3.0. The project icon and bundled third-party resources retain their
-documented authorship and licenses. See the source repository's third-party notices for details.
-
-## Project links
-
-- Original project: https://github.com/MUKSC/TaCZTweaks
-- Port source: https://github.com/q14433686-arch/TaCZTweaks_Unofficial
-- Documentation: https://github.com/q14433686-arch/TaCZTweaks_Unofficial/tree/HEAD/docs
-- Issue tracker: https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues
-
-The links above provide source code, attribution, documentation, and support. Mod files should be
-downloaded from this CurseForge project page rather than from an external file link.
-
-## AI-assisted page disclosure
-
-This project-page description was drafted with generative AI assistance and reviewed by the
-project maintainer. The licensed upstream project icon is not AI-generated or AI-modified.
-```
-
-## CurseForge fields and moderation checklist
-
-- **Project type:** Mods
-- **Mod loader:** Fabric
-- **License:** GNU General Public License v3.0
-- **Required relations:** Fabric API, Fabric Language Kotlin, TaCZ Refabricated Unofficial, YetAnotherConfigLib
-- **Optional relations:** only integrations applicable to the uploaded file
-- **Source and Issues:** use the dedicated project fields as well as the links at the bottom
-- **Files:** tag every upload with its exact game version, loader and release status
-- **Avatar:** use the licensed square icon from this repository
-- **Description:** do not add external jar download links
-
-若 CurseForge 无法为某个依赖建立 Relation，不应把它伪装成可选依赖；应在文件说明和正文中明确其必需性，并等待平台审核或依赖项目上线。
+- Game version: exactly the value declared by the file.
+- Mod loader: NeoForge.
+- Required relations: TaCZ: Renovated and YetAnotherConfigLib.
+- Optional relations: only integrations inside the file's declared ranges.
+- Release type and validation wording: match `CHANGELOG.md`.
+- Upload only the release jar; publish the example pack as a clearly separate artifact if desired.

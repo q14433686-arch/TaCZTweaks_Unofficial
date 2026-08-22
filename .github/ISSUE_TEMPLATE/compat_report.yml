@@ -31,7 +31,7 @@ body:
   - type: input
     id: mod_version
     attributes:
-      label: TaCZ Tweaks (Refabricated) 完整版本
+      label: TaCZ Tweaks (Renovated) 完整版本
     validations:
       required: true
 

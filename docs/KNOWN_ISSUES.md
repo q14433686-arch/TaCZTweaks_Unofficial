@@ -1,32 +1,78 @@
-# Known issues
+# Known issues and validation gaps
 
-This page is for user-facing limitations. Porting debates and obsolete investigation notes belong
-in `AUDIT.md`, `PORTING_NOTES.md`, or handoff files.
+## NeoForge 26.2 has not passed build or runtime gates yet
 
-## Dedicated-server startup is not yet automated in CI
+The code and dependency surfaces have been translated and checked statically, but this sandbox has no
+JDK 25 and cannot reach Maven/Modrinth/GitHub release-asset binary endpoints. The following remain
+**not run** for 26.2:
 
-The repository has a server-log checker, but GitHub Actions currently runs static audit, checksum
-checks and Gradle builds only. Dedicated-server startup remains a manual pre-release gate until a
-server smoke workflow is added.
+- `./gradlew test`
+- `./gradlew build`
+- client main-menu startup
+- dedicated-server startup and `scripts/check_server_log.py`
+- gun / ADS / reload / unload / config screen / datapack reload smoke scenarios
 
-## Optional compatibility claims are version-bounded
+The client-load PASS of the 26.1.2 NeoForge skeleton is not a 26.2 PASS.
 
-Sound Physics Remastered, First Aid New and Pillager's Gun support is limited to the ranges in
-`fabric.mod.json` and `docs/COMPATIBILITY.md`. Reports outside those ranges should first reproduce
-inside the declared range.
+## Block-break protection is weaker than on Fabric
 
-## Removed legacy compatibility switches
+Fabric exposes `PlayerBlockBreakEvents.BEFORE / CANCELED / AFTER`. NeoForge 26.2.x exposes the
+cancellable `net.neoforged.neoforge.event.level.block.BreakBlockEvent`, fired for the break attempt,
+but no equivalent three-phase chain.
 
-The following old options are intentionally not supported in this Fabric 26.2 port:
+Bullet/melee block destruction therefore checks `Level#mayInteract` and posts a `BreakBlockEvent`.
+Claim/protection mods that rely on Fabric's canceled/after notifications may not receive an equivalent
+callback. Internal break-progress cleanup listens at `EventPriority.LOWEST` and ignores canceled
+events, which only approximates “the block is about to be removed.” Specific protection mods are
+untested. This is a documented semantic downgrade, not a completed compatibility fix.
 
-- `thirdPersonGunRenderingFix` — TaCZ Refabricated R2 already fixes the target behavior.
-- `lsoCompat` — no supported Legendary Survival Overhaul Fabric 26.2 target.
-- `mtsFix` — no supported MTS / Immersive Vehicles Fabric 26.2 target.
-- `vsCollisionCompat` and `vsExplosionCompat` — no supported Valkyrien Skies Fabric 26.2 target.
+## Shield durability depends on a NeoForge-patched call site
 
-If these keys remain in an old JSON config, remove them to avoid confusion.
+NeoForge 26.2.x patches `LivingEntity#applyItemBlocking` to invoke the six-argument overload:
 
-## Data-pack errors fail by reload diagnostics
+```text
+BlocksAttacks#hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, float, int)
+```
 
-The data-driven systems are strict enough to reject malformed codecs. Keep a minimal test pack and
-attach the relevant reload log when filing issues.
+The six-argument wrap is the primary path. A five-argument wrap remains with `require = 0` as a
+vanilla/unpatched fallback. If neither target matches, the mod logs a one-time warning when a shield
+rule resolves. Build and client mixin application still need to prove the 26.2 compiled descriptor.
+
+## Optional integrations are source-checked, not runtime-verified
+
+Sound Physics Remastered, First Aid New, Pillager's Gun and bundled LRTactical have gated code paths.
+Their 26.2 source/API surfaces were located, but the published jars and behavior have not been tested
+with this port. Stay inside `docs/COMPATIBILITY.md` ranges and attach full logs to reports.
+
+## Pending dependency digests block release
+
+`RESOURCE_IMPORT_MANIFEST.tsv` uses `pending` for binaries that this sandbox could not download.
+Before a release, replace every pending digest with the SHA-256 of the exact artifact and rerun both
+dependency and release-consistency checks. The TaCZ digest is copied from GitHub's release asset API,
+but should still be re-hashed on the release machine.
+
+## YACL is required on dedicated servers too
+
+Although only clients render the config screen, shared config persistence/sync classes extend YACL
+config types. `neoforge.mods.toml` therefore marks YACL required on BOTH physical sides. Omitting it
+from a dedicated server is unsupported.
+
+## Kotlin runtime is embedded
+
+NeoForge has no Fabric Language Kotlin equivalent here. The release jar uses `jarJar` for
+`kotlin-stdlib 2.4.10`; release-jar inspection and coexistence with other mods embedding Kotlin have
+not yet been tested on NeoForge 26.2.
+
+## Removed legacy switches
+
+The following options are not shipped:
+
+- `thirdPersonGunRenderingFix`
+- `lsoCompat`
+- `mtsFix`
+- `vsCollisionCompat`
+- `vsExplosionCompat`
+
+LSO, MTS and Valkyrien Skies targets were not re-verified for this NeoForge 26.2 port, so they are
+listed as unsupported rather than represented by empty/no-op switches. Remove stale keys from old
+JSON configuration files.

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Static audit for the Fabric 26.2 TaCZ Tweaks port.
+"""Static audit for the NeoForge 26.2 TaCZ Tweaks port.
 
 The script deliberately uses only the Python standard library so it can run before
 Gradle in CI.  It catches the easy-to-miss failures that compilation alone does not:
 
 * mixin classes omitted from (or misspelled in) the mixin JSON;
 * mixins aimed at methods absent from the bundled TaCZ/LRTactical jar;
-* common mixins aimed at @Environment(CLIENT) methods stripped on dedicated servers;
-* config switches which are persisted/synchronised but never read by behaviour code;
-* language-file drift;
-* mod-icon content, metadata, dimensions, and license-provenance drift;
-* a bundled MixinExtras version lower than the mixin config's declared minimum.
+ * common mixins aimed at @OnlyIn(Dist.CLIENT) methods stripped on dedicated servers;
+ * config switches which are persisted/synchronised but never read by behaviour code;
+ * language-file drift;
+ * mod-icon content, metadata, dimensions, and license-provenance drift;
+ * a bundled MixinExtras version lower than the mixin config's declared minimum.
 
-Pass --minecraft-jar after Loom has prepared Minecraft to validate vanilla mixin
-method names too. Pass --upstream-root with a TaCZTweaks v2.14.2 checkout to print a
+Pass --minecraft-jar (the ModDevGradle-produced Minecraft artifact) to validate vanilla
+mixin method names too. Pass --upstream-root with a TaCZTweaks v2.14.2 checkout to print a
 source inventory comparison; that report is informational because many upstream
 mixins were intentionally merged or redesigned in this port.
 """
@@ -32,13 +32,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_mod_icon import validate_icon
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src/main"
 MIXIN_ROOT = SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin"
 MIXIN_JSON = SOURCE_ROOT / "resources/tacztweaks.mixins.json"
-TA_CZ_JAR = ROOT / "libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar"
+TA_CZ_JAR = ROOT / "libs/tacz-1.1.8+neoforge.26.2.R1.jar"
+MOD_METADATA = ROOT / "src/main/templates/META-INF/neoforge.mods.toml"
 CONFIG = SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt"
 
 # Any intentionally persisted but dormant legacy fields must be justified here. The
@@ -181,9 +183,9 @@ def read_class_info(raw: bytes) -> ClassInfo:
         try:
             for _ in range(read_u2()):
                 annotation_type, values = read_annotation()
-                if annotation_type != "Lnet/fabricmc/api/Environment;":
+                if annotation_type != "Lnet/neoforged/api/distmarker/OnlyIn;":
                     continue
-                if ("Lnet/fabricmc/api/EnvType;", "CLIENT") in values:
+                if ("Lnet/neoforged/api/distmarker/Dist;", "CLIENT") in values:
                     return True
         except (IndexError, struct.error, ValueError):
             return False
@@ -572,7 +574,7 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
             # Vanilla targets cannot be checked before a Minecraft jar is supplied.
             if target.startswith("net.minecraft.") and not any("minecraft" in p.name for p in jars.paths):
                 continue
-            (errors if strict else warnings).append(message)
+            (errors if (strict and jars.paths) else warnings).append(message)
             continue
         if source_name in common_mixins:
             if info.client_only_class:
@@ -688,26 +690,6 @@ def audit_config_usage() -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
-def audit_firstaid_shader_overrides() -> list[str]:
-    errors: list[str] = []
-    shader_dir = SOURCE_ROOT / "resources/assets/firstaid/shaders/post"
-    expected = {
-        "pain_pulse_blur.fsh": "BlurSettings",
-        "saturation_boost.fsh": "SaturationSettings",
-    }
-    for name, required_block in expected.items():
-        path = shader_dir / name
-        if not path.is_file():
-            errors.append(f"missing First Aid 26.2 shader compatibility override: {name}")
-            continue
-        text = path.read_text(encoding="utf-8")
-        if "dynamictransforms.glsl" in text or "DynamicTransforms" in text:
-            errors.append(f"{name} reintroduces the unsupported DynamicTransforms block")
-        if required_block not in text:
-            errors.append(f"{name} no longer defines required block {required_block}")
-    return errors
-
-
 def audit_languages() -> list[str]:
     errors: list[str] = []
     lang_dir = SOURCE_ROOT / "resources/assets/tacztweaks/lang"
@@ -732,20 +714,29 @@ def audit_versions(config: dict) -> list[str]:
         if "=" in line and not line.lstrip().startswith("#"):
             key, value = line.split("=", 1)
             properties[key.strip()] = value.strip()
+    # NeoForge ships MixinExtras itself, so there is no bundled version property to compare
+    # against; the mixin JSON minimum is only informational on this loader.
     required = config.get("mixinextras", {}).get("minVersion")
     bundled = properties.get("mixinextras_version")
     if required and bundled and version_tuple(bundled) < version_tuple(required):
         errors.append(f"MixinExtras {bundled} is lower than mixin JSON minimum {required}")
 
+    expected_platform = {
+        "minecraft_version": "26.2",
+        "minecraft_version_range": "[26.2]",
+        "neo_version": "26.2.0.64",
+        "neo_version_range": "[26.2.0.64,)",
+        "kotlin_version": "2.4.10",
+    }
+    for key, expected in expected_platform.items():
+        if properties.get(key) != expected:
+            errors.append(f"gradle.properties {key} must be {expected}, got {properties.get(key)!r}")
+
     mod_version = properties.get("mod_version")
     if not mod_version:
         errors.append("gradle.properties is missing mod_version")
         return errors
-    version_pattern = (
-        r"\d+\.\d+\.\d+\+fabric\.26\.2\."
-        r"(?:R\d+(?:-[0-9A-Za-z]+)*"
-        r"|Beta-\d+(?:-[0-9A-Za-z]+)*)"
-    )
+    version_pattern = r"\d+\.\d+\.\d+\+neoforge\.26\.2\.(?:R\d+|Beta-\d+)(?:-[A-Za-z0-9]+)?"
     if not re.fullmatch(version_pattern, mod_version):
         errors.append(f"mod_version has an unexpected 26.2 format: {mod_version}")
 
@@ -766,15 +757,49 @@ def audit_versions(config: dict) -> list[str]:
 
 def audit_release_guards() -> list[str]:
     errors: list[str] = []
-    metadata = json.loads((SOURCE_ROOT / "resources/fabric.mod.json").read_text(encoding="utf-8"))
-    dependencies = metadata.get("depends", {})
-    if dependencies.get("tacz") != "=1.1.8+fabric.26.2.R2":
-        errors.append("fabric.mod.json must require the exact TaCZ R2 hook surface")
-    if metadata.get("suggests", {}).get("firstaid") != ">=1.3.0 <1.4.0":
-        errors.append("First Aid shader override is not constrained to the verified 1.3.x range")
-    firstaid_breaks = set(metadata.get("breaks", {}).get("firstaid", []))
-    if firstaid_breaks != {"<1.3.0", ">=1.4.0"}:
-        errors.append("unsupported First Aid versions are not blocked from shader override")
+    metadata = MOD_METADATA.read_text(encoding="utf-8")
+    if 'modId="tacz"' not in metadata:
+        errors.append("neoforge.mods.toml does not declare the required tacz dependency")
+    if 'versionRange="[3.9.5,3.10.0)"' not in metadata:
+        errors.append("YACL is not constrained to the NeoForge 26.2-compatible 3.9.x range")
+    if 'versionRange="[1.3.0,1.4.0)"' not in metadata:
+        errors.append("First Aid compatibility is not constrained to the source-checked 1.3.x range")
+    if 'versionRange="[1.5.1,1.6.0)"' not in metadata:
+        errors.append("Sound Physics compatibility is not constrained to the source-checked 1.5.1 range")
+    if 'versionRange="[3.3.5,3.4.0)"' not in metadata:
+        errors.append("Pillager's Gun compatibility is not constrained to the 26.2 3.3.5 line")
+    yacl_block = re.search(
+        r'\[\[dependencies\.\$\{mod_id\}\]\]\s+modId="yet_another_config_lib_v3"(?P<body>.*?)(?=\n\[\[|\Z)',
+        metadata,
+        re.S,
+    )
+    if yacl_block is None or 'side="BOTH"' not in yacl_block.group("body"):
+        errors.append("YACL must be required on BOTH sides because common config types extend YACL")
+
+    common_client_free = [
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt",
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/ConfigManager.kt",
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/network/NetworkHandler.kt",
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/network/message/ServerMessageBroadcastSound.kt",
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/network/message/ServerMessageSyncConfig.kt",
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/compat/soundphysics/network/message/ServerMessageAirspaceSounds.kt",
+        SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/compat/soundphysics/network/message/ServerMessageSoundPhysicsRequired.kt",
+    ]
+    forbidden_client_tokens = ("net.minecraft.client", "net.neoforged.neoforge.client")
+    for path in common_client_free:
+        text = path.read_text(encoding="utf-8")
+        for token in forbidden_client_tokens:
+            if token in text:
+                errors.append(f"common/server-loadable source references client API {token}: {path.relative_to(ROOT)}")
+    bridge = SOURCE_ROOT / "java/me/muksc/tacztweaks/network/ClientPacketBridge.java"
+    if not bridge.is_file() or "Class.forName" not in bridge.read_text(encoding="utf-8"):
+        errors.append("dedicated-safe ClientPacketBridge is missing")
+
+    # The exact TaCZ release family gate cannot be expressed in the toml range; it lives in
+    # TaczVersionSupport and must stay in sync with the shipped dependency.
+    gate = (SOURCE_ROOT / "java/me/muksc/tacztweaks/TaczVersionSupport.java").read_text(encoding="utf-8")
+    if 'EXPECTED_FAMILY = "neoforge.26.2"' not in gate or "MIN_REVISION = 1" not in gate:
+        errors.append("TaczVersionSupport no longer pins the NeoForge 26.2 R1+ release family")
 
     wrapper = (ROOT / "gradle/wrapper/gradle-wrapper.properties").read_text(encoding="utf-8")
     expected_gradle_sum = "bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f"
@@ -812,12 +837,14 @@ def audit_release_guards() -> list[str]:
     if re.search(r"(?i)\b(?:alpha|beta|release[ -]candidate)[ -]?\d+\b", publication_text):
         errors.append("publication copy must not embed a numbered release stage")
 
+    # The NeoForge test source set is not fed through ModDevGradle, so only tests that need
+    # no Minecraft classes survive (the Minecraft-bootstrapping codec/example-pack tests were
+    # dropped with the Fabric build; see docs/records/NEOFORGE_26_1_2_PORT_PLAN.md).
     required_tests = {
         "src/test/kotlin/me/muksc/tacztweaks/core/SafeMathTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/core/StackSplitterTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/core/ProjectileIndexAllocatorTest.kt",
-        "src/test/kotlin/me/muksc/tacztweaks/client/sound/MonoConversionTest.kt",
-        "src/test/kotlin/me/muksc/tacztweaks/data/CodecSmokeTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/TaczVersionSupportTest.kt",
     }
     for name in sorted(required_tests):
         if not (ROOT / name).is_file():
@@ -829,31 +856,24 @@ def audit_release_guards() -> list[str]:
         "tacz-tweaks-example-pack/assets/tacztweaks/sounds/whizz/near1.ogg",
         "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
         "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
-        "src/test/resources/fixtures/schema_smoke.json",
-        "src/test/resources/fixtures/airspace.json",
     }
     for name in sorted(required_fixtures):
         if not (ROOT / name).is_file():
             errors.append(f"missing restored-schema smoke fixture: {name}")
 
-    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+    build_script = (ROOT / "build.gradle").read_text(encoding="utf-8")
     if "examplePackZip" not in build_script:
         errors.append("build does not package the example pack")
-    if "stagedTestRuntimeDir" not in build_script or "gradle.gradleUserHomeDir" not in build_script:
-        errors.append("Gradle test worker runtime is not staged away from non-ASCII project paths")
-    fixture_pairs = (
-        (
-            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_interactions/schema_smoke.json",
-            ROOT / "src/test/resources/fixtures/schema_smoke.json",
-        ),
-        (
-            ROOT / "tacz-tweaks-example-pack/data/tacztweaks/bullet_sounds/airspace.json",
-            ROOT / "src/test/resources/fixtures/airspace.json",
-        ),
-    )
-    for example, test_fixture in fixture_pairs:
-        if example.read_bytes() != test_fixture.read_bytes():
-            errors.append(f"test fixture has drifted from example pack: {test_fixture.relative_to(ROOT)}")
+    if "net.neoforged.moddev" not in build_script:
+        errors.append("build no longer applies ModDevGradle")
+    if "fabric-loom" in build_script:
+        errors.append("build still applies Fabric Loom")
+    if "JavaLanguageVersion.of(25)" not in build_script:
+        errors.append("Gradle Java toolchain is not pinned to JDK 25")
+    if "jarJar \"org.jetbrains.kotlin:kotlin-stdlib" not in build_script:
+        errors.append("kotlin-stdlib is not embedded (NeoForge has no Fabric Language Kotlin)")
+    if "checkVendoredDependencies" not in build_script:
+        errors.append("build does not verify the libs/ dependency digests")
     if not (ROOT / "scripts/check_server_log.py").is_file():
         errors.append("missing dedicated-server log gate")
     if not (ROOT / "THIRD_PARTY_NOTICES.md").is_file():
@@ -959,17 +979,46 @@ def find_minecraft_jars(explicit: list[str]) -> list[Path]:
     return paths
 
 
+TACZ_VERSION_PATTERN = re.compile(
+    r"^1\.1\.8\+neoforge\.26\.2\.[rR][1-9][0-9]*(?:-[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)*$"
+)
+
+
+def audit_tacz_artifact(path: Path) -> list[str]:
+    """Reject a similarly-shaped jar from another Minecraft branch or TaCZ revision."""
+    errors: list[str] = []
+    if not path.is_file():
+        return [f"TaCZ audit artifact is missing: {path} (see libs/README.txt)"]
+    try:
+        with zipfile.ZipFile(path) as jar:
+            metadata = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
+    except (OSError, KeyError, zipfile.BadZipFile, UnicodeDecodeError) as error:
+        return [*errors, f"cannot read TaCZ neoforge.mods.toml from {path}: {error}"]
+    mod_id = re.search(r'^modId\s*=\s*"([^"]+)"', metadata, re.MULTILINE)
+    version = re.search(r'^version\s*=\s*"([^"]+)"', metadata, re.MULTILINE)
+    mod_id_value = mod_id.group(1) if mod_id else None
+    version_value = version.group(1) if version else None
+    if mod_id_value != "tacz" or not (version_value and TACZ_VERSION_PATTERN.match(version_value)):
+        errors.append(
+            "TaCZ audit artifact is not a NeoForge 26.2 TaCZ build: "
+            f"modId={mod_id_value!r}, version={version_value!r}"
+        )
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--strict", action="store_true", help="fail on target-class/method mismatches")
+    parser.add_argument("--tacz-jar", type=Path, default=TA_CZ_JAR, help="exact TaCZ R2 jar to inspect")
     parser.add_argument("--minecraft-jar", action="append", default=[], help="Loom Minecraft jar to inspect")
     parser.add_argument("--upstream-root", type=Path, help="optional MUKSC/TaCZTweaks v2.14.2 checkout")
     args = parser.parse_args()
 
     errors: list[str] = []
     warnings: list[str] = []
+    errors.extend(audit_tacz_artifact(args.tacz_jar))
     config = json.loads(MIXIN_JSON.read_text(encoding="utf-8"))
-    jar_paths = [TA_CZ_JAR, *find_minecraft_jars(args.minecraft_jar)]
+    jar_paths = [args.tacz_jar, *find_minecraft_jars(args.minecraft_jar)]
     jars = JarIndex(jar_paths)
     try:
         mixin_errors, mixin_warnings = audit_mixins(config, jars, args.strict)
@@ -981,7 +1030,6 @@ def main() -> int:
     errors.extend(config_errors)
     warnings.extend(config_warnings)
     errors.extend(audit_languages())
-    errors.extend(audit_firstaid_shader_overrides())
     errors.extend(audit_versions(config))
     errors.extend(audit_release_guards())
     errors.extend(validate_icon())

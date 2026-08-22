@@ -2,12 +2,12 @@ package me.muksc.tacztweaks.compat.soundphysics.network.message
 
 import io.netty.handler.codec.DecoderException
 import me.muksc.tacztweaks.TaCZTweaks
-import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat
-import net.minecraft.client.Minecraft
+import me.muksc.tacztweaks.network.ClientPacketBridge
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.network.handling.IPayloadContext
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.level.Level
@@ -73,9 +73,14 @@ class ServerMessageAirspaceSounds(
             { buf -> ServerMessageAirspaceSounds(buf) }
         )
 
-        fun handle(msg: ServerMessageAirspaceSounds, client: Minecraft) {
-            if (!SoundPhysicsCompat.isEnabled()) return
-            client.execute { SoundPhysicsCompat.play(client, msg) }
+        fun handle(msg: ServerMessageAirspaceSounds, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                ClientPacketBridge.invoke(
+                    "onAirspaceSounds",
+                    arrayOf<Class<*>>(ServerMessageAirspaceSounds::class.java),
+                    msg
+                )
+            }
         }
     }
 

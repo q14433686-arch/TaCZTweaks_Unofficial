@@ -8,13 +8,13 @@ standalone and as part of the Gradle verification lifecycle.
 from __future__ import annotations
 
 import hashlib
-import json
+import re
 import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = ROOT / "src/main/resources"
-METADATA = RESOURCES / "fabric.mod.json"
+METADATA = ROOT / "src/main/templates/META-INF/neoforge.mods.toml"
 NOTICE = ROOT / "THIRD_PARTY_NOTICES.md"
 
 ICON_PATH = "icon.png"
@@ -33,14 +33,16 @@ def validate_icon() -> list[str]:
     errors: list[str] = []
 
     try:
-        metadata = json.loads(METADATA.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        metadata = METADATA.read_text(encoding="utf-8")
+    except OSError as exc:
         return [f"cannot read {METADATA.relative_to(ROOT)}: {exc}"]
 
-    configured_icon = metadata.get("icon")
+    # NeoForge declares the icon as logoFile in neoforge.mods.toml.
+    match = re.search(r'^logoFile\s*=\s*"([^"]+)"', metadata, re.MULTILINE)
+    configured_icon = match.group(1) if match else None
     if configured_icon != ICON_PATH:
         errors.append(
-            f"fabric.mod.json icon must be {ICON_PATH!r}, not {configured_icon!r}"
+            f"neoforge.mods.toml logoFile must be {ICON_PATH!r}, not {configured_icon!r}"
         )
 
     icon = RESOURCES / ICON_PATH
