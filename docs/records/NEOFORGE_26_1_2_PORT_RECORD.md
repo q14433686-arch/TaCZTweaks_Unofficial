@@ -149,6 +149,49 @@ python3 scripts/audit_port.py                -> 1 error / 63 warning
   `RESOURCE_IMPORT_MANIFEST.tsv`，并注明"取自维护者下载，未与上游公布校验值交叉核对"。
   YACL 条目的文件名已改为实际拼写，摘要仍为 `pending`。
 
+## 4.3 首次实机加载反馈（2026-08-23，客户端 26.1.2 + NeoForge 26.1.2.97）
+
+**加载已经推进到 mixin 应用阶段**：jar 被 FML 识别为
+`TaCZ Tweaks (Renovated) 2.14.2+neoforge.26.1.2.Beta-1`，内嵌的 `kotlin-stdlib-2.4.10.jar`
+被 jar-in-jar 正确展开，mixin `Compatibility level set to JAVA_25` 被接受，
+`TaczVersionSupport` 版本门放行了 `tacz 1.1.8+neoforge.26.1.2.R1`。
+
+**崩溃点**：`features.bullet_interactions.LivingEntityMixin` 的
+`tacztweaks$applyItemBlocking$customDurability` ——
+`Critical injection failure ... (0/1) succeeded. Scanned 0 target(s).`
+
+根因（NeoForge 对原版打的补丁，分支 `26.1.x`）：
+
+- `patches/net/minecraft/world/item/component/BlocksAttacks.java.patch` 新增重载
+  `hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, float, int fixedDamage)`；
+- `patches/net/minecraft/world/entity/LivingEntity.java.patch` 把 `applyItemBlocking` 里的调用
+  改成了这个 6 参重载，传入 `CommonHooks.onDamageBlock(...)` 返回的 `ev.shieldDamage()`。
+
+因此只认原版 5 参描述符 `(…F)V` 的 wrap 一个目标都扫不到。处置：
+
+1. 新增 6 参 wrap（`…FI)V`）作为 NeoForge 主路径，并且**不再自己重写耐久逻辑**——把自定义耐久值
+   当作 `fixedDamage` 传回 `original.call(...)`，让 NeoForge 自己的 `hurtAndBreak` +
+   `onPlayerDestroyItem` + 破盾修复照常执行；
+2. 原 5 参 wrap 保留为 `require = 0` 的回退（万一某个构建仍用原版调用点）；
+3. 两个 wrap 都 `require = 0` 会带来"静默失效"风险，因此在 RETURN 处新增一次性 `LOGGER.warn`：
+   当数据包解析出了盾牌规则、却没有任何耐久 wrap 命中时明确告警，而不是安静地少一个功能。
+
+**顺带对其余注入原版类的 mixin 做了 NeoForge patch 核对**（同一分支的 `patches/` 目录）：
+
+| 目标 | NeoForge 是否打补丁 | 我们的注入点是否受影响 |
+|---|---|---|
+| `LivingEntity#applyItemBlocking` | 是 | **是**（已修，见上） |
+| `EnderMan#hurtServer` | 该类有补丁 | 否（补丁只动 `setTarget` / `isBeingStaredBy` / 搬运 AI） |
+| `EnchantmentHelper#getDamageProtection` | 该类有补丁 | 否（补丁未触及该方法） |
+| `LocalPlayer#tick` / `aiStep` | 该类有补丁 | 否 |
+| `MouseHandler#turnPlayer` / `handleAccumulatedMovement` | 该类有补丁 | 否（补丁只动屏幕鼠标事件/滚轮/拖拽） |
+| `SoundBufferLibrary` / `ClipContext` / `AvatarRenderer` | 无补丁 | 否 |
+
+另外重跑了一次"注入点落在 Renovated 对应方法体内"的加强版静态核对：没有发现 TaCZ 侧调用点漂移
+（脚本对 lambda 与构造器有解析局限，逐个人工复核了 `EntityUtil#findEntitiesOnPath`、
+`EntityKineticBullet#createDamageSources`、`AdsModifier#initCache/getPropertyDiagramsData`、
+`GunSoundInstance` 的两个构造器描述符，均存在且形参一致）。
+
 ## 5. 未来提交者注意
 
 1. 源码里仍有若干注释描述的是 **Refabricated**（Fabric 目标端）的方法/lambda 命名由来；
