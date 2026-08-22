@@ -2,8 +2,8 @@
 
 本模组是 **TaCZ Tweaks 的 Fabric 26.2 移植版**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
-`2.14.2+fabric.26.2.Beta-1`。
+当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
+`2.14.2+fabric.26.2.Beta-1-hotfix`。
 
 ---
 
@@ -58,7 +58,8 @@
 ```
 https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2
 ```
-下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）
+下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）。R2 及之后的
+同一 `1.1.8+fabric.26.2.R<n>` 发布版本（包括 `R2-hotfix`）也受支持，运行时要求 revision 不低于 R2。
 
 ### ② YACL 配置库（implementation，配置 GUI）
 
@@ -114,8 +115,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1-hotfix.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁

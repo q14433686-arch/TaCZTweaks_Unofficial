@@ -4,7 +4,7 @@ All notable changes to this unofficial Fabric port are tracked here. Release ent
 be user-facing and concise; keep detailed process notes in `docs/maintenance/` or the
 handoff/audit documents.
 
-## 2.14.2+fabric.26.2.Beta-1 - Unreleased
+## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
 
 ### Added
 
@@ -28,6 +28,8 @@ handoff/audit documents.
 
 ### Fixed
 
+- TaCZ `1.1.8+fabric.26.2.R2-hotfix` is accepted alongside the pinned R2 build; the previous
+  startup guard no longer rejects the official hotfix release.
 - Release metadata now includes homepage, source and issue links, plus a separate maintainer
   contributor entry.
 - `LICENSE` and `THIRD_PARTY_NOTICES.md` are packaged into the release jar under `META-INF/`.
@@ -39,7 +41,8 @@ handoff/audit documents.
 - Fabric Loader: `>=0.19.3 <0.20.0`
 - Fabric API: `>=0.155.2+26.2 <0.157.0`
 - Java: `>=25`
-- TaCZ Refabricated Unofficial: exactly `1.1.8+fabric.26.2.R2`
+- TaCZ Refabricated Unofficial: `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same
+  release family
 - Fabric Language Kotlin: `>=1.13.13 <1.14.0`
 - YetAnotherConfigLib: exactly `3.9.6+26.2-fabric`
 

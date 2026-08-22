@@ -16,7 +16,7 @@ authors. Install the exact dependencies listed below before filing issues. Start
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-当前测试版本：**Beta-1**（`2.14.2+fabric.26.2.Beta-1`）。
+当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.2.Beta-1-hotfix`）。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
 
@@ -85,7 +85,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 | 必需 | Minecraft | 26.2 |
 | 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
 | 必需 | Fabric API | >=0.155.2+26.2、<0.157.0 |
-| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.2.R2**（精确验证完整版本字符串） |
+| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.2.R2 及之后的 R<n> 版本**（运行时按当前 26.2 发布系列校验） |
 | 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
 | 必需 | YetAnotherConfigLib | 3.9.6+26.2-fabric |
 | 可选 | Sound Physics Remastered | 1.5.1+26.2 Fabric |
@@ -101,7 +101,7 @@ python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、
