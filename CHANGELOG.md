@@ -4,7 +4,7 @@ All notable changes to this unofficial Fabric 1.21.11 port are tracked here. Rel
 should be user-facing and concise; keep detailed process notes in `docs/maintenance/` or
 `PORTING_NOTES.md`.
 
-## 2.14.2+fabric.1.21.11.Beta-1 - Unreleased
+## 2.14.2+fabric.1.21.11.Beta-1-hotfix - Unreleased
 
 ### Added
 

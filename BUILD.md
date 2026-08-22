@@ -6,7 +6,7 @@
 
 > 其余两个分支（26.2 / 26.1.2，未混淆版）用 **JDK 25**；**本 1.21.11 分支必须用 JDK 21**。
 >
-> 当前测试版本统一对齐为 **Beta-1**：`2.14.2+fabric.1.21.11.Beta-1`
+> 当前测试版本统一对齐为 **Beta-1-hotfix**：`2.14.2+fabric.1.21.11.Beta-1-hotfix`
 
 ---
 
@@ -51,7 +51,7 @@ gradlew.bat build -Ptacztweaks.python=C:\Python312\python.exe
 
 ## 2. 拿到源码
 
-- **下载 zip**：从 Release 页下载 `tacztweaks-2.14.2+fabric.1.21.11.Beta-1-src.zip`，解压；
+- **下载 zip**：从 Release 页下载 `tacztweaks-2.14.2+fabric.1.21.11.Beta-1-hotfix-src.zip`，解压；
 - **git clone**：
   ```powershell
   git clone https://github.com/q14433686-arch/TaCZTweaks_Unofficial.git
@@ -116,8 +116,8 @@ gradlew.bat build
 成功后产物：
 
 ```text
-build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1.jar
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
+build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1-hotfix.jar
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1-hotfix.zip
 ```
 
 本分支使用 `fabric-loom-remap`，上面的 jar 是 **remapJar** 发布产物。

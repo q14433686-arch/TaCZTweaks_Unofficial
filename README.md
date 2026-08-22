@@ -17,7 +17,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 原项目：**[MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks)**（Forge 1.20.1 / TaCZ 1.1.8），
 代码遵循 **GPL-3.0** 发布。本项目与 MUKSC、TACZ Dev Team 无从属或背书关系。
 
-当前测试版本：**Beta-1**（`2.14.2+fabric.1.21.11.Beta-1`）。
+当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.1.21.11.Beta-1-hotfix`）。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
 
@@ -55,7 +55,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - 恢复 `betterMonoConversion`：把 TaCZ 的 mono 标记重新接回 `GunSoundInstance` → `SoundBufferLibrary` PCM downmix 路径，并按 1.21.11 源码验证 `SoundBuffer` 构造点；
 - 恢复 First Aid / Pillager’s Gun / Sound Physics Remastered 可选兼容代码路径；
 - 增加 dedicated-server 日志门禁脚本、混淆端口审计脚本、JUnit 基础测试脚手架与 ASCII `GRADLE_USER_HOME` test staging；
-- 版本号与说明文档统一对齐到 **Beta-1** 命名，并修正文档中遗留的版本/依赖描述错误。
+- 版本号与说明文档统一对齐到 **Beta-1-hotfix** 命名，并修正文档中遗留的版本/依赖描述错误。
 
 ---
 
@@ -104,8 +104,8 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 python3 scripts/download_dependencies.py --check-only
 python3 scripts/check_release_consistency.py
 ./gradlew build
-# 产物：build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1.jar
-# 示例包：build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1.zip
+# 产物：build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1-hotfix.jar
+# 示例包：build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1-hotfix.zip
 ```
 
 本分支的发布产物是 Loom **remapJar**（混淆环境），不是 26.x 的未 remap jar。

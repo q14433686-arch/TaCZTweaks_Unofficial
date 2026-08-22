@@ -670,7 +670,7 @@ def audit_versions(config: dict) -> tuple[list[str], list[str]]:
         errors.append(f"MixinExtras {bundled} is lower than mixin JSON minimum {required}")
 
     mod_version = properties.get("mod_version", "")
-    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.1\.21\.11\.(?:R\d+|Beta-\d+)", mod_version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.1\.21\.11\.(?:R\d+|Beta-\d+(?:-hotfix)?)", mod_version):
         errors.append(f"unexpected mod_version format: {mod_version}")
 
     readme_text = (ROOT / "README.md").read_text(encoding="utf-8")
