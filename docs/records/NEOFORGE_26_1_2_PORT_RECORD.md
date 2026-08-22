@@ -127,6 +127,28 @@ python3 scripts/audit_port.py                -> 1 error / 63 warning
 **仍未验证**：补齐 jar 之后的实际编译结果。第一轮构建只证明了 MDG/NeoForge 26.1.2 环境本身能
 起来（`createMinecraftArtifacts` 成功）以及 Kotlin 2.4.10 + JDK 25 工具链可用。
 
+## 4.2 第二、三轮构建反馈（2026-08-23）
+
+- **依赖识别**：`libs/` 里的 jar 改为按文件名关键词匹配，且匹配前忽略 `-` `_` `.` 与空格
+  （维护者的 YACL 文件名是 `yet_another_config_lib_v3-...`，下划线拼写）。名字含 `fabric`
+  的文件一律忽略，防止误用 Fabric 版编译。四个必需件已全部识别成功。
+- **真实 API 缺口（计划文档 §2 标注"仍缺证据"的那一条得到证实）**：
+  NeoForge 26.1.x **没有** `BlockEvent.BreakEvent`。等价物是
+  `net.neoforged.neoforge.event.level.block.BreakBlockEvent`，构造器
+  `(Level, BlockPos, BlockState, Player)`，实现 `ICancellableEvent`。
+  证据：`neoforged/NeoForge` 分支 `26.1.x`
+  `src/main/java/net/neoforged/neoforge/event/level/block/BreakBlockEvent.java`，
+  以及 `common/CommonHooks.java:601-620` 的 `fireBlockBreak(...)` —— 它 `new BreakBlockEvent(...)`
+  后 `NeoForge.EVENT_BUS.post(event)`。
+  处置：
+  - `ProtectedBlockBreaking` 直接 post `BreakBlockEvent`（**不**走 `CommonHooks.fireBlockBreak`，
+    因为后者会按手持物品的 `canDestroyBlock` 预取消——子弹命中不是手持物品在挖方块）；
+  - `TaCZTweaks#onBlockBreak` 订阅 `BreakBlockEvent`，用 `EventPriority.LOWEST` +
+    跳过已取消事件来逼近原来的 "AFTER" 语义。
+- **摘要**：维护者本机下载的 tacz / SPR / commons-math3 三件的 SHA-256 已写回
+  `RESOURCE_IMPORT_MANIFEST.tsv`，并注明"取自维护者下载，未与上游公布校验值交叉核对"。
+  YACL 条目的文件名已改为实际拼写，摘要仍为 `pending`。
+
 ## 5. 未来提交者注意
 
 1. 源码里仍有若干注释描述的是 **Refabricated**（Fabric 目标端）的方法/lambda 命名由来；

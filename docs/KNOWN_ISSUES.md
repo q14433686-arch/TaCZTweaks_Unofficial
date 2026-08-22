@@ -11,10 +11,13 @@ smoke tests and in-game testing are all still outstanding.
 
 ## Block-break protection is weaker than on Fabric
 
-Fabric exposes `PlayerBlockBreakEvents.BEFORE / CANCELED / AFTER`; NeoForge only has the
-cancellable `BlockEvent.BreakEvent`. Player-owned bullet/melee block destruction therefore runs
+Fabric exposes `PlayerBlockBreakEvents.BEFORE / CANCELED / AFTER`; NeoForge 26.1.x only has the
+cancellable `net.neoforged.neoforge.event.level.block.BreakBlockEvent` (which replaced the older
+`BlockEvent.BreakEvent`), and it fires on the break *attempt*, not after the break. Player-owned bullet/melee block destruction therefore runs
 `Level#mayInteract` plus that event, but claim/protection mods relying on a "canceled" or "after"
-notification will not receive one. Behaviour with specific protection mods is untested.
+notification will not receive one. Our own breaking-progress bookkeeping listens at
+`EventPriority.LOWEST` and ignores cancelled events, which is the closest available approximation
+of "the block is about to be removed". Behaviour with specific protection mods is untested.
 
 ## Dedicated-server startup is not yet automated in CI
 

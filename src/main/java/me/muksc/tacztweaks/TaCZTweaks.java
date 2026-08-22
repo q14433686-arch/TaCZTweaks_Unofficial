@@ -28,6 +28,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -35,7 +36,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -143,8 +144,17 @@ public class TaCZTweaks {
         ClientMessageBroadcastSound.clearAll();
     }
 
-    @SubscribeEvent
-    public void onBlockBreak(BlockEvent.BreakEvent event) {
+    /**
+     * Clears our tracked breaking progress when a player breaks that block themselves.
+     *
+     * <p>NeoForge 26.1.x replaced {@code BlockEvent.BreakEvent} with
+     * {@link BreakBlockEvent}, which fires on the <em>attempt</em> (both sides) rather than
+     * after the break. Running at {@link EventPriority#LOWEST} and skipping cancelled events
+     * gets as close to "the block is about to be removed" as this loader allows.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onBlockBreak(BreakBlockEvent event) {
+        if (event.isCanceled()) return;
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             BlockBreakingManager.INSTANCE.onBlockBreak(serverLevel, event.getPos());
         }
