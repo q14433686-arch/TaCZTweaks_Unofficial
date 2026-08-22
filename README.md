@@ -61,18 +61,30 @@ build.bat test           :: 仅跑单测
 > 若 `build.bat` 报 "JAVA_HOME is not set",请将 JDK 21 加入 PATH,或设置环境变量
 > `set "JAVA_HOME=C:\Program Files\Java\jdk-21"`(路径按实际安装位置调整)。
 
-低内存机器(≤2GB):
+默认 JVM 参数已在 `gradle.properties` 里调为开发机可用的值
+(`-Xmx2g -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=256m`)，这是
+Kotlin 2.4.10 (K2) 稳定编译所必需的——过低的 `ReservedCodeCacheSize`
+(例如 40m)会让 JIT 在编译 Kotlin 时抛
+`Out of space in CodeCache for adapters`，并可能连锁触发
+`java.lang.InternalError: MethodHandle.linkToStatic(...)`
+这种看起来像 JDK 版本错的二次异常。出现这种报错请**加大 CodeCache/heap**，
+而不是换 JDK。
+
+低内存机器(可用 RAM < 2GB 的 CI / 沙箱)建议用 daemon + SerialGC + client 模式
+的覆盖参数(会慢一些但能跑通):
+
+Linux / macOS:
 
 ```bash
-export JAVA_TOOL_OPTIONS="-Xmx384m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC"
-./gradlew build --no-parallel
+export JAVA_TOOL_OPTIONS="-Xmx768m -XX:MaxMetaspaceSize=256m -XX:ReservedCodeCacheSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k"
+./gradlew build --no-daemon
 ```
 
-Windows 低内存(cmd):
+Windows(cmd):
 
 ```bat
-set JAVA_TOOL_OPTIONS=-Xmx384m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC
-gradlew.bat build --no-parallel
+set JAVA_TOOL_OPTIONS=-Xmx768m -XX:MaxMetaspaceSize=256m -XX:ReservedCodeCacheSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k
+build.bat --no-daemon
 ```
 
 ## 安装

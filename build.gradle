@@ -90,8 +90,10 @@ dependencies {
 tasks.named('test', Test) {
     useJUnitPlatform()
     // The version-gate test only exercises TaczVersionSupport, which is pure-JDK code with zero
-    // MC/NeoForge/Kotlin references. Keep the JVM tiny and don't wire game-test namespaces.
-    jvmArgs '-Xmx256M'
+    // MC/NeoForge/Kotlin references. Give the test JVM a comfortable code cache / heap so it
+    // does not hit the same "Out of space in CodeCache for adapters" failure the build daemon
+    // can hit on an undersized JVM.
+    jvmArgs '-Xmx512m', '-XX:ReservedCodeCacheSize=128m'
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
