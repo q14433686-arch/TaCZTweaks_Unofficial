@@ -7,20 +7,21 @@
 
 ## 0. 状态结论
 
-本轮完成了**源码/静态层**的 26.2 改造：构建与元数据目标、加载器 API、Fabric 26.1.2 →
-26.2 业务 delta、版本门、依赖清单、文档、26.2 mixin 源码目标复核、NeoForge 原版补丁复核。
+本轮完成了 26.2 改造：构建与元数据目标、加载器 API、Fabric 26.1.2 → 26.2 业务 delta、
+版本门、依赖清单、文档、mixin 源码目标复核与 NeoForge 原版补丁复核。
 
-以下门禁没有完成，不能写 PASS：
+后续维护者反馈补齐了两级证据：
 
-- `./gradlew test`、`./gradlew build`；
-- 26.2 客户端主界面；
-- 专服 `Done (...)!`；
-- 拿枪、开镜、换弹、卸弹、配置屏、数据包重载。
+- Windows / JDK 25 `gradlew build` **PASS**（包含单测与 Gradle 发布门禁）；
+- 构建产物进入游戏，维护者报告大多数核心功能通过实际测试。
 
-原因是当前沙箱没有任何 JDK，且 Maven、Modrinth、Oracle/Adoptium 与 GitHub
-`release-assets.githubusercontent.com` 的二进制连接失败。GitHub git/API 可用，所以源码与
-NeoForge patches 已取得，但发布 jar 无法取得。26.1.2 骨架的客户端 PASS 只能说明加载器翻译曾经
-成立，不能代替 26.2 验收。
+该游戏测试是 Beta 阶段的非穷尽冒烟，不等于所有功能/配置/数据包/可选兼容均有保证。仍未报告：
+
+- 专服日志 `Done (...)!`；
+- 拿枪、开镜、换弹、卸弹、配置屏、数据包重载的逐项记录；
+- Sound Physics、First Aid、Pillager's Gun 等可选组合的运行矩阵。
+
+当前沙箱本身仍没有 JDK，且二进制端点不可达；本文件把沙箱静态结果与维护者外部验证分开记录。
 
 ## 1. 基线与叠加方法
 
@@ -76,7 +77,8 @@ MIN_REVISION          = 1
 ```
 
 接受 R1、r1、R2、R10 与规范 `-hotfix.1` 后缀；拒绝 r0、Fabric、NeoForge 26.1.2/1.21.11、
-错误 core、前导零和 prefix+junk。`TaczVersionSupportTest` 覆盖该矩阵，但因无 JDK 尚未执行。
+错误 core、前导零和 prefix+junk。`TaczVersionSupportTest` 覆盖该矩阵，并已随维护者的
+成功 `gradlew build` 执行通过；当前沙箱因无 JDK 无法独立复跑。
 
 ## 4. NeoForge API 证据（新增/复核调用）
 
@@ -164,7 +166,8 @@ NeoForge 26.2.x：
 2. 五参 vanilla 路径 `require = 0`，仅作未打补丁构建的 fallback；
 3. 两者都没命中时，RETURN 注入在首次解析到盾牌规则后输出明确警告。
 
-这与 26.1.2 实机崩溃的修复方向一致，并由 26.2.x patch 再次确认；运行时是否应用成功仍待客户端日志。
+这与 26.1.2 实机崩溃的修复方向一致，并由 26.2.x patch 再次确认。维护者报告的 26.2
+客户端/游戏冒烟未出现通用 mixin 应用失败，但没有单独提供盾牌规则场景记录。
 
 ## 6. 可选兼容证据
 
@@ -179,7 +182,7 @@ LSO / Valkyrien Skies / MTS 本轮未得到可验证 NeoForge 26.2 目标，因�
 
 ## 7. 依赖与摘要
 
-目标本地文件：TaCZ R1、YACL 3.9.5+26.2 NeoForge（配置类型继承 YACL，双端必需）、SPR 1.5.1+26.2 NeoForge、
+目标本地文件：TaCZ R1、YACL 3.9.6+26.2 NeoForge（声明范围从 3.9.5 起；配置类型继承 YACL，双端必需）、SPR 1.5.1+26.2 NeoForge、
 First Aid 1.3.0-patched（可选）、Pillager's Gun 3.3.5（可选）、commons-math3 3.6.1。
 构建按规范化文件名匹配，并强制目标 jar 含 `26.2`、排除含 `fabric` 的文件。
 
@@ -220,6 +223,20 @@ java -version                                    command not found
    暴露的摘要；SPR 实际摘要也已写回。YACL 实际使用 `3.9.6+26.2-neoforge`，manifest 路径已
    对齐，摘要仍 pending。
 
-修正后的 `./gradlew build` 尚待维护者复跑，因此仍不能声明 build PASS。
+修正后的 `./gradlew build` 当时尚待复跑；结果见下一节。
 
-发布者必须按 `BUILD.md` 从测试、构建、客户端、专服到游戏内场景顺序补齐证据，不能跳级声明。
+## 10. 第二轮维护者反馈（2026-08-23）
+
+维护者确认：
+
+```text
+gradlew build                 PASS
+客户端进入游戏                PASS
+大多数核心游戏内功能          实测通过（非穷尽）
+```
+
+`build` PASS 同时覆盖 Gradle `test`、图标、依赖 manifest 与 jar 内容门禁。游戏反馈没有逐项
+测试清单，因此只记录为“多数核心功能的 Beta 冒烟通过”，不把未列出的单项、可选模组组合、
+专服或所有边界情况升级成 PASS。维护者明确不对 Beta 提供全面功能保证。
+
+发布者仍应按 `BUILD.md` 补齐专服与需要发布声明的逐项证据，不能由“多数通过”推导出未测项目。

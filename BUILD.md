@@ -4,8 +4,9 @@
 TaCZ: Renovated `1.1.8+neoforge.26.2.R1`。当前产物版本：
 `2.14.2+neoforge.26.2.Beta-1`。
 
-> 当前 26.2 工作树尚未在本沙箱构建：这里没有 JDK 25，Maven/Modrinth/GitHub release-assets
-> 二进制下载也不可达。以下是必须在具备依赖的机器上执行的验收流程，不是完成声明。
+> 当前沙箱没有 JDK 25，无法本地复跑；维护者已在 Windows / JDK 25 上报告
+> `gradlew build` PASS，并进入游戏完成大多数核心功能的非穷尽 Beta 测试。以下流程仍是复现构建、
+> 专服与逐项验证的标准步骤；现有游戏报告不构成全面兼容保证。
 
 ## 1. 环境
 

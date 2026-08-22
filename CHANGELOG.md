@@ -3,7 +3,7 @@
 All notable changes to this unofficial port are tracked here. Detailed evidence belongs in
 `docs/records/`; this file does not upgrade unperformed tests into support claims.
 
-## 2.14.2+neoforge.26.2.Beta-1 - Unreleased (source/static port; build and game gates pending)
+## 2.14.2+neoforge.26.2.Beta-1 - Unreleased (build PASS; client gameplay smoke-tested)
 
 NeoForge 26.2 loader port of the Fabric `26.2(main)` gameplay line, using the client-load-tested
 26.1.2 NeoForge port as its loader skeleton. Targets NeoForge 26.2.0.64 / Java 25 and
@@ -38,15 +38,20 @@ TaCZ: Renovated `1.1.8+neoforge.26.2.R1`.
 - First Aid, Pillager's Gun and Sound Physics source surfaces used by optional integrations were
   located for their 26.2 lines. This is not shipped-jar or gameplay verification.
 
+### Maintainer validation
+
+- Windows / JDK 25 `gradlew build`: **PASS**, including unit tests and Gradle release gates.
+- The built client entered the game; the maintainer reports that most core in-game functions passed
+  practical testing. This is non-exhaustive Beta smoke coverage, not a guarantee for every feature,
+  configuration combination, datapack, or optional integration.
+
 ### Known gaps
 
-- The first external Windows/JDK 25 `./gradlew build` reached Kotlin compilation but failed on
-  unqualified names in the extracted config-screen builder and a stale TaCZ checksum. Both are
-  corrected here; a successful rerun is still pending. This sandbox itself has no JDK 25.
-- Client main-menu startup, dedicated-server `Done (...)!`, and the gun/ADS/reload/unload/config/
-  datapack-reload smoke scenarios are pending.
-- New dependency SHA-256 values marked `pending` in `RESOURCE_IMPORT_MANIFEST.tsv` must be filled
-  from actual downloaded files before release.
+- Dedicated-server `Done (...)!` has not been reported.
+- The gameplay report did not include a per-scenario transcript, so gun/ADS/reload/unload/config/
+  datapack-reload and optional compatibility rows are not individually promoted to PASS.
+- Dependency SHA-256 values still marked `pending` in `RESOURCE_IMPORT_MANIFEST.tsv` must be filled
+  from actual downloaded files before release-quality provenance is complete.
 - NeoForge block-break protection remains a documented semantic downgrade from Fabric's
   BEFORE/CANCELED/AFTER event chain.
 

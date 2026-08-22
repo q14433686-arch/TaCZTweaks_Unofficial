@@ -10,11 +10,10 @@ TaCZ Tweaks v2.14.2 的**非官方 NeoForge 26.2 社区移植**，目标依赖�
 游戏语义来自本仓库 Fabric `26.2(main)` 分支；加载器实现继承已经通过 26.1.2 客户端加载验证的
 NeoForge 骨架，再针对 26.2 API、依赖和 mixin 目标更新。
 
-> **26.2 验证状态：源码/静态移植，未完成构建与实机验收。** 当前沙箱没有 JDK 25，且无法连接
-> Maven、Modrinth 或 GitHub release-assets 二进制端点。维护者首轮 Windows/JDK 25 build 已到
-> Kotlin 编译阶段，但因配置屏限定名与依赖摘要失败；本轮已修正，成功复跑仍待确认。
-> `./gradlew test`、客户端、专服及游戏内最小实测也尚未通过。不能把 26.1.2 PASS 当成 26.2 PASS。
-> 证据和未完成门禁见
+> **26.2 验证状态：Windows / JDK 25 的 `gradlew build` 已 PASS（包含单测与发布门禁）；
+> 维护者已进入游戏并报告大多数核心功能通过实际测试。** 这是 Beta 阶段的冒烟/回归证据，
+> 不是对每个配置组合、数据包、可选兼容模组或边界条件的保证。专服 `Done (...)!` 尚未报告，
+> 各游戏内场景也没有逐项测试记录。详细证据与边界见
 > [`docs/records/NEOFORGE_26_2_PORT_RECORD.md`](docs/records/NEOFORGE_26_2_PORT_RECORD.md)。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) ·
@@ -89,8 +88,9 @@ python3 scripts/audit_port.py --strict
 ./gradlew build
 ```
 
-发布前还必须完成：客户端进入主界面、专服日志出现 `Done (...)!`，以及拿枪、开镜、换弹、卸弹、
-配置屏和数据包重载最小实测。详细步骤与产物位置见 [`BUILD.md`](BUILD.md)。
+已报告 `build` PASS 和客户端核心功能冒烟；尚未报告专服 `Done (...)!`，也没有对拿枪、开镜、
+换弹、卸弹、配置屏、数据包重载及可选兼容项逐项留证。Beta 只代表当前测试覆盖，不构成全面保证。
+详细步骤与产物位置见 [`BUILD.md`](BUILD.md)。
 
 ## 许可与反馈
 

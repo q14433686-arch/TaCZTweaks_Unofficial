@@ -1,19 +1,17 @@
 # Known issues and validation gaps
 
-## NeoForge 26.2 has not passed build or runtime gates yet
+## Build passed; runtime coverage is intentionally non-exhaustive
 
-The code and dependency surfaces have been translated and checked statically, but this sandbox has no
-JDK 25 and cannot reach Maven/Modrinth/GitHub release-asset binary endpoints. A maintainer's first
-Windows/JDK 25 build reached Kotlin compilation and exposed two now-corrected issues; a successful
-rerun has not yet been reported. The following remain **not passed** for 26.2:
+A maintainer completed a Windows / JDK 25 `gradlew build` successfully and reports that the built
+client entered the game with most core functions passing practical tests. That is meaningful Beta
+smoke coverage, but it is not a guarantee for every feature, config combination, datapack, hardware
+setup, or optional-mod combination.
 
-- `./gradlew test`
-- `./gradlew build`
-- client main-menu startup
-- dedicated-server startup and `scripts/check_server_log.py`
-- gun / ADS / reload / unload / config screen / datapack reload smoke scenarios
+Still outstanding or not individually evidenced:
 
-The client-load PASS of the 26.1.2 NeoForge skeleton is not a 26.2 PASS.
+- dedicated-server startup and `scripts/check_server_log.py` showing `Done (...)!`;
+- a per-scenario record for gun / ADS / reload / unload / config screen / datapack reload;
+- runtime matrices for Sound Physics, First Aid, Pillager's Gun and protection mods.
 
 ## Block-break protection is weaker than on Fabric
 
@@ -37,7 +35,8 @@ BlocksAttacks#hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, 
 
 The six-argument wrap is the primary path. A five-argument wrap remains with `require = 0` as a
 vanilla/unpatched fallback. If neither target matches, the mod logs a one-time warning when a shield
-rule resolves. Build and client mixin application still need to prove the 26.2 compiled descriptor.
+rule resolves. Build and general client startup no longer report an injection failure, but the
+maintainer did not provide a targeted shield-rule transcript.
 
 ## Optional integrations are source-checked, not runtime-verified
 
@@ -47,10 +46,9 @@ with this port. Stay inside `docs/COMPATIBILITY.md` ranges and attach full logs 
 
 ## Pending dependency digests block release
 
-`RESOURCE_IMPORT_MANIFEST.tsv` uses `pending` for binaries that this sandbox could not download.
-Before a release, replace every pending digest with the SHA-256 of the exact artifact and rerun both
-dependency and release-consistency checks. The TaCZ digest is copied from GitHub's release asset API,
-but should still be re-hashed on the release machine.
+`RESOURCE_IMPORT_MANIFEST.tsv` still uses `pending` for binaries not covered by the available build
+log. TaCZ and Sound Physics hashes were taken from the maintainer's actual build inputs; YACL and
+optional jars still need exact SHA-256 values before release-quality provenance is complete.
 
 ## YACL is required on dedicated servers too
 
@@ -61,8 +59,8 @@ from a dedicated server is unsupported.
 ## Kotlin runtime is embedded
 
 NeoForge has no Fabric Language Kotlin equivalent here. The release jar uses `jarJar` for
-`kotlin-stdlib 2.4.10`; release-jar inspection and coexistence with other mods embedding Kotlin have
-not yet been tested on NeoForge 26.2.
+`kotlin-stdlib 2.4.10`; Gradle jar-content checks and general client startup passed. Coexistence with
+arbitrary other mods embedding different Kotlin versions remains outside the Beta smoke coverage.
 
 ## Removed legacy switches
 
