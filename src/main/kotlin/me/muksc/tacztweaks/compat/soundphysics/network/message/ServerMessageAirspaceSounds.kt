@@ -8,6 +8,7 @@ import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
+import net.neoforged.neoforge.network.handling.IPayloadContext
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.level.Level
@@ -73,9 +74,9 @@ class ServerMessageAirspaceSounds(
             { buf -> ServerMessageAirspaceSounds(buf) }
         )
 
-        fun handle(msg: ServerMessageAirspaceSounds, client: Minecraft) {
+        fun handle(msg: ServerMessageAirspaceSounds, ctx: IPayloadContext) {
             if (!SoundPhysicsCompat.isEnabled()) return
-            client.execute { SoundPhysicsCompat.play(client, msg) }
+            ctx.enqueueWork { SoundPhysicsCompat.play(Minecraft.getInstance(), msg) }
         }
     }
 

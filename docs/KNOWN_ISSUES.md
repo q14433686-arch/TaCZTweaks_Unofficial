@@ -3,6 +3,22 @@
 This page is for user-facing limitations. Porting debates and obsolete investigation notes belong
 in `AUDIT.md`, `PORTING_NOTES.md`, or handoff files.
 
+## This branch has never been built or played
+
+The NeoForge 26.1.2 port is a source-level translation done in an environment without a JDK and
+without network access to Maven/CurseForge. `./gradlew build`, `./gradlew test`, dedicated-server
+smoke tests and in-game testing are all still outstanding.
+
+## Block-break protection is weaker than on Fabric
+
+Fabric exposes `PlayerBlockBreakEvents.BEFORE / CANCELED / AFTER`; NeoForge 26.1.x only has the
+cancellable `net.neoforged.neoforge.event.level.block.BreakBlockEvent` (which replaced the older
+`BlockEvent.BreakEvent`), and it fires on the break *attempt*, not after the break. Player-owned bullet/melee block destruction therefore runs
+`Level#mayInteract` plus that event, but claim/protection mods relying on a "canceled" or "after"
+notification will not receive one. Our own breaking-progress bookkeeping listens at
+`EventPriority.LOWEST` and ignores cancelled events, which is the closest available approximation
+of "the block is about to be removed". Behaviour with specific protection mods is untested.
+
 ## Dedicated-server startup is not yet automated in CI
 
 The repository has a server-log checker, but GitHub Actions currently runs static audit, checksum
@@ -12,17 +28,17 @@ server smoke workflow is added.
 ## Optional compatibility claims are version-bounded
 
 Sound Physics Remastered, First Aid New and Pillager's Gun support is limited to the ranges in
-`fabric.mod.json` and `docs/COMPATIBILITY.md`. Reports outside those ranges should first reproduce
+`neoforge.mods.toml` and `docs/COMPATIBILITY.md`. Reports outside those ranges should first reproduce
 inside the declared range.
 
 ## Removed legacy compatibility switches
 
-The following old options are intentionally not supported in this Fabric 26.1.2 port:
+The following old options are not present in this port:
 
-- `thirdPersonGunRenderingFix` — TaCZ Refabricated R2 already fixes the target behavior.
-- `lsoCompat` — no supported Legendary Survival Overhaul Fabric 26.1.2 target.
-- `mtsFix` — no supported MTS / Immersive Vehicles Fabric 26.1.2 target.
-- `vsCollisionCompat` and `vsExplosionCompat` — no supported Valkyrien Skies Fabric 26.1.2 target.
+- `thirdPersonGunRenderingFix` — removed on the Fabric line because the target port fixes it
+  natively; whether TaCZ: Renovated needs it has **not** been re-checked.
+- `lsoCompat`, `mtsFix`, `vsCollisionCompat`, `vsExplosionCompat` — the availability of those mods
+  on NeoForge 26.1.2 was **not** investigated, so no switches are shipped.
 
 If these keys remain in an old JSON config, remove them to avoid confusion.
 

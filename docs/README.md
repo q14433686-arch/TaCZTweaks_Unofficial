@@ -1,6 +1,11 @@
-# TaCZ Tweaks (Refabricated) 文档
+# TaCZ Tweaks（非官方移植）文档索引
 
-文档分为玩家支持、扩展包说明、发布资料和维护审计。README 只提供项目概览；遇到问题时应从本页进入对应的事实来源。
+文档分为玩家支持、扩展包说明、发布资料与维护审计。README 只提供项目概览；遇到问题时从本页
+进入对应的事实来源。
+
+> 本仓库用同一套源码维护 **Fabric** 与 **NeoForge** 两条移植线（分支后缀 `-neoforge` 为
+> NeoForge 线）。文件不可跨加载器、跨 Minecraft 版本混用。当前各分支的版本与实测状态见
+> [发布状态](publish/RELEASE.md)。
 
 ## 玩家与服务器管理员
 
@@ -11,11 +16,12 @@
 - [问题排查与 Bug 提交流程](SUPPORT.md)
 - [示例扩展包](../tacz-tweaks-example-pack/)
 
-下载文件时，以发布平台为该文件标注的 Minecraft、加载器和依赖版本为准，不要从项目标题或旧截图推断兼容范围。
+下载文件时，以发布平台为该文件标注的 Minecraft、加载器和依赖版本为准，不要从项目标题或旧截图
+推断兼容范围。启动时会校验所装 TaCZ 移植的版本系列，装错会直接拒绝加载。
 
 ## 数据驱动内容作者
 
-仓库中的 `tacz-tweaks-example-pack/` 是可重载示例，包含以下系统的实际目录和 schema 示例：
+仓库中的 `tacz-tweaks-example-pack/` 是可重载示例，包含以下系统的实际目录与 schema 示例：
 
 - [选择器通用格式](data/SELECTORS.md)
 - [bullet_interactions](data/BULLET_INTERACTIONS.md)
@@ -24,16 +30,17 @@
 - [melee_interactions](data/MELEE_INTERACTIONS.md)
 - [迁移说明](data/MIGRATION.md)
 
-修改或分发示例中的第三方音频前，请同时阅读 [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)。兼容某个第三方枪包、资源包或模组，不代表本项目拥有、转授或改变该内容的许可。
+修改或分发示例中的第三方音频前，请同时阅读 [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)。
+兼容某个第三方枪包、资源包或模组，不代表本项目拥有、转授或改变该内容的许可。
 
 ## 发布维护
 
+- [发布状态与文案分层规范](publish/RELEASE.md) ← 版本与实测状态的唯一事实来源
 - [发布文案与平台检查表](publish/README.md)
 - [Modrinth 文案](publish/Modrinth.md)
 - [CurseForge 文案](publish/CurseForge.md)
-- [项目许可](../LICENSE)
-- [许可证总览](../LICENSES.md)
-- [第三方来源与许可](../THIRD_PARTY_NOTICES.md)
+- [MC 百科文案](publish/MCMOD.md)
+- [项目许可](../LICENSE) · [许可证总览](../LICENSES.md) · [第三方来源与许可](../THIRD_PARTY_NOTICES.md)
 - [依赖清单](../RESOURCE_IMPORT_MANIFEST.tsv)
 
 ## 移植与审计
@@ -41,5 +48,7 @@
 - [当前审计结论](../AUDIT.md)
 - [移植笔记](../PORTING_NOTES.md)
 - [维护规则](../AGENTS.md)
+- [NeoForge 移植计划与执行记录](records/)
 
-过程笔记可能记录已经被后续工作推翻的旧结论。判断当前行为时，优先使用当前源码、`AUDIT.md` 和实际依赖的 class descriptor。
+过程笔记可能记录已被后续工作推翻的旧结论。判断当前行为时，优先使用当前源码、`AUDIT.md`、
+`docs/records/` 中的证据条目，以及实际依赖的 class descriptor。

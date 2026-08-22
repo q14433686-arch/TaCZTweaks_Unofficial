@@ -1,7 +1,7 @@
 package me.muksc.tacztweaks.compat;
 
 import me.muksc.tacztweaks.TaCZTweaks;
-import net.fabricmc.loader.api.FabricLoader;
+import net.neoforged.fml.ModList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.entity.Entity;
@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 
 /** Friendly-fire semantics shared with Pillager's Gun 3.3.x for TaCZ projectiles. */
 public final class PillagersGunCompat {
-    private static final boolean LOADED = FabricLoader.getInstance().isModLoaded("pillagers_gun");
+    private static final boolean LOADED = ModList.get().isLoaded("pillagers_gun");
     private static Method valuesMethod;
     private static Method friendlyFireMethod;
     private static boolean lookupFailed;
