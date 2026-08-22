@@ -78,6 +78,20 @@ dependencies {
     localRuntime files("libs/tacz-1.1.8+neoforge.1.21.11.r0.jar")
     localRuntime files("libs/yet-another-config-lib-v3-3.8.2+1.21.11-neoforge.jar")
     localRuntime files("libs/sound-physics-remastered-neoforge-1.21.11-1.5.1.jar")
+
+    // Minimal JUnit Jupiter setup for pure-Java unit tests (version-gate validator, etc.).
+    // Test source set is *not* fed through MDG/NeoForge — TaczVersionSupport has no MC deps.
+    testImplementation platform("org.junit:junit-bom:5.10.2")
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testImplementation "org.junit.jupiter:junit-jupiter-params"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    // The version-gate test only exercises TaczVersionSupport, which is pure-JDK code with zero
+    // MC/NeoForge/Kotlin references. Keep the JVM tiny and don't wire game-test namespaces.
+    jvmArgs '-Xmx256M'
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
