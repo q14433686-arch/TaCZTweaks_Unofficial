@@ -28,6 +28,12 @@ handoff/audit documents.
 
 ### Fixed
 
+- The runtime TaCZ version gate no longer compares the exact friendly string against a single
+  pinned R2 build. It now accepts `1.1.8+fabric.26.1.2.R<n>` for `n >= 2` (including suffix
+  builds such as `R2-hotfix` and later revisions such as `R3`, `R10`), rejecting only the wrong
+  Minecraft version, wrong TaCZ core version, wrong Fabric release family, pre-R2 revisions and
+  malformed strings. `R10` is compared numerically so it is never mistaken for a version below
+  `R2`.
 - Release metadata now includes homepage, source and issue links, plus a separate maintainer
   contributor entry.
 - `LICENSE` and `THIRD_PARTY_NOTICES.md` are packaged into the release jar under `META-INF/`.
@@ -39,7 +45,10 @@ handoff/audit documents.
 - Fabric Loader: `>=0.19.3 <0.20.0`
 - Fabric API: `>=0.155.2+26.1.2 <0.157.0`
 - Java: `>=25`
-- TaCZ Refabricated Unofficial: exactly `1.1.8+fabric.26.1.2.R2`
+- TaCZ Refabricated Unofficial: `1.1.8+fabric.26.1.2.R<n>` with `n >= 2` (R2 baseline, hotfix
+  builds, and later R<n> revisions in the same release family; the Minecraft version, TaCZ core
+  version and Fabric release family remain strict. Future builds must still pass the matching
+  descriptor, client and server validation before being claimed as tested.)
 - Fabric Language Kotlin: `>=1.13.13 <1.14.0`
 - YetAnotherConfigLib: exactly `3.9.6+26.1-fabric`
 

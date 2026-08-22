@@ -53,6 +53,11 @@ YACL 3.9.6+26.1-fabric 已由 Gradle 从 Modrinth Maven 自动解析，不需要
 
 ### TaCZ 本体（compileOnly，提供 mixin 目标类）
 
+> 说明：编译期仍使用 **R2 基线包** `TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar`
+> 作为 mixin 目标和 API 表面。运行时版本门禁放宽为接受同发布系列的
+> `1.1.8+fabric.26.1.2.R<n>`（`n >= 2`，包括 `R2-hotfix`、`R3`、`R10` 等）；因此构建和
+> 静态审计基线保持 R2，无需更换这份依赖包，也不要把它替换为其它哈希的文件。
+
 从 TaCZ 的 Release 页下载：
 ```
 https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.1.2_R2

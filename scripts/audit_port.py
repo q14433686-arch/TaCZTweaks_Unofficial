@@ -796,6 +796,7 @@ def audit_release_guards() -> list[str]:
         "src/test/kotlin/me/muksc/tacztweaks/client/sound/MonoConversionTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/data/CodecSmokeTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/data/ExamplePackTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/TaCZTweaksVersionTest.kt",
     }
     for name in sorted(required_tests):
         if not (ROOT / name).is_file():

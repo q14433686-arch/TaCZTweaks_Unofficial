@@ -85,13 +85,18 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 | 必需 | Minecraft | 26.1.2 |
 | 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
 | 必需 | Fabric API | >=0.155.2+26.1.2、<0.157.0 |
-| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.1.2.R2**（精确验证完整版本字符串） |
+| 必需 | [UNOFFICIAL] TaCZ Refabricated | `1.1.8+fabric.26.1.2.R<n>`，n >= 2（接受 R2、R2-hotfix 以及 R3、R10 等同一发布系列；Minecraft 版本、TaCZ 核心版本和 fabric release family 仍严格匹配） |
 | 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
 | 必需 | YetAnotherConfigLib | 3.9.6+26.1-fabric |
 | 可选 | Sound Physics Remastered | 1.5.1+26.1.2 Fabric |
 | 可选 | First Aid New | >=1.2.8、<1.3.0 Fabric 26.1.2 |
 | 可选 | Pillager’s Gun (Unofficial Port) | >=3.2.2、<3.3.0 Fabric 26.1.2 |
 | 运行环境 | Java | >=25 |
+
+> TaCZ 版本门禁：接受 `1.1.8+fabric.26.1.2.R<n>`，其中 `n >= 2`，并允许同系列的后缀版本
+> （如 `R2-hotfix`、`R10-preview`）。R2 及之后的同系列 revision 会被版本门禁接受；
+> 具体未来构建仍需通过对应的 descriptor、客户端和服务器验证。错误的 Minecraft 版本、
+> TaCZ 核心版本和 fabric release family 仍然拒绝。
 
 ## 构建与审计
 
