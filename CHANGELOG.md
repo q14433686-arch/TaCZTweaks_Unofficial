@@ -41,8 +41,8 @@ handoff/audit documents.
 - Fabric Loader: `>=0.19.3 <0.20.0`
 - Fabric API: `>=0.155.2+26.2 <0.157.0`
 - Java: `>=25`
-- TaCZ Refabricated Unofficial: exactly `1.1.8+fabric.26.2.R2` or
-  `1.1.8+fabric.26.2.R2-hotfix`
+- TaCZ Refabricated Unofficial: `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same
+  release family
 - Fabric Language Kotlin: `>=1.13.13 <1.14.0`
 - YetAnotherConfigLib: exactly `3.9.6+26.2-fabric`
 

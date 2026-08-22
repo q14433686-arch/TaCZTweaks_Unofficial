@@ -32,9 +32,10 @@ python3 scripts/audit_port.py --strict \
 TaCZ R2-hotfix 将版本后缀放在 SemVer 的 build metadata 中，因此 Fabric 的依赖谓词会把它
 视为与 R2 相同的 `1.1.8` 核心版本；但 TaCZ Tweaks 自身此前又比较完整 friendly string，
 导致 hotfix 能通过 Fabric 依赖检查，却在 `TaCZTweaks.onInitialize` 主动崩溃。启动门禁现在
-明确 allow-list `R2` 与 `R2-hotfix`，同时继续拒绝其他 1.1.8 构建。R2 仍是仓库内编译和
-静态 descriptor 审计输入，hotfix 与其共享本项目使用的 R2 命名 hook；该兼容路径由版本
-单测覆盖，未宣称完整游戏内矩阵实测。
+现在按当前 Minecraft 发布系列解析 `R<n>` revision，接受 `R2` 及之后的 revision（包括
+`R2-hotfix` 等后缀），同时继续拒绝 pre-R2、其他 Minecraft 系列和其他 TaCZ core 版本。
+R2 仍是仓库内编译和静态 descriptor 审计输入；放宽的是版本门禁，不等于已经对每个未来
+R<n> 构建完成游戏内矩阵实测，版本单测覆盖了解析边界。
 
 ## 逐项结论
 

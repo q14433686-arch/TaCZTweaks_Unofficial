@@ -30,17 +30,21 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TaCZTweaks implements ModInitializer {
     public static final String MOD_ID = "tacztweaks";
     public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.2.R2";
-    public static final String SUPPORTED_TACZ_HOTFIX_VERSION = "1.1.8+fabric.26.2.R2-hotfix";
-    private static final List<String> SUPPORTED_TACZ_VERSIONS = List.of(
-        SUPPORTED_TACZ_VERSION,
-        SUPPORTED_TACZ_HOTFIX_VERSION
+    private static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+fabric.26.2.R";
+    private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(2);
+    private static final Pattern SUPPORTED_TACZ_VERSION_PATTERN = Pattern.compile(
+        "^" + Pattern.quote(SUPPORTED_TACZ_VERSION_PREFIX)
+            + "(\\d+)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$"
     );
     public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
@@ -53,7 +57,10 @@ public class TaCZTweaks implements ModInitializer {
     }
 
     static boolean isSupportedTaczVersion(String version) {
-        return SUPPORTED_TACZ_VERSIONS.contains(version);
+        if (version == null) return false;
+        Matcher matcher = SUPPORTED_TACZ_VERSION_PATTERN.matcher(version);
+        if (!matcher.matches()) return false;
+        return new BigInteger(matcher.group(1)).compareTo(MIN_SUPPORTED_TACZ_REVISION) >= 0;
     }
 
     @Override
@@ -61,14 +68,13 @@ public class TaCZTweaks implements ModInitializer {
         String taczVersion = FabricLoader.getInstance().getModContainer("tacz")
             .orElseThrow(() -> new IllegalStateException("TaCZ is required"))
             .getMetadata().getVersion().getFriendlyString();
-        // Fabric's version predicates ignore the part after '+', so both R2 and the
-        // upstream R2-hotfix pass the metadata dependency check. Keep a full friendly
-        // string allow-list here so unrelated 1.1.8 builds cannot silently change the
-        // hook surface used by this port.
+        // Fabric's version predicates ignore the part after '+'. Keep the Minecraft,
+        // TaCZ core version, release family and R2 minimum strict, while accepting R2,
+        // R2-hotfix and later R<n> builds from the same release family.
         if (!isSupportedTaczVersion(taczVersion)) {
             throw new IllegalStateException(
-                "TaCZ Tweaks requires TaCZ " + String.join(" or ", SUPPORTED_TACZ_VERSIONS)
-                    + ", found " + taczVersion
+                "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION
+                    + " or a later R<n> build for Minecraft 26.2, found " + taczVersion
             );
         }
         Config.INSTANCE.initialize();

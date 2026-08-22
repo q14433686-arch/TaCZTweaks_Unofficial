@@ -58,8 +58,8 @@
 ```
 https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2
 ```
-下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）。已发布的
-`1.1.8+fabric.26.2.R2-hotfix` 也受支持，运行时会校验这两个完整版本字符串。
+下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）。R2 及之后的
+同一 `1.1.8+fabric.26.2.R<n>` 发布版本（包括 `R2-hotfix`）也受支持，运行时要求 revision 不低于 R2。
 
 ### ② YACL 配置库（implementation，配置 GUI）
 
