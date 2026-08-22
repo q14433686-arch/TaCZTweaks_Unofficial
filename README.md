@@ -51,7 +51,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - 恢复 old v2 bullet interaction converter、burst/pellet selector、shield 数据结构、entity pierce prepare/finish、projectile explosion `playerDamage`；
 - 恢复 gun melee / LRTactical melee block interaction 与 protected block breaking helper；
 - 恢复 client-only modifier diagram mixins 与 gunsmith safety 守卫；
-- 确认第三人称枪械渲染修复已由 TaCZ 1.21.11 R2 自带 `ItemInHandLayerMixin` 原生提供，因此本模组不再单独暴露对应开关；
+- 确认第三人称枪械渲染修复已由 TaCZ 1.21.11 R2 及之后同系列版本自带 `ItemInHandLayerMixin` 原生提供，因此本模组不再单独暴露对应开关；
 - 恢复 `betterMonoConversion`：把 TaCZ 的 mono 标记重新接回 `GunSoundInstance` → `SoundBufferLibrary` PCM downmix 路径，并按 1.21.11 源码验证 `SoundBuffer` 构造点；
 - 恢复 First Aid / Pillager’s Gun / Sound Physics Remastered 可选兼容代码路径；
 - 增加 dedicated-server 日志门禁脚本、混淆端口审计脚本、JUnit 基础测试脚手架与 ASCII `GRADLE_USER_HOME` test staging；
@@ -79,7 +79,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 | 必需 | Minecraft | `=1.21.11` |
 | 必需 | Fabric Loader | `>=0.19.3 <0.20.0` |
 | 必需 | Fabric API | `>=0.141.6+1.21.11 <0.143.0` |
-| 必需 | [UNOFFICIAL] TaCZ Refabricated | **`1.1.8+fabric.1.21.11.R2`**（运行时精确验证 friendly string） |
+| 必需 | [UNOFFICIAL] TaCZ Refabricated | **`1.1.8+fabric.1.21.11.R<n>`，其中 n >= 2**（Minecraft、TaCZ 核心版本和 Fabric release family 严格匹配；运行时按 friendly string 验证） |
 | 必需 | Fabric Language Kotlin | `>=1.13.13 <1.14.0` |
 | 必需 | YetAnotherConfigLib (YACL) | **`3.8.2+1.21.11-fabric`** |
 | 必需 | Java | `>=21` |
@@ -146,3 +146,8 @@ python3 scripts/check_server_log.py <dedicated-server-latest.log>
 报告必须包含完整版本、完整日志、从新建存档或测试服务器开始的最小复现步骤、出现环境、
 相关配置，以及枪包、可选兼容模组和其他第三方内容的准确名称与完整版本。“最新版”、
 截图或单行报错不能代替这些资料。
+
+
+### TaCZ 版本门禁
+
+运行时接受 `1.1.8+fabric.1.21.11.R<n>`，其中 `n >= 2`；支持 R2、hotfix 以及之后的 R3、R10 等同一 release family revision。Minecraft 版本、TaCZ 核心版本和 Fabric release family 仍然严格匹配。版本门禁接受 R2 及之后的同系列 revision；具体未来构建仍需通过对应的 descriptor、客户端和服务器验证。

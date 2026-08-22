@@ -8,7 +8,7 @@ should be user-facing and concise; keep detailed process notes in `docs/maintena
 
 ### Added
 
-- Fabric 1.21.11 port of TaCZ Tweaks v2.14.2 for `TaCZ_Refabricated_Unofficial` R2.
+- Fabric 1.21.11 port of TaCZ Tweaks v2.14.2 for the `TaCZ_Refabricated_Unofficial` R2 and later revisions in the same release family.
 - YACL v3 configuration UI, Mod Menu entrypoint, JSON persistence and server configuration sync.
 - Gun movement, reload, unload, manual bolt, underwater-fire, hit-marker and modifier features.
 - Data-driven bullet interactions, bullet sounds, bullet particles and melee interactions.
@@ -41,7 +41,7 @@ should be user-facing and concise; keep detailed process notes in `docs/maintena
 - Fabric Loader: `>=0.19.3 <0.20.0`
 - Fabric API: `>=0.141.6+1.21.11 <0.143.0`
 - Java: `>=21`
-- TaCZ Refabricated Unofficial: exactly `1.1.8+fabric.1.21.11.R2`
+- TaCZ Refabricated Unofficial runtime gate: `1.1.8+fabric.1.21.11.R<n>` with `n >= 2`; the R2 jar remains the compile/test/static-audit baseline.
 - Fabric Language Kotlin: `>=1.13.13 <1.14.0`
 - YetAnotherConfigLib: exactly `3.8.2+1.21.11-fabric`
 
@@ -78,3 +78,6 @@ should be user-facing and concise; keep detailed process notes in `docs/maintena
 
 - Fill in final release artifact SHA-256 values after producing the signed/uploaded jar and
   example pack.
+
+### TaCZ R2+ gate
+- The runtime friendly-string check accepts numeric revisions `R<n>` where `n >= 2`, including hotfix/prerelease suffixes, only for `1.1.8+fabric.1.21.11`. R10 uses numeric comparison. Wrong Minecraft/core/family and pre-R2 versions remain rejected. Future builds still require descriptor, client, and server validation.

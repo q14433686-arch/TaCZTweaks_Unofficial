@@ -179,3 +179,8 @@ py -3 scripts/check_server_log.py run/logs/latest.log
 ## 6. 只想改代码、不想每次重新下载
 
 依赖第一次下载后走 `%USERPROFILE%\.gradle` 缓存，二次构建通常几十秒。
+
+
+## TaCZ 版本门禁
+
+运行时接受当前分支的 `1.1.8+fabric.1.21.11.R<n>`，其中 `n >= 2`，包括 R2-hotfix 及之后的 R3、R10 等同一 release family revision。`libs/` 中的 R2 jar 仍是 compile/test/static audit 基线，不代表未来构建已经完成游戏内实测。Minecraft、TaCZ 核心版本和 Fabric release family 仍严格匹配；具体未来构建需通过 descriptor、客户端和服务器验证。

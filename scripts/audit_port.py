@@ -686,7 +686,10 @@ def audit_versions(config: dict) -> tuple[list[str], list[str]]:
 
     mod_json = json.loads((SOURCE_ROOT / "resources/fabric.mod.json").read_text(encoding="utf-8"))
     if mod_json.get("depends", {}).get("tacz") != "=1.1.8+fabric.1.21.11.R2":
-        errors.append("fabric.mod.json must require the exact TaCZ 1.21.11 R2 hook surface")
+        errors.append(
+            "fabric.mod.json must retain the current-branch TaCZ R2 compile/test baseline "
+            "(runtime accepts 1.1.8+fabric.1.21.11.R<n>, n >= 2)"
+        )
 
     suggests = mod_json.get("suggests", {})
     breaks = mod_json.get("breaks", {})
