@@ -121,10 +121,10 @@ sealed class BulletParticles(
                     Codec.STRING.fieldOf("particle").forGetter(BlockParticle::particle),
                     Coordinates.CODEC.strictOptionalFieldOf("position", Coordinates.Relative(0.0, 0.0, 0.0)).forGetter(BlockParticle::position),
                     Coordinates.CODEC.strictOptionalFieldOf("delta", Coordinates.Absolute(0.0, 0.0, 0.0)).forGetter(BlockParticle::delta),
-                    Codec.doubleRange(0.0, 64.0).strictOptionalFieldOf("speed", 0.0).forGetter(BlockParticle::speed),
-                    Codec.intRange(0, 4096).strictOptionalFieldOf("count", 1).forGetter(BlockParticle::count),
+                    Codec.DOUBLE.strictOptionalFieldOf("speed", 0.0).forGetter(BlockParticle::speed),
+                    Codec.INT.strictOptionalFieldOf("count", 1).forGetter(BlockParticle::count),
                     Codec.BOOL.strictOptionalFieldOf("force", false).forGetter(BlockParticle::force),
-                    Codec.intRange(1, 1200).strictOptionalFieldOf("duration", 1).forGetter(BlockParticle::duration)
+                    Codec.INT.strictOptionalFieldOf("duration", 1).forGetter(BlockParticle::duration)
                 ).apply(it, ::BlockParticle) }
             }
         }
@@ -167,10 +167,10 @@ sealed class BulletParticles(
                     Codec.STRING.fieldOf("particle").forGetter(EntityParticle::particle),
                     Coordinates.CODEC.strictOptionalFieldOf("position", Coordinates.Relative(0.0, 0.0, 0.0)).forGetter(EntityParticle::position),
                     Coordinates.CODEC.strictOptionalFieldOf("delta", Coordinates.Absolute(0.0, 0.0, 0.0)).forGetter(EntityParticle::delta),
-                    Codec.doubleRange(0.0, 64.0).strictOptionalFieldOf("speed", 0.0).forGetter(EntityParticle::speed),
-                    Codec.intRange(0, 4096).strictOptionalFieldOf("count", 1).forGetter(EntityParticle::count),
+                    Codec.DOUBLE.strictOptionalFieldOf("speed", 0.0).forGetter(EntityParticle::speed),
+                    Codec.INT.strictOptionalFieldOf("count", 1).forGetter(EntityParticle::count),
                     Codec.BOOL.strictOptionalFieldOf("force", false).forGetter(EntityParticle::force),
-                    Codec.intRange(1, 1200).strictOptionalFieldOf("duration", 1).forGetter(EntityParticle::duration)
+                    Codec.INT.strictOptionalFieldOf("duration", 1).forGetter(EntityParticle::duration)
                 ).apply(it, ::EntityParticle) }
             }
         }

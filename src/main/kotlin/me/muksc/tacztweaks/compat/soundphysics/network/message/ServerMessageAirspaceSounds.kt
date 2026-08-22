@@ -1,4 +1,5 @@
 package me.muksc.tacztweaks.compat.soundphysics.network.message
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 import io.netty.handler.codec.DecoderException
 import me.muksc.tacztweaks.TaCZTweaks
@@ -15,28 +16,18 @@ import net.minecraft.world.level.Level
 private const val MAX_CANDIDATES = 64
 private const val MAX_SOUNDS_PER_CANDIDATE = 32
 
-private fun <T> readBoundedList(
-    buf: FriendlyByteBuf,
-    maxSize: Int,
-    decoder: (FriendlyByteBuf) -> T
-): List<T> {
+private fun <T> readBoundedList(buf: FriendlyByteBuf, maxSize: Int, decoder: (FriendlyByteBuf) -> T): List<T> {
     val size = buf.readVarInt()
     if (size !in 0..maxSize) throw DecoderException("Collection size $size exceeds limit $maxSize")
     return List(size) { decoder(buf) }
 }
 
-private fun <T> writeBoundedList(
-    buf: FriendlyByteBuf,
-    values: List<T>,
-    maxSize: Int,
-    encoder: (FriendlyByteBuf, T) -> Unit
-) {
+private fun <T> writeBoundedList(buf: FriendlyByteBuf, values: List<T>, maxSize: Int, encoder: (FriendlyByteBuf, T) -> Unit) {
     val bounded = values.take(maxSize)
     buf.writeVarInt(bounded.size)
     bounded.forEach { encoder(buf, it) }
 }
 
-/** Bounded airspace candidates encoded independently of ClientboundSoundPacket. */
 class ServerMessageAirspaceSounds(
     val sounds: List<AirspaceSound>,
     val x: Double,
@@ -70,12 +61,12 @@ class ServerMessageAirspaceSounds(
         )
         val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageAirspaceSounds> = StreamCodec.ofMember(
             ServerMessageAirspaceSounds::write,
-            { buf -> ServerMessageAirspaceSounds(buf) }
+            ::ServerMessageAirspaceSounds
         )
 
-        fun handle(msg: ServerMessageAirspaceSounds, client: Minecraft) {
+        fun handle(msg: ServerMessageAirspaceSounds, ctx: IPayloadContext) {
             if (!SoundPhysicsCompat.isEnabled()) return
-            client.execute { SoundPhysicsCompat.play(client, msg) }
+            ctx.enqueueWork { SoundPhysicsCompat.play(Minecraft.getInstance(), msg) }
         }
     }
 
@@ -110,8 +101,7 @@ class ServerMessageAirspaceSounds(
         fun canPlayAtReflectivity(reflectivity: Float): Boolean = reflectivity.isFinite() && reflectivity in minReflectivity..maxReflectivity
 
         companion object {
-            private fun validRange(min: Float, max: Float): Boolean =
-                min.isFinite() && max.isFinite() && min <= max
+            private fun validRange(min: Float, max: Float): Boolean = min.isFinite() && max.isFinite() && min <= max
 
             fun read(buf: FriendlyByteBuf): AirspaceSound = AirspaceSound(
                 readBoundedList(buf, MAX_SOUNDS_PER_CANDIDATE, SoundSpec::read),

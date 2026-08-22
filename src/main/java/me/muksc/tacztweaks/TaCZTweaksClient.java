@@ -9,38 +9,60 @@ import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.config.ConfigManager;
 import me.muksc.tacztweaks.config.sync.ESyncDirection;
-import me.muksc.tacztweaks.network.NetworkHandler;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.common.NeoForge;
 
-public class TaCZTweaksClient implements ClientModInitializer {
+/**
+ * 客户端侧初始化（NeoForge 无 ClientModInitializer；由 {@link TaCZTweaks} 在
+ * Dist.CLIENT 下显式调用——与 TaCZ-Renovated 的 GunModClient 同模式）。
+ */
+public final class TaCZTweaksClient {
     public static KeyMapping.Category CATEGORY;
 
-    @Override
-    public void onInitializeClient() {
+    private TaCZTweaksClient() {
+    }
+
+    public static void init(IEventBus modEventBus, ModContainer modContainer) {
+        if (!FMLLoader.getCurrent().getDist().isClient()) {
+            return;
+        }
         CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "general"));
-        KeyMappingHelper.registerKeyMapping(UnloadKey.KEY);
-        KeyMappingHelper.registerKeyMapping(TiltGunKey.KEY);
-        KeyMappingHelper.registerKeyMapping(ReduceSensitivityKey.KEY);
+        modEventBus.addListener(TaCZTweaksClient::onRegisterKeyMappings);
+        // YACL 配置屏：21.11 无 RegisterConfigScreenEvent，走 ModContainer 扩展点
+        // （等价于姊妹 Fabric 侧的 ModMenuApiImpl）。
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class,
+                (container, screen) -> Config.INSTANCE.generateConfigScreen(screen));
+        NeoForge.EVENT_BUS.register(TaCZTweaksClient.class);
+    }
 
-        NetworkHandler.INSTANCE.registerClient();
+    private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+        event.register(UnloadKey.KEY);
+        event.register(TiltGunKey.KEY);
+        event.register(ReduceSensitivityKey.KEY);
+    }
 
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            UnloadKey.onClientTick();
-            TiltGunKey.onClientTick();
-            CrawlPitchController.apply(client.player);
-        });
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        UnloadKey.onClientTick();
+        TiltGunKey.onClientTick();
+        CrawlPitchController.apply(net.minecraft.client.Minecraft.getInstance().player);
+    }
 
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            ConfigManager.INSTANCE.setSyncedWithServer(false);
-            Config.INSTANCE.sync(ESyncDirection.RESET);
-            MonoConversion.INSTANCE.clear();
-            SoundPhysicsCompat.INSTANCE.clearAll();
-            CrawlPitchController.reset();
-        });
+    @SubscribeEvent
+    public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event) {
+        ConfigManager.INSTANCE.setSyncedWithServer(false);
+        Config.INSTANCE.sync(ESyncDirection.RESET);
+        MonoConversion.INSTANCE.clear();
+        SoundPhysicsCompat.INSTANCE.clearAll();
+        CrawlPitchController.reset();
     }
 }

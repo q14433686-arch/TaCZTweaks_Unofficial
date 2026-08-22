@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * When a gun-bayonet / stock melee swing hits no living entity, try the data-driven
- * block-break rules (same hook as upstream: {@code doMelee} + {@code doPerLivingHurt}).
+ * block-break rules.
  */
 @Mixin(value = ModernKineticGunItem.class, remap = false)
 public abstract class ModernKineticGunItemMixin {
@@ -40,7 +40,8 @@ public abstract class ModernKineticGunItemMixin {
         method = "doMelee",
         at = @At(
             value = "INVOKE",
-            target = "Lcom/tacz/guns/item/ModernKineticGunItem;doPerLivingHurt(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;FFLjava/util/List;)V"
+            target = "Lcom/tacz/guns/item/ModernKineticGunItem;doPerLivingHurt(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/LivingEntity;FFLjava/util/List;)V",
+            remap = true
         )
     )
     private static void tacztweaks$doMelee$setHit(

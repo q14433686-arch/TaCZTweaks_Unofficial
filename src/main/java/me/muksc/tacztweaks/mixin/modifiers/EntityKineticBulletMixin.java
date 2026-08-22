@@ -31,7 +31,7 @@ public abstract class EntityKineticBulletMixin {
         return (float) Config.Modifiers.Friction.INSTANCE.eval(original);
     }
 
-    @ModifyExpressionValue(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;getDamage(Lnet/minecraft/world/phys/Vec3;)F", ordinal = 1))
+    @ModifyExpressionValue(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;getDamage(Lnet/minecraft/world/phys/Vec3;)F", ordinal = 1, remap = true))
     private float tacztweaks$onHitEntity$playerDamageModifier(float original, @Local(argsOnly = true) TacHitResult result) {
         if (!(result.getEntity() instanceof Player)) return original;
         return (float) Config.Modifiers.PlayerDamage.INSTANCE.eval(original);

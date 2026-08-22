@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-/** Restores two upstream gunsmith safety checks on the 26.2 GUI signature. */
+/** Restores gunsmith safety checks and guards scrolling when recipes are absent. */
 @Mixin(value = GunSmithTableScreen.class, remap = false)
 public abstract class GunSmithTableScreenMixin extends AbstractContainerScreen<GunSmithTableMenu> {
     @Shadow
@@ -33,7 +33,8 @@ public abstract class GunSmithTableScreenMixin extends AbstractContainerScreen<G
         method = "isSuitableForMainHand",
         at = @At(
             value = "INVOKE",
-            target = "Lcom/tacz/guns/api/item/IGun;allowAttachment(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z"
+            target = "Lcom/tacz/guns/api/item/IGun;allowAttachment(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z",
+            remap = true
         )
     )
     private boolean tacztweaks$isSuitableForMainHand$checkType(

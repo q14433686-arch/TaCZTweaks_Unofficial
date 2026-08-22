@@ -18,6 +18,7 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
+import kotlin.math.abs
 
 private val COMPARATOR = compareBy<BulletParticles> { it.priority }
     .thenPrioritizeBy { it.target.isNotEmpty() }
@@ -119,9 +120,6 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
         val particleOptions: ParticleOptions = try {
             ParticleArgument.readParticle(reader, entity.registryAccess())
         } catch (e: Exception) {
-            // 26.2 把粒子参数改成了 SNBT/codec 格式（如 minecraft:block{block_state:"..."}），
-            // 旧语法或第三方包的错误语法在这里解析失败。粒子只是视觉效果，解析失败
-            // 绝不能拖垮实体 tick —— 记日志并跳过即可。
             logger.error("Failed to parse bullet particle '{}': {}", particleString, e.message)
             return
         }
@@ -133,7 +131,7 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
             else -> Vec3(0.0, 0.0, 1.0)
         }
         var referenceUp = Vec3(0.0, 1.0, 0.0)
-        if (kotlin.math.abs(forward.dot(referenceUp)) > 0.999) referenceUp = Vec3(0.0, 0.0, 1.0)
+        if (abs(forward.dot(referenceUp)) > 0.999) referenceUp = Vec3(0.0, 0.0, 1.0)
         val left = referenceUp.cross(forward).normalize()
         val up = forward.cross(left).normalize()
 
@@ -149,8 +147,6 @@ object BulletParticlesManager : BaseDataManager<BulletParticles>(
         }
 
         val coordinates = resolve(position, base)
-        // Delta is a vector, so relative/local values are resolved around zero rather than
-        // accidentally adding the world-space hit position.
         val deltaCoordinates = resolve(delta, null)
         if (!coordinates.hasFiniteComponents() || !deltaCoordinates.hasFiniteComponents()) return
 

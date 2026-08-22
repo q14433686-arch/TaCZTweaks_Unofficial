@@ -16,10 +16,11 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(value = ObjectAnimationSoundChannel.class, remap = false)
 public abstract class ObjectAnimationSoundChannelMixin {
     @WrapOperation(
-        method = "playSound(DDLnet/minecraft/world/entity/Entity;IFF)V",
+        method = "playSound",
         at = @At(
             value = "INVOKE",
-            target = "Lcom/tacz/guns/client/sound/SoundPlayManager;playAnimationSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/resources/Identifier;FFI)Lcom/tacz/guns/client/sound/GunSoundInstance;"
+            target = "Lcom/tacz/guns/client/sound/SoundPlayManager;playAnimationSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/resources/Identifier;FFI)Lcom/tacz/guns/client/sound/GunSoundInstance;",
+            remap = true
         )
     )
     private GunSoundInstance tacztweaks$playSound$broadcast(

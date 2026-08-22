@@ -3,50 +3,32 @@ package me.muksc.tacztweaks.client.sound
 import me.muksc.tacztweaks.config.Config
 import net.minecraft.resources.Identifier
 import java.nio.ByteBuffer
-import java.util.ArrayDeque
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import javax.sound.sampled.AudioFormat
 
-/** Request-scoped PCM conversion helpers for [Config.Tweaks.betterMonoConversion]. */
+/** PCM conversion helpers for betterMonoConversion. */
 object MonoConversion {
-    /** getPath() and getCompleteBuffer() run synchronously on the same sound thread. */
-    private val pendingRequests = ThreadLocal.withInitial {
-        HashMap<Identifier, ArrayDeque<Boolean>>()
-    }
-
-    /** Set only on the asynchronous task loading the dedicated mono cache. */
-    private val activeConversion = ThreadLocal<Identifier?>()
+    /**
+     * TaCZ routes mono world sounds through the same logical sound id/path that Minecraft caches.
+     * Once a path is requested as mono we keep remembering it until disconnect/resource reset,
+     * mirroring the upstream cache behaviour while avoiding mutable data on Identifier records.
+     */
+    private val monoPaths = Collections.newSetFromMap(ConcurrentHashMap<Identifier, Boolean>())
 
     fun request(id: Identifier, mono: Boolean) {
-        pendingRequests.get().computeIfAbsent(id) { ArrayDeque() }.addLast(mono)
-    }
-
-    fun consumeMonoRequest(id: Identifier): Boolean {
-        val requests = pendingRequests.get()
-        val queue = requests[id]
-        val mono = if (queue == null || queue.isEmpty()) false else queue.removeFirst()
-        if (queue == null || queue.isEmpty()) requests.remove(id)
-        return Config.Tweaks.betterMonoConversion() && mono
-    }
-
-    fun beginConversion(id: Identifier) {
-        activeConversion.set(id)
-    }
-
-    fun endConversion() {
-        activeConversion.remove()
+        if (Config.Tweaks.betterMonoConversion() && mono) monoPaths.add(id)
     }
 
     fun clear() {
-        pendingRequests.remove()
-        activeConversion.remove()
+        monoPaths.clear()
     }
 
     fun shouldConvert(format: AudioFormat, id: Identifier): Boolean {
-        if (activeConversion.get() != id || format.channels != 2) return false
+        if (!Config.Tweaks.betterMonoConversion() || id !in monoPaths || format.channels != 2) return false
         return when (format.sampleSizeInBits) {
             16 -> format.encoding == AudioFormat.Encoding.PCM_SIGNED
-            8 -> format.encoding == AudioFormat.Encoding.PCM_SIGNED ||
-                format.encoding == AudioFormat.Encoding.PCM_UNSIGNED
+            8 -> format.encoding == AudioFormat.Encoding.PCM_SIGNED || format.encoding == AudioFormat.Encoding.PCM_UNSIGNED
             else -> false
         }
     }
@@ -64,16 +46,8 @@ object MonoConversion {
                 }
             }
             8 -> while (input.remaining() >= 2) {
-                val left = if (format.encoding == AudioFormat.Encoding.PCM_UNSIGNED) {
-                    input.get().toInt() and 0xFF
-                } else {
-                    input.get().toInt()
-                }
-                val right = if (format.encoding == AudioFormat.Encoding.PCM_UNSIGNED) {
-                    input.get().toInt() and 0xFF
-                } else {
-                    input.get().toInt()
-                }
+                val left = if (format.encoding == AudioFormat.Encoding.PCM_UNSIGNED) input.get().toInt() and 0xFF else input.get().toInt()
+                val right = if (format.encoding == AudioFormat.Encoding.PCM_UNSIGNED) input.get().toInt() and 0xFF else input.get().toInt()
                 mono.put(((left + right) / 2).toByte())
             }
             else -> return source

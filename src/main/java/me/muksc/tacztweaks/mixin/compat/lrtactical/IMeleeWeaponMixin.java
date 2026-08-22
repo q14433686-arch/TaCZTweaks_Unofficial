@@ -17,9 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Optional;
 
 /**
- * LRTactical 26.2 moved the swing onto the {@link IMeleeWeapon} default
- * {@code performAttack} (return value = entities hit). A miss goes to the
- * data-driven block-break rules.
+ * LRTactical 1.21.11 routes a melee swing through IMeleeWeapon#performAttack.
+ * If the swing hits no entities, try data-driven block interaction rules.
  */
 @Mixin(value = IMeleeWeapon.class, remap = false)
 public interface IMeleeWeaponMixin {
@@ -28,8 +27,8 @@ public interface IMeleeWeaponMixin {
         ServerPlayer player,
         ItemStack stack,
         MeleeAction action,
-        Vec3 from,
-        Vec3 to,
+        Vec3 origin,
+        Vec3 direction,
         CallbackInfoReturnable<Integer> cir
     ) {
         if (cir.getReturnValueI() > 0) return;

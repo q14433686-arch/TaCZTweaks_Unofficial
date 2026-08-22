@@ -38,13 +38,7 @@ public abstract class LocalPlayerMixin implements SlideDataHolder {
             return context.shouldSlide();
         };
         boolean shouldSlide = supplier.get();
-        LocalPlayer player = LocalPlayer.class.cast(this);
-        boolean changed = shouldSlide != tacztweaks$getShouldSlide();
-        // A true request is a heartbeat, not permanent client-owned gameplay state. The
-        // server validates the held gun and expires the request if heartbeats stop.
-        if (changed || shouldSlide && player.tickCount % 20 == 0) {
-            NetworkHandler.INSTANCE.sendC2S(ClientMessagePlayerShouldSlide.create(shouldSlide));
-        }
+        if (shouldSlide != tacztweaks$getShouldSlide()) NetworkHandler.INSTANCE.sendC2S(ClientMessagePlayerShouldSlide.create(shouldSlide));
         tacztweaks$setShouldSlide(shouldSlide);
     }
 }

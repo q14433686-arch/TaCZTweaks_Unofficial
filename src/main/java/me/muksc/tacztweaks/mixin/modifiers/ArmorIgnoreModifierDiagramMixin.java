@@ -12,13 +12,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Client-only baseline adjustment for the refit-screen armor-ignore diagram. */
 @Mixin(value = ArmorIgnoreModifier.class, remap = false)
 public abstract class ArmorIgnoreModifierDiagramMixin {
-    @Inject(
-        method = "getPropertyDiagramsData",
-        at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;")
-    )
+    @Inject(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;"))
     private void tacztweaks$getPropertyDiagramsData$armorIgnoreModifier(
         ItemStack gunItem,
         GunData gunData,

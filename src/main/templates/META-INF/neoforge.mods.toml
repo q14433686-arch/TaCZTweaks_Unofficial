@@ -1,0 +1,59 @@
+license="${mod_license}"
+issueTrackerURL="https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+logoFile="icon.png"
+logoBlur=false
+displayURL="https://github.com/q14433686-arch/TaCZTweaks_Unofficial"
+credits="TaCZ Tweaks by MUKSC (Forge 1.20.1). Unofficial ports: q14433686-arch (Fabric 26.x / 1.21.11, NeoForge 1.21.11)."
+authors="MUKSC (original); unofficial NeoForge 1.21.11 port"
+description='''
+TaCZ Tweaks (unofficial NeoForge 1.21.11 port) — configurable gunplay, movement,
+balance, sound, interactions and data-driven systems for TaCZ.
+
+THIS IS UNOFFICIAL. Do not report bugs to MUKSC or the TACZ Dev Team.
+
+Requires TaCZ (tacz) on Minecraft 1.21.11 + NeoForge 21.11.x.
+Optional: Yet Another Config Lib (config screen), Sound Physics Remastered.
+'''
+
+[[mixins]]
+config="tacztweaks.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="tacz"
+    type="required"
+    versionRange="[1.1.8,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="yet_another_config_lib_v3"
+    type="required"
+    versionRange="[3.8.2,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="sound_physics_remastered"
+    type="optional"
+    versionRange="*"
+    ordering="NONE"
+    side="CLIENT"

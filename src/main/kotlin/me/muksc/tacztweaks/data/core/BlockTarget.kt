@@ -6,7 +6,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder
 import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.id
-import net.minecraft.advancements.predicates.BlockPredicate
+import net.minecraft.advancements.criterion.BlockPredicate
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
@@ -16,11 +16,7 @@ import net.minecraft.tags.TagKey
 import net.minecraft.world.item.ToolMaterial
 import net.minecraft.world.level.block.state.BlockState
 
-/**
- * Structured block matcher used by `block`/`melee` bullet interactions.
- * 26.2 moved [BlockPredicate] and replaced Forge's tier registry with vanilla
- * [ToolMaterial] incorrect-block tags; both legacy matcher types remain representable.
- */
+/** Structured block matcher used by `block`/`melee` bullet interactions. */
 sealed class BlockTarget(
     val type: EBlockTargetType
 ) : BlockTestable {
@@ -77,8 +73,7 @@ sealed class BlockTarget(
     }
 
     class Block(val values: List<net.minecraft.world.level.block.Block>) : BlockTarget(EBlockTargetType.BLOCK) {
-        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            values.any { state.`is`(it) }
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = values.any { state.`is`(it) }
 
         companion object {
             val CODEC: Codec<Block> = RecordCodecBuilder.create<Block> { it.group(
@@ -88,8 +83,7 @@ sealed class BlockTarget(
     }
 
     class BlockTag(val values: List<TagKey<net.minecraft.world.level.block.Block>>) : BlockTarget(EBlockTargetType.BLOCK_TAG) {
-        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            values.any { state.`is`(it) }
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = values.any { state.`is`(it) }
 
         companion object {
             val CODEC: Codec<BlockTag> = RecordCodecBuilder.create<BlockTag> { it.group(
@@ -110,8 +104,7 @@ sealed class BlockTarget(
     }
 
     class Predicate(val predicate: BlockPredicate) : BlockTarget(EBlockTargetType.PREDICATE) {
-        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            predicate.matches(level, pos)
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = predicate.matches(level, pos)
 
         companion object {
             val CODEC: Codec<Predicate> = RecordCodecBuilder.create<Predicate> { it.group(
@@ -122,7 +115,7 @@ sealed class BlockTarget(
 
     class HardnessTier(val tier: TierDefinition) : BlockTarget(EBlockTargetType.TIER) {
         override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            !state.`is`(tier.material.incorrectBlocksForDrops())
+            !state.`is`(tier.material.incorrectBlocksForDrops)
 
         companion object {
             val CODEC: Codec<HardnessTier> = RecordCodecBuilder.create<HardnessTier> { it.group(
@@ -151,8 +144,7 @@ sealed class BlockTarget(
     }
 
     class Hardness(val range: ValueRange) : BlockTarget(EBlockTargetType.HARDNESS) {
-        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean =
-            state.getDestroySpeed(level, pos) in range
+        override fun test(level: ServerLevel, pos: BlockPos, state: BlockState): Boolean = state.getDestroySpeed(level, pos) in range
 
         companion object {
             val CODEC: Codec<Hardness> = RecordCodecBuilder.create<Hardness> { it.group(

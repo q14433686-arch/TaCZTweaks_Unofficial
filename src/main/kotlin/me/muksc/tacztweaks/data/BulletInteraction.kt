@@ -14,20 +14,13 @@ import me.muksc.tacztweaks.data.core.BlockTestable
 import me.muksc.tacztweaks.data.core.EntityTestable
 import me.muksc.tacztweaks.data.core.Target
 import me.muksc.tacztweaks.data.core.ValueRange
-import net.minecraft.advancements.predicates.ItemPredicate
+import net.minecraft.advancements.criterion.ItemPredicate
 import net.minecraft.commands.arguments.blocks.BlockInput
 import net.minecraft.world.level.block.Blocks
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
-/**
- * Data-driven bullet interactions (glass piercing, dripstone breaking, custom damage, …).
- *
- * 26.2 notes:
- * - shield behavior is implemented through the `BlocksAttacks` data component rather than
- *   Forge's old ShieldBlockEvent;
- * - ItemPredicate and tool tiers use their 26.2 predicate/ToolMaterial representations.
- */
+/** Data-driven bullet interactions (block, entity and shield rules). */
 sealed class BulletInteraction(
     val type: EBulletInteractionType,
     val target: List<Target>,
@@ -133,11 +126,10 @@ sealed class BulletInteraction(
         val consume: Boolean
     ) {
         companion object {
-            fun codec(default: Boolean): Codec<GunPierce> =
-                RecordCodecBuilder.create { it.group(
-                    Codec.BOOL.strictOptionalFieldOf("required", default).forGetter(GunPierce::required),
-                    Codec.BOOL.strictOptionalFieldOf("consume", default).forGetter(GunPierce::consume)
-                ).apply(it, ::GunPierce) }
+            fun codec(default: Boolean): Codec<GunPierce> = RecordCodecBuilder.create { it.group(
+                Codec.BOOL.strictOptionalFieldOf("required", default).forGetter(GunPierce::required),
+                Codec.BOOL.strictOptionalFieldOf("consume", default).forGetter(GunPierce::consume)
+            ).apply(it, ::GunPierce) }
         }
     }
 
@@ -305,7 +297,7 @@ sealed class BulletInteraction(
 
     class Shield(
         target: List<Target>,
-        val predicate: java.util.Optional<ItemPredicate>,
+        val predicate: Optional<ItemPredicate>,
         val damage: ShieldDamage,
         val disable: Disable,
         val durability: Durability,
@@ -388,7 +380,7 @@ sealed class BulletInteraction(
         companion object {
             val DEFAULT = Shield(
                 emptyList(),
-                java.util.Optional.empty(),
+                Optional.empty(),
                 ShieldDamage(0.0F, 1.0F),
                 Disable(0, 0.0F, true),
                 Durability.FixedDamage(0, true),

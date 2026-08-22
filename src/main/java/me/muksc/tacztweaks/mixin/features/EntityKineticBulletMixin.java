@@ -36,16 +36,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Injects the state and hooks needed by the data-driven bullet interaction system into
- * {@code EntityKineticBullet}:
- * <ul>
- *   <li>stores the gun item stack (for armor-ignore / gun lookups);</li>
- *   <li>applies the per-hit damage modifiers ({@code pierce} damage falloff / entity damage);</li>
- *   <li>wraps {@code onHitEntity} to apply entity interactions and play hit/kill sounds & particles;</li>
- *   <li>after each tick, plays constant / whizz sounds.</li>
- * </ul>
- */
 @Mixin(value = EntityKineticBullet.class, remap = false)
 public abstract class EntityKineticBulletMixin implements EntityKineticBulletExtension {
     @Shadow
@@ -76,10 +66,10 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
     private final Set<UUID> tacztweaks$whizzedPlayers = new HashSet<>();
 
     @Unique
-    private int tacztweaks$burstIndex;
+    private int tacztweaks$burstIndex = 0;
 
     @Unique
-    private int tacztweaks$pelletIndex;
+    private int tacztweaks$pelletIndex = 0;
 
     @Override
     public ItemStack tacztweaks$getGunStack() {
@@ -176,23 +166,18 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
 
     @ModifyExpressionValue(
         method = "onBulletTick",
-        at = @At(
-            value = "FIELD",
-            target = "Lcom/tacz/guns/entity/EntityKineticBullet;pierce:I",
-            ordinal = 0
-        )
+        at = @At(value = "FIELD", target = "Lcom/tacz/guns/entity/EntityKineticBullet;pierce:I", ordinal = 0)
     )
     private int tacztweaks$onBulletTick$traceCustomPierce(int original) {
-        return BulletInteractionManager.INSTANCE.needsExtendedEntityTrace()
-            ? Math.max(2, original)
-            : original;
+        return BulletInteractionManager.INSTANCE.needsExtendedEntityTrace() ? Math.max(2, original) : original;
     }
 
     @ModifyExpressionValue(
         method = "onBulletTick",
         at = @At(
             value = "INVOKE",
-            target = "Lcom/tacz/guns/util/EntityUtil;findEntitiesOnPath(Lnet/minecraft/world/entity/projectile/Projectile;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)Ljava/util/List;"
+            target = "Lcom/tacz/guns/util/EntityUtil;findEntitiesOnPath(Lnet/minecraft/world/entity/projectile/Projectile;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)Ljava/util/List;",
+            remap = true
         )
     )
     private List<EntityKineticBullet.EntityResult> tacztweaks$onBulletTick$sortAllEntityHits(
@@ -212,15 +197,14 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         return damage;
     }
 
-    @WrapOperation(method = "onBulletTick", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onHitEntity(Lcom/tacz/guns/util/TacHitResult;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)V"))
+    @WrapOperation(method = "onBulletTick", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/entity/EntityKineticBullet;onHitEntity(Lcom/tacz/guns/util/TacHitResult;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;)V", remap = true))
     private void tacztweaks$onBulletTick$onHitEntity(EntityKineticBullet self, TacHitResult result, Vec3 from, Vec3 to, Operation<Void> original) {
         FirstAidCompat.recordProjectileHit(self, result);
         tacztweaks$setPosition(result.getLocation());
         Entity entity = result.getEntity();
         if (entity instanceof ServerPlayer player) tacztweaks$hitPlayers.add(player);
 
-        BulletInteractionManager.EntityInteraction interaction =
-            BulletInteractionManager.INSTANCE.prepareEntityInteraction(self, result.getLocation(), entity);
+        BulletInteractionManager.EntityInteraction interaction = BulletInteractionManager.INSTANCE.prepareEntityInteraction(self, result.getLocation(), entity);
         tacztweaks$addDamageModifier(interaction.getDamageModifier(), interaction.getDamageMultiplier());
         try {
             original.call(self, result, from, to);
@@ -229,16 +213,10 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
         }
 
         boolean dead = !entity.isAlive();
-        BulletInteractionManager.EntityInteractionResult interactionResult =
-            BulletInteractionManager.INSTANCE.finishEntityInteraction(
-                self, result.getLocation(), interaction, dead
-            );
+        BulletInteractionManager.EntityInteractionResult interactionResult = BulletInteractionManager.INSTANCE.finishEntityInteraction(self, result.getLocation(), interaction, dead);
         if (!interactionResult.getPierce()) {
-            // The caller decrements immediately after this wrapper. Setting one makes it
-            // reach zero and follow its normal stop/discard path.
             tacztweaks$setGunPierce(1);
         } else if (!interactionResult.getConsumeGunPierce()) {
-            // Compensate the caller's unconditional native decrement.
             tacztweaks$incrementGunPierce();
         }
 
@@ -253,12 +231,8 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
                 : interactionResult.getPierce()
                     ? BulletParticlesManager.EEntityParticleType.PIERCE
                     : BulletParticlesManager.EEntityParticleType.HIT;
-            BulletSoundsManager.INSTANCE.handleEntitySound(
-                soundType, level, self, result.getLocation(), entity
-            );
-            BulletParticlesManager.INSTANCE.handleEntityParticle(
-                particleType, level, self, result.getLocation(), entity
-            );
+            BulletSoundsManager.INSTANCE.handleEntitySound(soundType, level, self, result.getLocation(), entity);
+            BulletParticlesManager.INSTANCE.handleEntityParticle(particleType, level, self, result.getLocation(), entity);
         }
     }
 
@@ -275,8 +249,6 @@ public abstract class EntityKineticBulletMixin implements EntityKineticBulletExt
             tacztweaks$position = self.position().add(self.getDeltaMovement());
         }
         BulletSoundsManager.INSTANCE.handleConstant(level, self);
-        BulletSoundsManager.INSTANCE.handleSoundWhizz(
-            level, self, tacztweaks$hitPlayers, tacztweaks$whizzedPlayers
-        );
+        BulletSoundsManager.INSTANCE.handleSoundWhizz(level, self, tacztweaks$hitPlayers, tacztweaks$whizzedPlayers);
     }
 }

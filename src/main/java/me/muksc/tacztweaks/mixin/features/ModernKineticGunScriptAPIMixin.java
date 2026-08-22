@@ -18,10 +18,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Restores data-pack burst/pellet selectors on R2's named projectile hooks and starts one
- * airspace evaluation per successful shot cycle.
- */
+/** Restores burst/pellet selectors on TaCZ 1.21.11 R2's stable projectile hooks. */
 @Mixin(value = ModernKineticGunScriptAPI.class, remap = false)
 public abstract class ModernKineticGunScriptAPIMixin {
     @Unique
@@ -52,7 +49,8 @@ public abstract class ModernKineticGunScriptAPIMixin {
         method = "spawnProjectiles",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z"
+            target = "Lnet/minecraft/world/level/Level;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z",
+            remap = true
         ),
         index = 0
     )

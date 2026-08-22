@@ -1,6 +1,6 @@
 package me.muksc.tacztweaks
 
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.loading.FMLLoader
 import org.objectweb.asm.tree.ClassNode
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo
@@ -12,9 +12,9 @@ class ModMixinPlugin : IMixinConfigPlugin {
 
     override fun shouldApplyMixin(targetClassName: String, mixinClassName: String): Boolean = when {
         mixinClassName.startsWith("me.muksc.tacztweaks.mixin.compat.soundphysics.") ->
-            FabricLoader.getInstance().isModLoaded("sound_physics_remastered")
+            FMLLoader.getCurrent().getLoadingModList().getModFileById("sound_physics_remastered") != null
         mixinClassName.startsWith("me.muksc.tacztweaks.mixin.compat.firstaid.") ->
-            FabricLoader.getInstance().isModLoaded("firstaid")
+            FMLLoader.getCurrent().getLoadingModList().getModFileById("firstaid") != null
         else -> true
     }
 

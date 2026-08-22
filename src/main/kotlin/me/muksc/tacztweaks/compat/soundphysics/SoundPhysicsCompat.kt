@@ -3,16 +3,16 @@ package me.muksc.tacztweaks.compat.soundphysics
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageAirspaceSounds
 import me.muksc.tacztweaks.data.manager.BulletSoundsManager
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.ModList
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 
-/** Client-side bridge to Sound Physics Remastered 1.5.1+26.2. */
+/** Client-side bridge to Sound Physics Remastered 1.5.1 on Fabric 1.21.11. */
 object SoundPhysicsCompat {
-    private val enabled = FabricLoader.getInstance().isModLoaded("sound_physics_remastered")
+    private val enabled = ModList.get().isLoaded("sound_physics_remastered")
     private val triggerId = Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "sound_physics_trigger")
     private val pending = ConcurrentHashMap<PositionKey, ConcurrentLinkedDeque<PendingSound>>()
     private val processing = ThreadLocal<ProcessingSound?>()
@@ -30,7 +30,6 @@ object SoundPhysicsCompat {
         )
     }
 
-    /** Called at SPR evaluateEnvironment HEAD; returns true only for our probe sound. */
     fun begin(x: Double, y: Double, z: Double, sound: Identifier): Boolean {
         if (!enabled || sound != triggerId) return false
         val key = PositionKey(x, y, z)
@@ -83,10 +82,6 @@ object SoundPhysicsCompat {
         pending.clear()
     }
 
-    /**
-     * SPR defines shared airspace as count * 64 / (ray count * bounce count). Read the
-     * user's live config reflectively so this optional integration has no hard dependency.
-     */
     private fun rayDivisor(): Float = try {
         val mod = Class.forName("com.sonicether.soundphysics.SoundPhysicsMod")
         val config = mod.getField("CONFIG").get(null)
@@ -96,8 +91,8 @@ object SoundPhysicsCompat {
         val bounces = (bounceEntry.javaClass.getMethod("get").invoke(bounceEntry) as Number).toInt()
         (count * bounces).coerceAtLeast(1).toFloat()
     } catch (error: ReflectiveOperationException) {
-        TaCZTweaks.LOGGER.warn("Could not read Sound Physics ray settings; using 1.5.1 defaults", error)
-        128.0F // 32 rays * 4 bounces
+        TaCZTweaks.LOGGER.warn("Could not read Sound Physics ray settings; using 1.21.11 defaults", error)
+        128.0F
     }
 
     private fun discardStale() {

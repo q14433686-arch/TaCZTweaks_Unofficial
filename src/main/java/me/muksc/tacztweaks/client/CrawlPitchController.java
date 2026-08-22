@@ -36,13 +36,11 @@ public final class CrawlPitchController {
         float lower = Mth.clamp(getPitchLowerLimit(player), -90.0F, 0.0F);
         updateState(true, player, upper, lower);
 
-        // Minecraft X rotation is positive down; the config uses positive-up pitch.
         float pitch = -player.getXRot();
         float clampedPitch = Mth.clamp(pitch, lower, upper);
         if (Math.abs(clampedPitch - pitch) <= 1.0E-4F) return;
 
         player.setXRot(-clampedPitch);
-        // Do not render one interpolation frame from the now-invalid previous angle.
         player.xRotO = player.getXRot();
 
         long now = System.currentTimeMillis();
@@ -55,12 +53,7 @@ public final class CrawlPitchController {
         }
     }
 
-    private static void updateState(
-        boolean crawling,
-        LocalPlayer player,
-        float upper,
-        float lower
-    ) {
+    private static void updateState(boolean crawling, LocalPlayer player, float upper, float lower) {
         if (!stateInitialized || crawling != wasCrawling) {
             stateInitialized = true;
             wasCrawling = crawling;
@@ -73,11 +66,7 @@ public final class CrawlPitchController {
         }
     }
 
-    /**
-     * A collision within one block progressively moves the downward limit toward zero.
-     * This preserves the original tweak's wall/floor anti-peek behavior without mixing
-     * radians and degrees.
-     */
+    /** A collision within one block progressively moves the downward limit toward zero. */
     private static float getPitchLowerLimit(LocalPlayer player) {
         float lower = Config.Crawl.INSTANCE.pitchLowerLimit();
         if (!Config.Crawl.INSTANCE.dynamicPitchLimit()) return lower;

@@ -1,12 +1,26 @@
+# Gradle / build outputs
 .gradle/
 build/
-out/
 run/
+out/
+
+# IDE
 .idea/
 *.iml
-__pycache__/
-*.py[cod]
-*.log
+.vscode/
+.project
+.classpath
+.settings/
+bin/
 
-# Local audit inputs and downloaded archives do not belong in Git.
-*.zip
+# Logs (past commits had to delete RawOutput.log/latest.log/debug.log by hand)
+*.log
+hs_err_pid*
+replay_pid*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local tooling
+repo/

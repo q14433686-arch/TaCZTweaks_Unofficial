@@ -12,8 +12,8 @@ import me.muksc.tacztweaks.data.codec.DispatchCodec
 import me.muksc.tacztweaks.data.codec.dispatchBy
 import me.muksc.tacztweaks.data.codec.strictOptionalFieldOf
 import me.muksc.tacztweaks.mixininterface.features.EntityKineticBulletExtension
-import net.minecraft.advancements.predicates.MinMaxBounds
-import net.minecraft.advancements.predicates.entity.EntityPredicate
+import net.minecraft.advancements.criterion.EntityPredicate
+import net.minecraft.advancements.criterion.MinMaxBounds
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.StringRepresentable
@@ -24,12 +24,6 @@ import kotlin.jvm.optionals.getOrNull
 /**
  * "When does this interaction apply" matcher, evaluated against the bullet (or null for
  * melee) plus the weapon id and bullet damage.
- *
- * 26.2 notes:
- * - advancement predicates moved from `advancements.critereon` to
- *   `advancements.predicates`; their codec and match method still exist;
- * - burst/pellet indices are attached at the stable `spawnProjectiles` hook;
- * - EntityKineticBullet fields are private in 26.2, so public accessors are used.
  */
 sealed class Target(
     val type: ETargetType
@@ -141,10 +135,12 @@ sealed class Target(
             }
         }
 
-        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean = regex.matches(when (match) {
-            EMatchType.GUN -> weaponId.toString()
-            EMatchType.AMMO -> entity?.getAmmoId()?.toString() ?: ""
-        })
+        override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean = regex.matches(
+            when (match) {
+                EMatchType.GUN -> weaponId.toString()
+                EMatchType.AMMO -> entity?.getAmmoId()?.toString() ?: ""
+            }
+        )
 
         companion object {
             val CODEC: Codec<RegexPattern> = RecordCodecBuilder.create<RegexPattern> { it.group(
@@ -179,7 +175,7 @@ sealed class Target(
 
     class Speed(val values: List<ValueRange>) : Target(ETargetType.SPEED) {
         override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean =
-            entity != null && values.any { it.contains(entity.getDeltaMovement().length() * 10) }
+            entity != null && values.any { it.contains(entity.deltaMovement.length() * 10) }
 
         companion object {
             val CODEC: Codec<Speed> = RecordCodecBuilder.create<Speed> { it.group(
@@ -190,7 +186,7 @@ sealed class Target(
 
     object Silenced : Target(ETargetType.SILENCED) {
         override fun test(entity: EntityKineticBullet?, weaponId: Identifier, damage: Float): Boolean {
-            val owner = entity?.getOwner() as? LivingEntity ?: return false
+            val owner = entity?.owner as? LivingEntity ?: return false
             val operator = IGunOperator.fromLivingEntity(owner)
             val silence = operator.getCacheProperty()?.getCache<Pair<Int, Boolean>>(SilenceModifier.ID) ?: return false
             return silence.right()

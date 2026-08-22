@@ -12,21 +12,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
-/**
- * Ports upstream's crawl transition smoothing to 26.2's render-state renderer.
- *
- * <p>26.2 reads {@link AvatarRenderState#isVisuallySwimming} directly. The interpolation
- * amount is the first float local declared by the method, after its two float arguments;
- * therefore it is float ordinal 2. {@link ModifyArgs} changes Y and Z in one injector and
- * avoids the invalid "modified argument + target method arguments" signature that
- * {@code ModifyArg} rejects at runtime.</p>
- */
+/** Client-side crawl transition smoothing for the 1.21.11 AvatarRenderer path. */
 @Mixin(AvatarRenderer.class)
 public abstract class AvatarRendererMixin {
     @Unique
     private static final String SETUP_ROTATIONS =
-        "setupRotations(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;" +
-            "Lcom/mojang/blaze3d/vertex/PoseStack;FF)V";
+        "setupRotations(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;FF)V";
 
     @ModifyExpressionValue(
         method = SETUP_ROTATIONS,
@@ -43,10 +34,7 @@ public abstract class AvatarRendererMixin {
         method = SETUP_ROTATIONS,
         at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V")
     )
-    private void tacztweaks$setupRotations$smoothTranslation(
-        Args args,
-        @Local(ordinal = 2) float swimAmount
-    ) {
+    private void tacztweaks$setupRotations$smoothTranslation(Args args, @Local(ordinal = 2) float swimAmount) {
         if (!Config.Crawl.INSTANCE.visualTweak()) return;
         float progress = Mth.clamp(swimAmount, 0.0F, 1.0F);
         float y = args.get(1);

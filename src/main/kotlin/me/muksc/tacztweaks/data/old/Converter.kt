@@ -5,10 +5,11 @@ import me.muksc.tacztweaks.data.BulletInteraction
 import me.muksc.tacztweaks.data.core.Target
 import me.muksc.tacztweaks.data.core.ValueRange
 import net.minecraft.world.level.block.Blocks
-import java.util.*
+import java.util.Optional
 import me.muksc.tacztweaks.data.old.BulletInteraction as OldBulletInteraction
 
-fun OldBulletInteraction.convert() = BulletInteraction.Block(
+/** Converts the old v2 schema to the current block interaction format at load time. */
+fun OldBulletInteraction.convert(): BulletInteraction.Block = BulletInteraction.Block(
     target = if (guns.isEmpty()) emptyList() else listOf(Target.Gun(guns)),
     blocks = blocks,
     blockBreak = when (blockBreak) {

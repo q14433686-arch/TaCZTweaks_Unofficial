@@ -1,4 +1,5 @@
 package me.muksc.tacztweaks.compat.soundphysics.network.message
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat
@@ -17,14 +18,14 @@ object ServerMessageSoundPhysicsRequired : CustomPacketPayload {
     val CODEC: StreamCodec<FriendlyByteBuf, ServerMessageSoundPhysicsRequired> =
         StreamCodec.unit(ServerMessageSoundPhysicsRequired)
 
-    fun handle(msg: ServerMessageSoundPhysicsRequired, client: Minecraft) {
+    fun handle(msg: ServerMessageSoundPhysicsRequired, ctx: IPayloadContext) {
         if (SoundPhysicsCompat.isEnabled()) return
-        client.execute {
-            // 26.2: Gui#chat and LocalPlayer#displayClientMessage are gone.
-            // TaCZ itself uses Player#sendSystemMessage(Component) on the client.
-            client.player?.sendSystemMessage(
+        ctx.enqueueWork {
+            val client = Minecraft.getInstance()
+            client.player?.displayClientMessage(
                 Component.literal("[TaCZ Tweaks] ").withStyle(ChatFormatting.GOLD)
-                    .append(TaCZTweaks.translatable("bullet_sounds.sound_physics_missing").withStyle(ChatFormatting.YELLOW))
+                    .append(TaCZTweaks.translatable("bullet_sounds.sound_physics_missing").withStyle(ChatFormatting.YELLOW)),
+                false
             )
         }
     }

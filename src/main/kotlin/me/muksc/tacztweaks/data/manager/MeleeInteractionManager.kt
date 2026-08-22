@@ -24,7 +24,7 @@ private val COMPARATOR = compareBy<MeleeInteraction> { it.priority }
 
 /**
  * Loads `melee_interactions` JSON and, when a melee swing misses entities, breaks the
- * looked-at block according to the matching rule (same semantics as upstream).
+ * looked-at block according to the matching rule.
  */
 object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
     "melee_interactions", MeleeInteraction.CODEC, COMPARATOR
@@ -37,8 +37,8 @@ object MeleeInteractionManager : BaseDataManager<MeleeInteraction>(
         selector: (T) -> List<E>,
         predicate: (E) -> Boolean
     ): Pair<Identifier, T>? = byType<T>().entries.firstOrNull { (_, interaction) ->
-        interaction.target.anyOrEmpty { it.test(null, weaponId, damage) }
-            && selector(interaction).anyOrEmpty(predicate)
+        interaction.target.anyOrEmpty { it.test(null, weaponId, damage) } &&
+            selector(interaction).anyOrEmpty(predicate)
     }?.toPair()
 
     fun handleBlockInteraction(player: ServerPlayer, reach: Double, damage: Float) {

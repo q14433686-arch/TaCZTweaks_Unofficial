@@ -11,7 +11,7 @@ public abstract class LivingEntityMixin implements SlideDataHolder {
     private boolean tacztweaks$shouldSlide = false;
 
     @Unique
-    private int tacztweaks$slideRequestExpiry;
+    private int tacztweaks$slideRequestExpiry = 0;
 
     @Override
     public boolean tacztweaks$getShouldSlide() {

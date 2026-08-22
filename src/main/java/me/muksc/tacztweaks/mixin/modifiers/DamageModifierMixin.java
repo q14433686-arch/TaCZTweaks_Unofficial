@@ -7,8 +7,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 /**
- * Applies the global damage modifier to both common cache construction paths. Client-only
- * property-diagram handling lives in DamageModifierDiagramMixin.
+ * Applies the global damage modifier to the base damage stored in the
+ * {@link com.tacz.guns.resource.pojo.data.gun.ExtraDamage.DistanceDamagePair} cache.
+ *
+ * <p>{@code initCache} builds the cache in two places (verified against the 26.2 bytecode):
+ * the distance-falloff loop (ordinal 0) and the plain-damage branch (ordinal 1). Both
+ * {@code DistanceDamagePair} constructions must be modified, otherwise guns without
+ * distance falloff would keep their unmodified damage.</p>
  */
 @Mixin(value = DamageModifier.class, remap = false)
 public abstract class DamageModifierMixin {

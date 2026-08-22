@@ -13,13 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Client-only baseline adjustments for the refit-screen inaccuracy diagram helpers. */
 @Mixin(value = InaccuracyModifier.class, remap = false)
 public abstract class InaccuracyModifierDiagramMixin {
-    @Inject(
-        method = "buildNormal",
-        at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;")
-    )
+    @Inject(method = "buildNormal", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;"))
     private void tacztweaks$buildNormal$inaccuracyModifier(
         GunData gunData,
         AttachmentCacheProperty cacheProperty,
@@ -33,10 +29,7 @@ public abstract class InaccuracyModifierDiagramMixin {
         inaccuracy.set((float) Config.Modifiers.Inaccuracy.INSTANCE.eval(inaccuracy.get()));
     }
 
-    @Inject(
-        method = "buildAim",
-        at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;")
-    )
+    @Inject(method = "buildAim", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/modifier/AttachmentCacheProperty;getCache(Ljava/lang/String;)Ljava/lang/Object;"))
     private void tacztweaks$buildAim$inaccuracyModifier(
         GunData gunData,
         AttachmentCacheProperty cacheProperty,

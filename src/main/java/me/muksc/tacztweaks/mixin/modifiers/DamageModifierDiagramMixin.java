@@ -12,13 +12,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Client-only baseline adjustment for the refit-screen damage diagram. */
 @Mixin(value = DamageModifier.class, remap = false)
 public abstract class DamageModifierDiagramMixin {
-    @Inject(
-        method = "getPropertyDiagramsData",
-        at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/ExtraDamage$DistanceDamagePair;getDamage()F", ordinal = 1)
-    )
+    @Inject(method = "getPropertyDiagramsData", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/resource/pojo/data/gun/ExtraDamage$DistanceDamagePair;getDamage()F", ordinal = 1))
     private void tacztweaks$getPropertyDiagramsData$damageModifier(
         ItemStack gunItem,
         GunData gunData,

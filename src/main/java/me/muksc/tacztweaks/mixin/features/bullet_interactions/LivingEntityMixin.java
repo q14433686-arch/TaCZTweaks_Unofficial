@@ -20,22 +20,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import kotlin.jvm.functions.Function1;
+import java.util.function.IntUnaryOperator;
 
-/**
- * Applies data-driven shield rules through 26.2's {@link BlocksAttacks} component.
- *
- * <p>Older Minecraft versions implemented shields in {@code Player#hurtCurrentlyUsedShield}
- * and {@code disableShield}. Both methods disappeared in 26.2. The exact replacement path is
- * {@code LivingEntity.applyItemBlocking}: resolve blocked damage, damage the blocking item,
- * then return the blocked amount to {@code hurtServer}. Hooking those two component calls
- * preserves vanilla angle/bypass checks while allowing the datapack to replace damage,
- * durability and cooldown values.</p>
- */
+/** Applies data-driven shield rules through LivingEntity's blocking-item path. */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
     @Unique
-    private Function1<Integer, Integer> tacztweaks$shieldDurability;
+    private IntUnaryOperator tacztweaks$shieldDurability;
 
     @Unique
     private int tacztweaks$shieldDisableTicks;
@@ -55,7 +46,8 @@ public abstract class LivingEntityMixin {
         method = "applyItemBlocking",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/item/component/BlocksAttacks;resolveBlockedDamage(Lnet/minecraft/world/damagesource/DamageSource;FD)F"
+            target = "Lnet/minecraft/world/item/component/BlocksAttacks;resolveBlockedDamage(Lnet/minecraft/world/damagesource/DamageSource;FD)F",
+            remap = true
         )
     )
     private float tacztweaks$applyItemBlocking$customDamage(
@@ -70,13 +62,13 @@ public abstract class LivingEntityMixin {
         if (!(source.getDirectEntity() instanceof EntityKineticBullet bullet)) return vanillaBlocked;
 
         LivingEntity self = (LivingEntity) (Object) this;
-        ItemStack shield = self.getItemBlockingWith();
+        ItemStack shield = self.getUseItem();
         if (shield == null || shield.isEmpty()) return vanillaBlocked;
 
         BulletInteractionManager.ShieldInteractionResult result =
             BulletInteractionManager.INSTANCE.handleShieldInteraction(bullet, bullet.position(), shield, amount);
         if (result == null) return vanillaBlocked;
-        tacztweaks$shieldDurability = result.getDurabilityDamage();
+        tacztweaks$shieldDurability = result.getDurabilityDamage()::invoke;
         tacztweaks$shieldDisableTicks = Math.max(0, result.getDisableDuration());
         return Math.clamp(result.getBlockedDamage(), 0.0F, amount);
     }
@@ -85,8 +77,10 @@ public abstract class LivingEntityMixin {
         method = "applyItemBlocking",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/item/component/BlocksAttacks;hurtBlockingItem(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;F)V"
-        )
+            target = "Lnet/minecraft/world/item/component/BlocksAttacks;hurtBlockingItem(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;F)V",
+            remap = true
+        ),
+        require = 0
     )
     private void tacztweaks$applyItemBlocking$customDurability(
         BlocksAttacks attacks,
@@ -97,7 +91,44 @@ public abstract class LivingEntityMixin {
         float blockedDamage,
         Operation<Void> original
     ) {
-        Function1<Integer, Integer> durability = tacztweaks$shieldDurability;
+        tacztweaks$customDurability(attacks, level, stack, entity, hand, blockedDamage, original);
+    }
+
+    // 1.21.11 专服 jar 的 applyItemBlocking 与服务端/客户端合并 jar 不同：
+    // hurtBlockingItem 在专服版多一个 int 形参。两处 require=0，各自只命中一种形态。
+    @WrapOperation(
+        method = "applyItemBlocking",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/item/component/BlocksAttacks;hurtBlockingItem(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;FI)V",
+            remap = true
+        ),
+        require = 0
+    )
+    private void tacztweaks$applyItemBlocking$customDurabilityServer(
+        BlocksAttacks attacks,
+        Level level,
+        ItemStack stack,
+        LivingEntity entity,
+        InteractionHand hand,
+        float blockedDamage,
+        int extra,
+        Operation<Void> original
+    ) {
+        tacztweaks$customDurability(attacks, level, stack, entity, hand, blockedDamage, original);
+    }
+
+    @Unique
+    private void tacztweaks$customDurability(
+        BlocksAttacks attacks,
+        Level level,
+        ItemStack stack,
+        LivingEntity entity,
+        InteractionHand hand,
+        float blockedDamage,
+        Operation<Void> original
+    ) {
+        IntUnaryOperator durability = tacztweaks$shieldDurability;
         if (durability == null) {
             original.call(attacks, level, stack, entity, hand, blockedDamage);
             return;
@@ -107,7 +138,7 @@ public abstract class LivingEntityMixin {
             player.awardStat(Stats.ITEM_USED.get(stack.getItem()));
         }
         int vanillaDamage = attacks.itemDamage().apply(blockedDamage);
-        int customDamage = Math.max(0, durability.invoke(vanillaDamage));
+        int customDamage = Math.max(0, durability.applyAsInt(vanillaDamage));
         if (customDamage > 0) {
             stack.hurtAndBreak(customDamage, entity, hand.asEquipmentSlot());
         }

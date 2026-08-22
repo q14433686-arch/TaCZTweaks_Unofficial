@@ -13,7 +13,7 @@ public abstract class ModernKineticGunScriptAPIMixin {
     @Shadow
     private Identifier gunId;
 
-    @ModifyExpressionValue(method = "getNeededAmmoAmount", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/gun/AbstractGunItem;getCurrentAmmoCount(Lnet/minecraft/world/item/ItemStack;)I"))
+    @ModifyExpressionValue(method = "getNeededAmmoAmount", at = @At(value = "INVOKE", target = "Lcom/tacz/guns/api/item/gun/AbstractGunItem;getCurrentAmmoCount(Lnet/minecraft/world/item/ItemStack;)I", remap = true))
     private int tacztweaks$getNeededAmmoAmount$discardCurrentAmmo(int original) {
         if (!Config.Gun.INSTANCE.reloadDiscardsMagazine()) return original;
         if (Config.Gun.INSTANCE.reloadDiscardsMagazineExclusions().contains(gunId.toString())) return original;

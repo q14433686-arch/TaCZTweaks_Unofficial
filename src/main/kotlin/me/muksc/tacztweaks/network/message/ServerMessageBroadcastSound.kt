@@ -1,4 +1,5 @@
 package me.muksc.tacztweaks.network.message
+import net.neoforged.neoforge.network.handling.IPayloadContext
 
 import com.tacz.guns.client.sound.SoundPlayManager
 import me.muksc.tacztweaks.TaCZTweaks
@@ -42,9 +43,10 @@ class ServerMessageBroadcastSound(
             { buf -> ServerMessageBroadcastSound(buf) }
         )
 
-        fun handle(msg: ServerMessageBroadcastSound, client: Minecraft) {
-            client.execute {
-                val entity = client.level?.getEntity(msg.entityId) ?: return@execute
+        fun handle(msg: ServerMessageBroadcastSound, ctx: IPayloadContext) {
+            val client = Minecraft.getInstance()
+            val entity = client.level?.getEntity(msg.entityId) ?: return
+            ctx.enqueueWork {
                 SoundPlayManager.playClientSound(
                     entity,
                     msg.soundName,

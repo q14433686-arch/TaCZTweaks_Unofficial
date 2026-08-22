@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(value = GunAnimationStateContext.class, remap = false)
 public abstract class GunAnimationStateContextMixin {
     // NOTE: upstream targeted `lambda$shouldSlide$18`; the 26.2 refabricated port renumbered
-    // the lambda to `lambda$shouldSlide$0`.
-    @WrapOperation(method = "lambda$shouldSlide$0", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;isCrouching()Z", remap = true))
+    // the lambda to `lambda$shouldSlide$0`; the 1.21.11 port recompiled it as `$16`.
+    @WrapOperation(method = "lambda$shouldSlide$16", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;isCrouching()Z", remap = true))
     private boolean tacztweaks$shouldSlide$tiltGun(Entity instance, Operation<Boolean> original) {
         if (Config.Crawl.INSTANCE.tiltGun() == Config.Crawl.ETiltGun.NEVER && instance.isVisuallyCrawling()) return false;
         boolean crouch = !Config.Tweaks.INSTANCE.betterGunTilt() && original.call(instance);

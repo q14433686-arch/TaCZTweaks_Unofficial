@@ -1,18 +1,20 @@
 package me.muksc.tacztweaks.config
 
 import net.minecraft.client.Minecraft
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.permissions.Permissions
-import net.minecraft.world.entity.player.Player
 
 object ConfigManager {
     var syncedWithServer = false
 
     fun canUpdateServerConfig(): Boolean {
-        val player = Minecraft.getInstance().player ?: return false
+        val minecraft = Minecraft.getInstance()
+        val player = minecraft.player ?: return false
         return canUpdateServerConfig(player)
     }
 
-    /** Permission state is synchronised onto LocalPlayer in 26.2; no ServerPlayer cast. */
-    fun canUpdateServerConfig(player: Player): Boolean =
-        player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)
+    fun canUpdateServerConfig(player: net.minecraft.world.entity.player.Player): Boolean {
+        val serverPlayer = player as? ServerPlayer ?: return false
+        return serverPlayer.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)
+    }
 }

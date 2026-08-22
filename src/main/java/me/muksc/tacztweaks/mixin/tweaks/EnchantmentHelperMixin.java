@@ -19,10 +19,10 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Makes Projectile Protection reduce TaCZ bullet damage. 26.2 deleted
- * {@code ProtectionEnchantment}; the datapack effect only checks {@code #is_projectile},
- * and {@code tacz:bullets} is not in that tag (on purpose — putting it there would also
- * change endermen / shields). We add the vanilla {@code 2 * level} amount ourselves.
+ * Makes Projectile Protection reduce TaCZ bullet damage.
+ *
+ * 1.21.11 uses data-driven enchantments, so we must hook EnchantmentHelper's aggregate
+ * protection lookup instead of the deleted ProtectionEnchantment class.
  */
 @Mixin(EnchantmentHelper.class)
 public abstract class EnchantmentHelperMixin {
@@ -37,7 +37,6 @@ public abstract class EnchantmentHelperMixin {
         if (!Config.Tweaks.INSTANCE.bulletProtection()) return original;
         if (!source.is(ModDamageTypes.BULLETS_TAG)) return original;
         if (source.is(DamageTypeTags.IS_PROJECTILE)) return original;
-        // Matches the second requirement in vanilla projectile_protection.json.
         if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return original;
 
         Holder.Reference<Enchantment> holder;
@@ -48,9 +47,7 @@ public abstract class EnchantmentHelperMixin {
         } catch (Exception ignored) {
             return original;
         }
-        // getEnchantmentLevel(entity) returns only the maximum level. Vanilla's
-        // damage_protection effect runs once per equipped stack, so levels on multiple armor
-        // pieces must be summed instead.
+
         int totalLevel = 0;
         for (ItemStack stack : holder.value().getSlotItems(entity).values()) {
             totalLevel += EnchantmentHelper.getItemEnchantmentLevel(holder, stack);

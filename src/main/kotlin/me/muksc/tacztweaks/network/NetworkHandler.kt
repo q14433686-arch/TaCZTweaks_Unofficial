@@ -1,81 +1,55 @@
 package me.muksc.tacztweaks.network
 
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageAirspaceSounds
+import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired
 import me.muksc.tacztweaks.network.message.ClientMessageBroadcastSound
 import me.muksc.tacztweaks.network.message.ClientMessagePlayerShouldSlide
 import me.muksc.tacztweaks.network.message.ClientMessagePlayerUnload
 import me.muksc.tacztweaks.network.message.ClientMessageSyncConfig
-import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageAirspaceSounds
-import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageSoundPhysicsRequired
 import me.muksc.tacztweaks.network.message.ServerMessageBroadcastSound
 import me.muksc.tacztweaks.network.message.ServerMessageSyncConfig
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.neoforged.neoforge.network.PacketDistributor
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 
+/**
+ * NeoForge 网络层（Fabric 三段合一为一次 RegisterPayloadHandlersEvent 注册）。
+ */
 object NetworkHandler {
-    fun registerPayloads() {
-        PayloadTypeRegistry.serverboundPlay().register(ClientMessageSyncConfig.TYPE, ClientMessageSyncConfig.CODEC)
-        PayloadTypeRegistry.serverboundPlay().register(ClientMessagePlayerUnload.TYPE, ClientMessagePlayerUnload.CODEC)
-        PayloadTypeRegistry.serverboundPlay().register(ClientMessageBroadcastSound.TYPE, ClientMessageBroadcastSound.CODEC)
-        PayloadTypeRegistry.serverboundPlay().register(ClientMessagePlayerShouldSlide.TYPE, ClientMessagePlayerShouldSlide.CODEC)
-        PayloadTypeRegistry.clientboundPlay().register(ServerMessageSyncConfig.TYPE, ServerMessageSyncConfig.CODEC)
-        PayloadTypeRegistry.clientboundPlay().register(ServerMessageBroadcastSound.TYPE, ServerMessageBroadcastSound.CODEC)
-        PayloadTypeRegistry.clientboundPlay().register(ServerMessageAirspaceSounds.TYPE, ServerMessageAirspaceSounds.CODEC)
-        PayloadTypeRegistry.clientboundPlay().register(ServerMessageSoundPhysicsRequired.TYPE, ServerMessageSoundPhysicsRequired.CODEC)
-    }
+    private const val VERSION = "1"
 
-    fun registerServer() {
-        registerPayloads()
-        ServerPlayNetworking.registerGlobalReceiver(ClientMessageSyncConfig.TYPE) { msg, ctx ->
-            ClientMessageSyncConfig.handle(msg, ctx.server(), ctx.player(), ctx.responseSender())
-        }
-        ServerPlayNetworking.registerGlobalReceiver(ClientMessagePlayerUnload.TYPE) { msg, ctx ->
-            ClientMessagePlayerUnload.handle(msg, ctx.server(), ctx.player(), ctx.responseSender())
-        }
-        ServerPlayNetworking.registerGlobalReceiver(ClientMessageBroadcastSound.TYPE) { msg, ctx ->
-            ClientMessageBroadcastSound.handle(msg, ctx.server(), ctx.player(), ctx.responseSender())
-        }
-        ServerPlayNetworking.registerGlobalReceiver(ClientMessagePlayerShouldSlide.TYPE) { msg, ctx ->
-            ClientMessagePlayerShouldSlide.handle(msg, ctx.server(), ctx.player(), ctx.responseSender())
-        }
-    }
-
-    fun registerClient() {
-        ClientPlayNetworking.registerGlobalReceiver(ServerMessageSyncConfig.TYPE) { msg, ctx ->
-            ServerMessageSyncConfig.handle(msg, ctx.client())
-        }
-        ClientPlayNetworking.registerGlobalReceiver(ServerMessageBroadcastSound.TYPE) { msg, ctx ->
-            ServerMessageBroadcastSound.handle(msg, ctx.client())
-        }
-        ClientPlayNetworking.registerGlobalReceiver(ServerMessageAirspaceSounds.TYPE) { msg, ctx ->
-            ServerMessageAirspaceSounds.handle(msg, ctx.client())
-        }
-        ClientPlayNetworking.registerGlobalReceiver(ServerMessageSoundPhysicsRequired.TYPE) { msg, ctx ->
-            ServerMessageSoundPhysicsRequired.handle(msg, ctx.client())
-        }
+    fun register(event: RegisterPayloadHandlersEvent) {
+        val registrar = event.registrar(VERSION)
+        registrar.playToServer(ClientMessageSyncConfig.TYPE, ClientMessageSyncConfig.CODEC, ClientMessageSyncConfig::handle)
+        registrar.playToServer(ClientMessagePlayerUnload.TYPE, ClientMessagePlayerUnload.CODEC, ClientMessagePlayerUnload::handle)
+        registrar.playToServer(ClientMessageBroadcastSound.TYPE, ClientMessageBroadcastSound.CODEC, ClientMessageBroadcastSound::handle)
+        registrar.playToServer(ClientMessagePlayerShouldSlide.TYPE, ClientMessagePlayerShouldSlide.CODEC, ClientMessagePlayerShouldSlide::handle)
+        registrar.playToClient(ServerMessageSyncConfig.TYPE, ServerMessageSyncConfig.CODEC, ServerMessageSyncConfig::handle)
+        registrar.playToClient(ServerMessageBroadcastSound.TYPE, ServerMessageBroadcastSound.CODEC, ServerMessageBroadcastSound::handle)
+        registrar.playToClient(ServerMessageAirspaceSounds.TYPE, ServerMessageAirspaceSounds.CODEC, ServerMessageAirspaceSounds::handle)
+        registrar.playToClient(ServerMessageSoundPhysicsRequired.TYPE, ServerMessageSoundPhysicsRequired.CODEC, ServerMessageSoundPhysicsRequired::handle)
     }
 
     fun sendC2S(payload: CustomPacketPayload) {
-        ClientPlayNetworking.send(payload)
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload)
     }
 
     fun sendPlayerUnload() {
-        ClientPlayNetworking.send(ClientMessagePlayerUnload)
+        sendC2S(ClientMessagePlayerUnload.create())
     }
 
     fun sendS2C(player: ServerPlayer, payload: CustomPacketPayload) {
-        ServerPlayNetworking.send(player, payload)
+        PacketDistributor.sendToPlayer(player, payload)
     }
 
     fun sendSyncConfig(player: ServerPlayer) {
-        ServerPlayNetworking.send(player, ServerMessageSyncConfig.create())
+        sendS2C(player, ServerMessageSyncConfig.create())
     }
 
     fun sendSyncConfigAll(server: MinecraftServer) {
         val payload = ServerMessageSyncConfig.create()
-        server.playerList.players.forEach { ServerPlayNetworking.send(it, payload) }
+        server.playerList.players.forEach { PacketDistributor.sendToPlayer(it, payload) }
     }
 }

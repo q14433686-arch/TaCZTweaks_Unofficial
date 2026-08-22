@@ -7,7 +7,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import me.muksc.tacztweaks.config.Config;
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntityType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(value = EntityKineticBullet.class, remap = false)
 public abstract class EntityKineticBulletMixin {
-    @WrapOperation(method = "createDamageSources", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/Holder$Reference;is(Lnet/minecraft/tags/TagKey;)Z"))
+    @WrapOperation(method = "createDamageSources", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/Holder$Reference;is(Lnet/minecraft/tags/TagKey;)Z", remap = true))
     private boolean tacztweaks$createDamageSources$dontUseMagicOnEndermen(
         Holder.Reference instance,
         TagKey tagKey,
@@ -36,7 +36,7 @@ public abstract class EntityKineticBulletMixin {
         boolean result = original.call(instance, tagKey);
         if (tagKey != EntityKineticBullet.USE_MAGIC_DAMAGE_ON) return result;
         if (!Config.Tweaks.INSTANCE.endermenEvadeBullets()) return result;
-        if (parts.hitPart().getType() != EntityTypes.ENDERMAN) return result;
+        if (parts.hitPart().getType() != EntityType.ENDERMAN) return result;
         return false;
     }
 }

@@ -3,10 +3,8 @@ package me.muksc.tacztweaks.data.manager
 import com.mojang.logging.LogUtils
 import com.mojang.serialization.Codec
 import me.muksc.tacztweaks.TaCZTweaks
-import net.fabricmc.fabric.api.resource.v1.ResourceLoader
 import net.minecraft.resources.FileToIdConverter
 import net.minecraft.resources.Identifier
-import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener
 import net.minecraft.util.profiling.ProfilerFiller
@@ -14,14 +12,8 @@ import org.slf4j.Logger
 import kotlin.reflect.KClass
 
 /**
- * Loads data-driven JSON files from the `data/<namespace>/<directory>` folder
- * (e.g. `data/tacztweaks/bullet_interactions/glass.json`), parses them with the element
- * codec, groups the results by concrete class and sorts each group by priority.
- *
- * 26.2 note: the vanilla [SimpleJsonResourceReloadListener] now takes a [Codec] and a
- * [FileToIdConverter] (the Gson-based ctor is gone), so [parseElement] and the old-format
- * fallback of the Forge version are dropped. Registration uses Fabric's current
- * [ResourceLoader] v1 API instead of Forge's `AddReloadListenerEvent`.
+ * Loads data-driven JSON files from the `data/<namespace>/<directory>` folder.
+ * NeoForge note: registration goes through `AddServerReloadListenersEvent`.
  */
 abstract class BaseDataManager<E : Any>(
     private val directory: String,
@@ -37,13 +29,9 @@ abstract class BaseDataManager<E : Any>(
         if (debugEnabled()) logger.info(msg.invoke())
     }
 
-    /** Registers this loader for the server data-pack reload. Call from mod init. */
-    fun register() {
-        ResourceLoader.get(PackType.SERVER_DATA).registerReloadListener(
-            Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "data/" + directory),
-            this
-        )
-    }
+    /** NeoForge 重载监听 id（对应 Fabric 的 getFabricId + register）。 */
+    fun id(): Identifier =
+        Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "data/" + directory)
 
     @Suppress("UNCHECKED_CAST")
     protected inline fun <reified T : E> byType(): Map<Identifier, T> =

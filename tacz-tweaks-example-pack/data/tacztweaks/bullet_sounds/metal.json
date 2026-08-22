@@ -1,9 +1,0 @@
-{
-  "type": "block",
-  "blocks": [
-    "#tacztweaks:metal"
-  ],
-  "hit": {
-    "sound": "tacztweaks:generic.hit.metal"
-  }
-}

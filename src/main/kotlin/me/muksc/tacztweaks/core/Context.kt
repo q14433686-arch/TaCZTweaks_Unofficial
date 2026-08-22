@@ -21,7 +21,7 @@ object Context {
             get() = id?.let { TimelessAPI.getCommonGunIndex(it).getOrNull() }
     }
 
-    fun Inventory.hasInfiniteAmmo(gunStack: ItemStack) = (0 until containerSize).any { index ->
+    fun Inventory.hasInfiniteAmmo(gunStack: ItemStack) = (0..containerSize).any { index ->
         val stack = getItem(index)
         val item = stack.item
         if (item !is IAmmoBox) return@any false

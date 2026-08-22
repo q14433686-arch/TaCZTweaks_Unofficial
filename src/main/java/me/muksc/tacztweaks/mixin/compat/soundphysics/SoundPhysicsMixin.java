@@ -2,21 +2,21 @@ package me.muksc.tacztweaks.mixin.compat.soundphysics;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.sonicether.soundphysics.SoundPhysics;
 import me.muksc.tacztweaks.compat.soundphysics.SoundPhysicsCompat;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Optional, string-targeted hooks for Sound Physics Remastered 1.5.1+26.2.
- * The mixin plugin suppresses this class when SPR is absent.
- */
-@Mixin(targets = "com.sonicether.soundphysics.SoundPhysics", remap = false)
+/** Optional hooks for Sound Physics Remastered 1.5.1 on 1.21.11. */
+@Pseudo
+@Mixin(value = SoundPhysics.class, remap = false)
 public abstract class SoundPhysicsMixin {
     @Unique
     private static final String EVALUATE = "evaluateEnvironment";
@@ -39,7 +39,8 @@ public abstract class SoundPhysicsMixin {
         method = EVALUATE,
         at = @At(
             value = "INVOKE",
-            target = "Lcom/sonicether/soundphysics/SoundPhysics;calculateOcclusion(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/sounds/SoundSource;Lnet/minecraft/resources/Identifier;)D"
+            target = "Lcom/sonicether/soundphysics/SoundPhysics;calculateOcclusion(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/sounds/SoundSource;Lnet/minecraft/resources/Identifier;)D",
+            remap = true
         )
     )
     private static double tacztweaks$evaluateEnvironment$captureOcclusion(double original) {
@@ -52,7 +53,8 @@ public abstract class SoundPhysicsMixin {
         at = @At(
             value = "INVOKE",
             target = "Lcom/sonicether/soundphysics/ReflectedAudio;getSharedAirspaces()I",
-            ordinal = 0
+            ordinal = 0,
+            remap = true
         )
     )
     private static int tacztweaks$evaluateEnvironment$captureAirspace(int original) {
