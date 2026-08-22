@@ -85,6 +85,9 @@ mismatched TaCZ build is rejected up front rather than failing later.
   "cancelled"/"after" callbacks may not be notified. Verify with your claim mod.
 - Listing a feature here does not mean it has been play-tested on every Minecraft
   release; per-file test status is stated in that file's Changelog.
+- Pre-release files aim to load cleanly with the main paths working. They do not
+  promise that every single option has been exercised, and the exact verification
+  scope for a build is always written in that file's Changelog.
 - Third-party gun packs and content packs must be verified against the exact
   Minecraft release you run.
 

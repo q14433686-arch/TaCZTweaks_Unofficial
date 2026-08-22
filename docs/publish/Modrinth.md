@@ -87,6 +87,9 @@ TaCZ build refuses to load instead of failing later in confusing ways.
   "cancelled"/"after" callbacks may not be notified. Verify with your claim mod.
 - A feature being listed here does not mean it has been play-tested for every
   Minecraft release. Per-file test status is stated in each release's notes.
+- Pre-release files aim to load cleanly with the main paths working. They do not
+  promise that every single option has been exercised; the exact verification
+  scope for a build is always written in that file's release notes.
 - Third-party gun packs and content packs must be verified against the exact
   Minecraft release you run.
 
