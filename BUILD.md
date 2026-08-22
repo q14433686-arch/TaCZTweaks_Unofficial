@@ -35,7 +35,7 @@ jar 不提交到 Git。来源、用途、许可证和 SHA-256 见
 
 ```text
 libs/tacz-1.1.8+neoforge.26.2.R1.jar
-libs/yet_another_config_lib_v3-3.9.5+26.2-neoforge.jar
+libs/yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar
 libs/sound-physics-remastered-neoforge-1.5.1+26.2.jar
 libs/commons-math3-3.6.1.jar
 ```
@@ -43,7 +43,7 @@ libs/commons-math3-3.6.1.jar
 来源：
 
 - TaCZ: Renovated：<https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.2_R1>
-- YACL：Modrinth/CurseForge 的 **3.9.5 for neoforge 26.2**（3.9.5 起；双端必需）
+- YACL：Modrinth/CurseForge 的 NeoForge 26.2 构建（3.9.5 起；维护者首轮构建使用 3.9.6；双端必需）
 - Sound Physics Remastered：**[NEOFORGE][26.2] 1.5.1+26.2**
 - Commons Math 3.6.1：Maven Central
 

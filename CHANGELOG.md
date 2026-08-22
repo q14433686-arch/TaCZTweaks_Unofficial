@@ -40,8 +40,9 @@ TaCZ: Renovated `1.1.8+neoforge.26.2.R1`.
 
 ### Known gaps
 
-- `./gradlew test` and `./gradlew build` have not run in this sandbox: JDK 25 is absent and
-  required binary endpoints are unreachable.
+- The first external Windows/JDK 25 `./gradlew build` reached Kotlin compilation but failed on
+  unqualified names in the extracted config-screen builder and a stale TaCZ checksum. Both are
+  corrected here; a successful rerun is still pending. This sandbox itself has no JDK 25.
 - Client main-menu startup, dedicated-server `Done (...)!`, and the gun/ADS/reload/unload/config/
   datapack-reload smoke scenarios are pending.
 - New dependency SHA-256 values marked `pending` in `RESOURCE_IMPORT_MANIFEST.tsv` must be filled

@@ -20,8 +20,7 @@ import java.text.DecimalFormat
 /** Client-only YACL screen builder; common config persistence contains no Minecraft client types. */
 object ConfigScreenFactory {
     @JvmStatic
-    fun generateConfigScreen(parent: Screen?): Screen = with(Config) {
-        YetAnotherConfigLib.createBuilder().apply {
+    fun generateConfigScreen(parent: Screen?): Screen = YetAnotherConfigLib.createBuilder().apply {
         title(TaCZTweaks.translatable("config.title"))
         save {
             if (ConfigManager.syncedWithServer && Minecraft.getInstance().player?.let(ConfigManager::canUpdateServerConfig) == true) {
@@ -84,7 +83,7 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Double>().apply {
                     name(TaCZTweaks.translatable("config.gun.reduceSensitivityKeyMultiplier.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.reduceSensitivityKeyMultiplier.description")))
-                    binding(Gun.reduceSensitivityKeyMultiplier.asBinding())
+                    binding(Config.Gun.reduceSensitivityKeyMultiplier.asBinding())
                     controller(slider(range = 0.0..1.0, step = 0.01) {
                         TaCZTweaks.translatable("config.label.multiplier", "%.2f".format(it))
                     })
@@ -92,31 +91,31 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.gun.disableReduceSensitivityKeyWhileAiming.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.disableReduceSensitivityKeyWhileAiming.description")))
-                    binding(Gun.disableReduceSensitivityKeyWhileAiming.asBinding())
+                    binding(Config.Gun.disableReduceSensitivityKeyWhileAiming.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.gun.tiltGunKeyTriggersReduceSensitivity.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.tiltGunKeyTriggersReduceSensitivity.description")))
-                    binding(Gun.tiltGunKeyTriggersReduceSensitivity.asBinding())
+                    binding(Config.Gun.tiltGunKeyTriggersReduceSensitivity.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.gun.tiltGunKeyCancelsSprint.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.tiltGunKeyCancelsSprint.description")))
-                    binding(Gun.tiltGunKeyCancelsSprint.asBinding())
+                    binding(Config.Gun.tiltGunKeyCancelsSprint.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.gun.cancelInspection.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.cancelInspection.description")))
-                    binding(Gun.cancelInspection.asBinding())
+                    binding(Config.Gun.cancelInspection.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.gun.disableBulletCulling.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.disableBulletCulling.description")))
-                    binding(Gun.disableBulletCulling.asBinding())
+                    binding(Config.Gun.disableBulletCulling.asBinding())
                     controller(booleanController())
                 }.build())
             }.build())
@@ -125,13 +124,13 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.crawl.visualTweak.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.crawl.visualTweak.description")))
-                    binding(Crawl.visualTweak.asBinding())
+                    binding(Config.Crawl.visualTweak.asBinding())
                     controller(booleanController())
                 }.build())
-                option(Option.createBuilder<Crawl.ETiltGun>().apply {
+                option(Option.createBuilder<Config.Crawl.ETiltGun>().apply {
                     name(TaCZTweaks.translatable("config.crawl.tiltGun.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.crawl.tiltGun.description")))
-                    binding(Crawl.tiltGun.asBinding())
+                    binding(Config.Crawl.tiltGun.asBinding())
                     controller(enumSwitch {
                         TaCZTweaks.translatable("config.label.ETiltGun.${it.name}")
                     })
@@ -142,7 +141,7 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.compat.firstAidCompat.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.compat.firstAidCompat.description")))
-                    binding(Compat.firstAidCompat.asSyncedBinding())
+                    binding(Config.Compat.firstAidCompat.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
@@ -152,43 +151,43 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.alwaysFilterByHand.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.alwaysFilterByHand.description")))
-                    binding(Tweaks.alwaysFilterByHand.asBinding())
+                    binding(Config.Tweaks.alwaysFilterByHand.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.rps.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.rps.description")))
-                    binding(Tweaks.rps.asBinding())
+                    binding(Config.Tweaks.rps.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.forceDefaultHitAndKillSounds.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.forceDefaultHitAndKillSounds.description")))
-                    binding(Tweaks.forceDefaultHitAndKillSounds.asBinding())
+                    binding(Config.Tweaks.forceDefaultHitAndKillSounds.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.suppressHeadHitSounds.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.suppressHeadHitSounds.description")))
-                    binding(Tweaks.suppressHeadHitSounds.asBinding())
+                    binding(Config.Tweaks.suppressHeadHitSounds.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.suppressFleshHitSounds.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.suppressFleshHitSounds.description")))
-                    binding(Tweaks.suppressFleshHitSounds.asBinding())
+                    binding(Config.Tweaks.suppressFleshHitSounds.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.suppressKillSounds.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.suppressKillSounds.description")))
-                    binding(Tweaks.suppressKillSounds.asBinding())
+                    binding(Config.Tweaks.suppressKillSounds.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.hideHitMarkers.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.hideHitMarkers.description")))
-                    binding(Tweaks.hideHitMarkers.asBinding())
+                    binding(Config.Tweaks.hideHitMarkers.asBinding())
                     controller(booleanController())
                 }.build())
             }.build())
@@ -197,28 +196,28 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.debug.bulletInteractions.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.debug.bulletInteractions.description")))
-                    binding(Debug.bulletInteractions.asSyncedBinding())
+                    binding(Config.Debug.bulletInteractions.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.debug.bulletParticles.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.debug.bulletParticles.description")))
-                    binding(Debug.bulletParticles.asSyncedBinding())
+                    binding(Config.Debug.bulletParticles.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.debug.bulletSounds.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.debug.bulletSounds.description")))
-                    binding(Debug.bulletSounds.asSyncedBinding())
+                    binding(Config.Debug.bulletSounds.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.debug.meleeInteractions.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.debug.meleeInteractions.description")))
-                    binding(Debug.meleeInteractions.asSyncedBinding())
+                    binding(Config.Debug.meleeInteractions.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
@@ -231,62 +230,62 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.shootWhileSprinting.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.shootWhileSprinting.description")))
-                    binding(Gun.shootWhileSprinting.asSyncedBinding())
+                    binding(Config.Gun.shootWhileSprinting.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.sprintWhileReloading.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.sprintWhileReloading.description")))
-                    binding(Gun.sprintWhileReloading.asSyncedBinding())
+                    binding(Config.Gun.sprintWhileReloading.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.reloadWhileShooting.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.reloadWhileShooting.description")))
-                    binding(Gun.reloadWhileShooting.asSyncedBinding())
+                    binding(Config.Gun.reloadWhileShooting.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.reloadDiscardsMagazine.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.reloadDiscardsMagazine.description")))
-                    binding(Gun.reloadDiscardsMagazine.asSyncedBinding())
+                    binding(Config.Gun.reloadDiscardsMagazine.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.fireSelectWhileShooting.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.fireSelectWhileShooting.description")))
-                    binding(Gun.fireSelectWhileShooting.asSyncedBinding())
+                    binding(Config.Gun.fireSelectWhileShooting.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.disableUnderwater.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.disableUnderwater.description")))
-                    binding(Gun.disableUnderwater.asSyncedBinding())
+                    binding(Config.Gun.disableUnderwater.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.gun.manualBolting.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.gun.manualBolting.description")))
-                    binding(Gun.manualBolting.asBinding())
+                    binding(Config.Gun.manualBolting.asBinding())
                     controller(booleanController())
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.allowUnload.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.allowUnload.description")))
-                    binding(Gun.allowUnload.asSyncedBinding())
+                    binding(Config.Gun.allowUnload.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.gun.unloadBulletInBarrel.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.unloadBulletInBarrel.description")))
-                    binding(Gun.unloadBulletInBarrel.asSyncedBinding())
+                    binding(Config.Gun.unloadBulletInBarrel.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
@@ -295,7 +294,7 @@ object ConfigScreenFactory {
                 nameSynced(TaCZTweaks.translatable("config.gun.reloadDiscardsMagazineExclusions.name"))
                 descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.gun.reloadDiscardsMagazineExclusions.description")))
                 collapsed(true)
-                binding(Gun.reloadDiscardsMagazineExclusions.asSyncedBinding())
+                binding(Config.Gun.reloadDiscardsMagazineExclusions.asSyncedBinding())
                 controller(stringField())
                 initial("")
                 available(canUpdateServerConfig)
@@ -305,14 +304,14 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.crawl.enabled.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.crawl.enabled.description")))
-                    binding(Crawl.enabled.asSyncedBinding())
+                    binding(Config.Crawl.enabled.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Float>().apply {
                     name(TaCZTweaks.translatable("config.crawl.pitchUpperLimit.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.crawl.pitchUpperLimit.description")))
-                    binding(Crawl.pitchUpperLimit.asBinding())
+                    binding(Config.Crawl.pitchUpperLimit.asBinding())
                     controller(slider(range = 0.0F..90.0F, step = 1.0F) {
                         TaCZTweaks.translatable("config.label.degree", "%.1f".format(it))
                     })
@@ -320,7 +319,7 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Float>().apply {
                     name(TaCZTweaks.translatable("config.crawl.pitchLowerLimit.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.crawl.pitchLowerLimit.description")))
-                    binding(Crawl.pitchLowerLimit.asBinding())
+                    binding(Config.Crawl.pitchLowerLimit.asBinding())
                     controller(slider(range = -90.0F..0.0F, step = 1.0F) {
                         TaCZTweaks.translatable("config.label.degree", "%.1f".format(it))
                     })
@@ -328,7 +327,7 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.crawl.dynamicPitchLimit.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.crawl.dynamicPitchLimit.description")))
-                    binding(Crawl.dynamicPitchLimit.asBinding())
+                    binding(Config.Crawl.dynamicPitchLimit.asBinding())
                     controller(booleanController())
                 }.build())
             }.build())
@@ -337,63 +336,63 @@ object ConfigScreenFactory {
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.audibleFirstPersonGunSounds.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.audibleFirstPersonGunSounds.description")))
-                    binding(Tweaks.audibleFirstPersonGunSounds.asSyncedBinding())
+                    binding(Config.Tweaks.audibleFirstPersonGunSounds.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.forceFirstPersonShootingSound.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.forceFirstPersonShootingSound.description")))
-                    binding(Tweaks.forceFirstPersonShootingSound.asSyncedBinding())
+                    binding(Config.Tweaks.forceFirstPersonShootingSound.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.betterInaccuracy.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterInaccuracy.description")))
-                    binding(Tweaks.betterInaccuracy.asSyncedBinding())
+                    binding(Config.Tweaks.betterInaccuracy.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     name(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.name"))
                     description(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterMonoConversion.description")))
-                    binding(Tweaks.betterMonoConversion.asBinding())
+                    binding(Config.Tweaks.betterMonoConversion.asBinding())
                     controller(booleanController())
                     flag(OptionFlag.ASSET_RELOAD)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.bulletProtection.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.bulletProtection.description")))
-                    binding(Tweaks.bulletProtection.asSyncedBinding())
+                    binding(Config.Tweaks.bulletProtection.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.betterGunTilt.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.betterGunTilt.description")))
-                    binding(Tweaks.betterGunTilt.asSyncedBinding())
+                    binding(Config.Tweaks.betterGunTilt.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.endermenEvadeBullets.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.endermenEvadeBullets.description")))
-                    binding(Tweaks.endermenEvadeBullets.asSyncedBinding())
+                    binding(Config.Tweaks.endermenEvadeBullets.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.disableRefitOnAdventure.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.disableRefitOnAdventure.description")))
-                    binding(Tweaks.disableRefitOnAdventure.asSyncedBinding())
+                    binding(Config.Tweaks.disableRefitOnAdventure.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
                 option(Option.createBuilder<Boolean>().apply {
                     nameSynced(TaCZTweaks.translatable("config.tweaks.infiniteAmmoDisablesConsumption.name"))
                     descriptionSynced(OptionDescription.of(TaCZTweaks.translatable("config.tweaks.infiniteAmmoDisablesConsumption.description")))
-                    binding(Tweaks.infiniteAmmoDisablesConsumption.asSyncedBinding())
+                    binding(Config.Tweaks.infiniteAmmoDisablesConsumption.asSyncedBinding())
                     controller(booleanController())
                     available(canUpdateServerConfig)
                 }.build())
@@ -402,28 +401,28 @@ object ConfigScreenFactory {
         category(ConfigCategory.createBuilder().apply {
             name(TaCZTweaks.translatable("config.category.balancing"))
             for ((key, modifier) in listOf(
-                "damage" to Modifiers.Damage,
-                "playerDamage" to Modifiers.PlayerDamage,
-                "headshot" to Modifiers.Headshot,
-                "playerHeadshot" to Modifiers.PlayerHeadshot,
-                "armorIgnore" to Modifiers.ArmorIgnore,
-                "speed" to Modifiers.Speed,
-                "gravity" to Modifiers.Gravity,
-                "friction" to Modifiers.Friction,
-                "aimTime" to Modifiers.AimTime,
-                "inaccuracy" to Modifiers.Inaccuracy,
-                "standInaccuracy" to Modifiers.StandInaccuracy,
-                "aimInaccuracy" to Modifiers.AimInaccuracy,
-                "moveInaccuracy" to Modifiers.MoveInaccuracy,
-                "sneakInaccuracy" to Modifiers.SneakInaccuracy,
-                "crawlInaccuracy" to Modifiers.CrawlInaccuracy,
-                "rpm" to Modifiers.RPM,
-                "verticalRecoil" to Modifiers.VerticalRecoil,
-                "horizontalRecoil" to Modifiers.HorizontalRecoil,
-                "aimVerticalRecoil" to Modifiers.AimVerticalRecoil,
-                "aimHorizontalRecoil" to Modifiers.AimHorizontalRecoil,
-                "crawlVerticalRecoil" to Modifiers.CrawlVerticalRecoil,
-                "crawlHorizontalRecoil" to Modifiers.CrawlHorizontalRecoil
+                "damage" to Config.Modifiers.Damage,
+                "playerDamage" to Config.Modifiers.PlayerDamage,
+                "headshot" to Config.Modifiers.Headshot,
+                "playerHeadshot" to Config.Modifiers.PlayerHeadshot,
+                "armorIgnore" to Config.Modifiers.ArmorIgnore,
+                "speed" to Config.Modifiers.Speed,
+                "gravity" to Config.Modifiers.Gravity,
+                "friction" to Config.Modifiers.Friction,
+                "aimTime" to Config.Modifiers.AimTime,
+                "inaccuracy" to Config.Modifiers.Inaccuracy,
+                "standInaccuracy" to Config.Modifiers.StandInaccuracy,
+                "aimInaccuracy" to Config.Modifiers.AimInaccuracy,
+                "moveInaccuracy" to Config.Modifiers.MoveInaccuracy,
+                "sneakInaccuracy" to Config.Modifiers.SneakInaccuracy,
+                "crawlInaccuracy" to Config.Modifiers.CrawlInaccuracy,
+                "rpm" to Config.Modifiers.RPM,
+                "verticalRecoil" to Config.Modifiers.VerticalRecoil,
+                "horizontalRecoil" to Config.Modifiers.HorizontalRecoil,
+                "aimVerticalRecoil" to Config.Modifiers.AimVerticalRecoil,
+                "aimHorizontalRecoil" to Config.Modifiers.AimHorizontalRecoil,
+                "crawlVerticalRecoil" to Config.Modifiers.CrawlVerticalRecoil,
+                "crawlHorizontalRecoil" to Config.Modifiers.CrawlHorizontalRecoil
             )) {
                 group(OptionGroup.createBuilder().apply {
                     name(TaCZTweaks.translatable("config.modifiers.$key.name"))
@@ -457,8 +456,7 @@ object ConfigScreenFactory {
                 }.build())
             }
         }.build())
-        }.build().generateScreen(parent)
-    }
+    }.build().generateScreen(parent)
 
     private fun booleanController(): ControllerBuilderFactory<Boolean> = { option ->
         BooleanControllerBuilder.create(option)

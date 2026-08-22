@@ -183,9 +183,13 @@ LSO / Valkyrien Skies / MTS 本轮未得到可验证 NeoForge 26.2 目标，因�
 First Aid 1.3.0-patched（可选）、Pillager's Gun 3.3.5（可选）、commons-math3 3.6.1。
 构建按规范化文件名匹配，并强制目标 jar 含 `26.2`、排除含 `fabric` 的文件。
 
-TaCZ release API 公布 SHA-256：
-`26003ae476d4d5dc4f85a82998b9622f59aca71d73757c8136184890440ed6ec`。
-其余新二进制按工单要求暂记 `pending`；发布前必须本地下载、复算并写回。
+GitHub release API 最初返回的 TaCZ 摘要与维护者实际下载件不一致。首轮 Windows/JDK 25
+构建对实际 R1 jar 复算为
+`332ae1cead447348e2b562aeab8528b46d1dc780e53154ffc6b625a9f68f0a16`，manifest 已以实际
+构建输入为准。Sound Physics 实际件为
+`814d979555debb59db87f4d281ab8a7c6971e27bd7054f8c7dd0d15a98d380a0`。
+维护者使用 YACL `3.9.6+26.2-neoforge`；其摘要仍待下一轮输出补齐。其他新二进制的
+`pending` 也必须在发布前本地复算并写回。
 
 ## 8. 本轮实际执行结果
 
@@ -202,5 +206,20 @@ java -version                                    command not found
 ./gradlew build                                  未运行
 客户端 / 专服 / 游戏内                           未运行
 ```
+
+## 9. 首轮维护者构建反馈（2026-08-23，Windows / JDK 25）
+
+首轮 `gradlew build` 已证明 MDG 能建立 Minecraft 26.2 artifacts，且四个编译必需 jar 能被
+文件名规则识别；构建尚未成功，暴露两项并在本提交后续修正：
+
+1. `ConfigScreenFactory` 从 `Config` 移出后，Kotlin 的 `with(Config)` 不会把 object 的嵌套
+   `Gun/Crawl/Compat/Tweaks/Debug/Modifiers` 当作可省略限定名的成员。所有屏幕 binding/type
+   已显式改成 `Config.Gun.*`、`Config.Crawl.*` 等，并删除无效的 `with(Config)` 包装。
+2. 维护者实际 TaCZ R1 jar 的 SHA-256 是
+   `332ae1cead447348e2b562aeab8528b46d1dc780e53154ffc6b625a9f68f0a16`，不是此前 GitHub API
+   暴露的摘要；SPR 实际摘要也已写回。YACL 实际使用 `3.9.6+26.2-neoforge`，manifest 路径已
+   对齐，摘要仍 pending。
+
+修正后的 `./gradlew build` 尚待维护者复跑，因此仍不能声明 build PASS。
 
 发布者必须按 `BUILD.md` 从测试、构建、客户端、专服到游戏内场景顺序补齐证据，不能跳级声明。

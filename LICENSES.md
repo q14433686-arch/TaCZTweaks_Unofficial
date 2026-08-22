@@ -29,7 +29,7 @@ must be installed separately where required.
 | Local artifact | Upstream/version | License | Build use | In this mod jar? |
 |---|---|---|---|---|
 | `tacz-1.1.8+neoforge.26.2.R1.jar` | `q14433686-arch/TaCZ_Renovated`, R1 | GPL-3.0 | compile API/mixin target and local runtime | No |
-| `yet_another_config_lib_v3-3.9.5+26.2-neoforge.jar` | isXander/YACL 3.9.5 | LGPL-3.0 | compile config API and local runtime on both physical sides | No |
+| `yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar` | isXander/YACL 3.9.6 | LGPL-3.0 | compile config API and local runtime on both physical sides | No |
 | `sound-physics-remastered-neoforge-1.5.1+26.2.jar` | henkelmax/SPR 1.5.1 | GPL-3.0 | optional-integration target validation | No |
 | `firstaid-1.3.0-patched+neoforge26.2.jar` | maoruiQa/First-Aid-New 1.3.0-patched | GPL-3.0 | optional source/jar compatibility audit | No |
 | `pillagers_gun-3.3.5-neoforge-26.2.jar` | SmartStreamLabs/Pillager's Gun port 3.3.5 | GPL-3.0 | optional source/jar compatibility audit | No |

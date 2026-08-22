@@ -17,8 +17,8 @@ NeoForge 26.2 线需要：
    作用：com.tacz.guns.* / me.xjqsh.lrtactical.* API 与全部 TaCZ mixin 目标。
    不进入本项目发布 jar；玩家必须单独安装。
 
-2) yet_another_config_lib_v3-3.9.5+26.2-neoforge.jar     （必需）
-   来源：Modrinth/CurseForge YACL “3.9.5 for neoforge 26.2”（3.9.5 起）。
+2) yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar     （必需）
+   来源：Modrinth/CurseForge YACL NeoForge 26.2（元数据接受 3.9.5 起；维护者首轮构建使用 3.9.6）。
    作用：配置持久化/同步基类与 NeoForge 模组列表配置屏；服务端也必须安装。
 
 3) sound-physics-remastered-neoforge-1.5.1+26.2.jar      （当前编译必需，运行可选）

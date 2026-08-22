@@ -3,8 +3,9 @@
 ## NeoForge 26.2 has not passed build or runtime gates yet
 
 The code and dependency surfaces have been translated and checked statically, but this sandbox has no
-JDK 25 and cannot reach Maven/Modrinth/GitHub release-asset binary endpoints. The following remain
-**not run** for 26.2:
+JDK 25 and cannot reach Maven/Modrinth/GitHub release-asset binary endpoints. A maintainer's first
+Windows/JDK 25 build reached Kotlin compilation and exposed two now-corrected issues; a successful
+rerun has not yet been reported. The following remain **not passed** for 26.2:
 
 - `./gradlew test`
 - `./gradlew build`

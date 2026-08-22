@@ -52,9 +52,9 @@ ext.localJars = { ->
 
 /**
  * Normalises a file name for matching: lower case, separators removed. This makes
- * `yet_another_config_lib_v3-3.9.5+26.2-neoforge.jar`,
- * `yet-another-config-lib-neoforge-3.9.5+26.2.jar` and
- * `YetAnotherConfigLib 3.9.5 (26.2 neoforge).jar` all compare equal for our tokens.
+ * `yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar`,
+ * `yet-another-config-lib-neoforge-3.9.6+26.2.jar` and
+ * `YetAnotherConfigLib 3.9.6 (26.2 neoforge).jar` all compare equal for our tokens.
  */
 ext.normaliseJarName = { String name -> name.toLowerCase().replaceAll('[^a-z0-9]', '') }
 
@@ -209,7 +209,7 @@ ext.requiredLocalDependencies = [
         [jar: taczJar, what: 'TaCZ: Renovated (name must contain "tacz", "neoforge" and "26.2")',
          source: 'https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.2_R1'],
         [jar: yaclJar, what: 'YetAnotherConfigLib (name must contain "config lib" or "yacl", plus "26.2"; separators ignored)',
-         source: 'CurseForge/Modrinth: YetAnotherConfigLib "3.9.5 for neoforge 26.2"'],
+         source: 'CurseForge/Modrinth: YetAnotherConfigLib NeoForge 26.2, version 3.9.5 or later'],
         [jar: soundPhysicsJar, what: 'Sound Physics Remastered (name must contain "sound physics", "neoforge" and "26.2")',
          source: 'CurseForge: Sound Physics Remastered "[NEOFORGE][26.2] 1.5.1+26.2"'],
         [jar: commonsMathJar, what: 'Apache Commons Math (name must contain "commons-math3")',

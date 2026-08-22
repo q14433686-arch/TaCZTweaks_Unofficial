@@ -11,8 +11,9 @@ TaCZ Tweaks v2.14.2 的**非官方 NeoForge 26.2 社区移植**，目标依赖�
 NeoForge 骨架，再针对 26.2 API、依赖和 mixin 目标更新。
 
 > **26.2 验证状态：源码/静态移植，未完成构建与实机验收。** 当前沙箱没有 JDK 25，且无法连接
-> Maven、Modrinth 或 GitHub release-assets 二进制端点，因此本次尚未运行 `./gradlew build`、
-> `./gradlew test`、客户端、专服及游戏内最小实测。不能把 26.1.2 骨架的 PASS 当成 26.2 PASS。
+> Maven、Modrinth 或 GitHub release-assets 二进制端点。维护者首轮 Windows/JDK 25 build 已到
+> Kotlin 编译阶段，但因配置屏限定名与依赖摘要失败；本轮已修正，成功复跑仍待确认。
+> `./gradlew test`、客户端、专服及游戏内最小实测也尚未通过。不能把 26.1.2 PASS 当成 26.2 PASS。
 > 证据和未完成门禁见
 > [`docs/records/NEOFORGE_26_2_PORT_RECORD.md`](docs/records/NEOFORGE_26_2_PORT_RECORD.md)。
 

@@ -38,7 +38,7 @@ Exact file paths, download URLs, checksums, licenses and inclusion flags are mai
 [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv). The inputs are:
 
 - TaCZ: Renovated `1.1.8+neoforge.26.2.R1` — GPL-3.0;
-- YetAnotherConfigLib `3.9.5+26.2-neoforge` — LGPL-3.0;
+- YetAnotherConfigLib `3.9.6+26.2-neoforge` — LGPL-3.0;
 - Sound Physics Remastered `1.5.1+26.2` NeoForge — GPL-3.0;
 - First Aid New `1.3.0-patched+neoforge26.2` (the separate 1.2.8 artifact is not in this port's declared range) — GPL-3.0;
 - Pillager’s Gun (Unofficial Port) `3.3.5` NeoForge 26.2 — GPL-3.0;
