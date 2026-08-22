@@ -81,10 +81,13 @@ dependencies {
 
     // Minimal JUnit Jupiter setup for pure-Java unit tests (version-gate validator, etc.).
     // Test source set is *not* fed through MDG/NeoForge — TaczVersionSupport has no MC deps.
+    // junit-platform-launcher is required at test runtime for Gradle's JUnit Platform
+    // integration (Gradle 9 refuses to start the Test Executor without it).
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testImplementation "org.junit.jupiter:junit-jupiter-params"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 tasks.named('test', Test) {
