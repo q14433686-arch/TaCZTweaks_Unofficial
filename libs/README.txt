@@ -7,6 +7,9 @@ jar 本身不进入 Git（见 .gitignore 的 libs/*.jar）。
   python3 scripts/download_dependencies.py --check-only
   python3 scripts/download_dependencies.py
 
+文件名按关键词匹配，不要求与下面完全一致（CurseForge / 浏览器改名无所谓）；
+但名字里含 "fabric" 的文件会被构建脚本故意忽略，防止误用 Fabric 版。
+
 NeoForge 26.1.2 线需要的文件：
 
 1) tacz-1.1.8+neoforge.26.1.2.R1.jar                      (必需, compileOnly + localRuntime)
@@ -18,10 +21,14 @@ NeoForge 26.1.2 线需要的文件：
    来源：CurseForge YACL «3.9.6 for neoforge 26.1»（Fabric 分支用的是同版本 fabric 构建）。
    作用：配置屏（IConfigScreenFactory 扩展点）。
 
-3) sound-physics-remastered-neoforge-1.5.1+26.1.2.jar     (可选, compileOnly)
-4) firstaid-1.2.8+neoforge26.1.jar                        (可选, compileOnly)
-5) pillagers_gun-3.2.2-neoforge-26.1.2.jar                (可选, compileOnly)
-   三者均只用于编译期与类/方法面核对；运行期通过 ModList / mixin plugin 门控。
+3) sound-physics-remastered-neoforge-1.5.1+26.1.2.jar     (编译必需, compileOnly)
+   运行期是可选 mod，但 SoundPhysicsMixin / SoundPhysicsCompat 直接引用
+   com.sonicether.soundphysics.*，没有它编译不过。
+
+4) firstaid-1.2.8+neoforge26.1.jar                        (真·可选, compileOnly)
+5) pillagers_gun-3.2.2-neoforge-26.1.2.jar                (真·可选, compileOnly)
+   这两个走反射 + 字符串目标 mixin，编译不需要；放进来只是方便核对类名，
+   构建脚本检测到才会加进 classpath。
 
 6) commons-math3-3.6.1.jar                                (compileOnly)
    TaCZ jar 内已内嵌，本项目只在编译期需要其类型。

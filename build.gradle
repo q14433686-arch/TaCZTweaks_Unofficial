@@ -35,18 +35,52 @@ configurations {
 // ---------------------------------------------------------------------------
 // Local binary dependencies.
 //
-// They are NOT committed to Git (see .gitignore); fetch them with
-//   python3 scripts/download_dependencies.py
-// and verify with
-//   python3 scripts/download_dependencies.py --check-only
+// They are NOT committed to Git (see .gitignore). Download them by hand (see
+// libs/README.txt and BUILD.md) or with scripts/download_dependencies.py.
 // Sources and SHA-256 digests live in RESOURCE_IMPORT_MANIFEST.tsv.
+//
+// Jars are matched by *pattern*, not by exact filename, because CurseForge /
+// Modrinth / browsers rename files (`+` -> `_`, `-v3-` dropped, etc.).
 // ---------------------------------------------------------------------------
-ext.taczJar = file("libs/tacz-1.1.8+neoforge.26.1.2.R1.jar")
-ext.yaclJar = file("libs/yet-another-config-lib-v3-3.9.6+26.1-neoforge.jar")
-ext.soundPhysicsJar = file("libs/sound-physics-remastered-neoforge-1.5.1+26.1.2.jar")
-ext.firstAidJar = file("libs/firstaid-1.2.8+neoforge26.1.jar")
-ext.pillagersGunJar = file("libs/pillagers_gun-3.2.2-neoforge-26.1.2.jar")
-ext.commonsMathJar = file("libs/commons-math3-3.6.1.jar")
+ext.libsDir = file('libs')
+
+/** All jars currently sitting in libs/, in stable order. */
+ext.localJars = { ->
+    def files = libsDir.listFiles()
+    files == null ? [] : files.findAll { it.isFile() && it.name.toLowerCase().endsWith('.jar') }.sort { it.name }
+}
+
+/**
+ * Finds one jar in libs/ whose (lower-cased) name contains every token in `mustContain`
+ * and none of the tokens in `mustNotContain`. Returns null when nothing matches.
+ */
+ext.findLocalJar = { List<String> mustContain, List<String> mustNotContain = [] ->
+    def matches = localJars().findAll { jar ->
+        def name = jar.name.toLowerCase()
+        mustContain.every { name.contains(it) } && mustNotContain.every { !name.contains(it) }
+    }
+    if (matches.size() > 1) {
+        logger.warn("libs/: ${matches*.name} all match ${mustContain}; using ${matches[0].name}")
+    }
+    matches.isEmpty() ? null : matches[0]
+}
+
+// "fabric" is excluded everywhere so a wrong-loader download is reported as missing
+// instead of silently compiling against the Fabric API surface.
+ext.taczJar = findLocalJar(['tacz', 'neoforge'], ['fabric'])
+// YACL ships under several names (yet-another-config-lib-*, YetAnotherConfigLib-*, yacl-*),
+// with or without a loader tag, so try the specific spellings first and then a loose match.
+ext.yaclJar = findLocalJar(['config-lib', 'neoforge'], ['fabric'])
+    ?: findLocalJar(['configlib', 'neoforge'], ['fabric'])
+    ?: findLocalJar(['yacl', 'neoforge'], ['fabric'])
+    ?: findLocalJar(['config-lib'], ['fabric'])
+    ?: findLocalJar(['configlib'], ['fabric'])
+    ?: findLocalJar(['yacl'], ['fabric'])
+ext.soundPhysicsJar = findLocalJar(['sound-physics', 'neoforge'], ['fabric'])
+ext.firstAidJar = findLocalJar(['firstaid', 'neoforge'], ['fabric'])
+ext.pillagersGunJar = findLocalJar(['pillagers_gun', 'neoforge'], ['fabric'])
+    ?: findLocalJar(['pillagers-gun', 'neoforge'], ['fabric'])
+ext.commonsMathJar = findLocalJar(['commons-math3'])
 
 neoForge {
     // ModDevGradle 2.x settings object. disableRecompilation skips Vineflower
@@ -85,28 +119,18 @@ dependencies {
 
     // --- Required on the compile classpath (see checkRequiredDependencies) ---
     // TaCZ: Renovated (unofficial NeoForge port) is the mixin/API target.
-    compileOnly files(taczJar)
-    localRuntime files(taczJar)
-
     // Config screen library (dev.isxander.yacl3.*).
-    compileOnly files(yaclJar)
-    localRuntime files(yaclJar)
-
-    // Sound Physics Remastered: optional at runtime, but the compat mixin/bridge references
-    // com.sonicether.soundphysics.* directly, so the jar is needed to compile.
-    compileOnly files(soundPhysicsJar)
-
+    // Sound Physics Remastered is optional at runtime, but the compat mixin/bridge references
+    // com.sonicether.soundphysics.* directly, so its jar is needed to compile.
     // commons-math3 is bundled inside the TaCZ jar; compile-time only for us.
-    compileOnly files(commonsMathJar)
+    //
+    // First Aid and Pillager's Gun are reached through reflection and string-target mixins,
+    // so they are only added when the jar happens to be present.
+    [taczJar, yaclJar, soundPhysicsJar, commonsMathJar, firstAidJar, pillagersGunJar]
+            .findAll { it != null }
+            .each { compileOnly files(it) }
 
-    // --- Truly optional: First Aid and Pillager's Gun are reached through reflection and
-    // string-target mixins, so they are only added when the jar happens to be present. ---
-    if (firstAidJar.exists()) {
-        compileOnly files(firstAidJar)
-    }
-    if (pillagersGunJar.exists()) {
-        compileOnly files(pillagersGunJar)
-    }
+    [taczJar, yaclJar].findAll { it != null }.each { localRuntime files(it) }
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
@@ -159,30 +183,43 @@ def sha256Of = { File f ->
             .digest(f.bytes).collect { String.format('%02x', it) }.join()
 }
 
-/** Required compile-time jars, with a human-readable source for the error message. */
+/** Required compile-time jars: resolved file (may be null), what to look for, where to get it. */
 ext.requiredLocalDependencies = [
-        (taczJar)        : 'https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.1.2_R1',
-        (yaclJar)        : 'CurseForge / Modrinth: YetAnotherConfigLib "3.9.6 for neoforge 26.1"',
-        (soundPhysicsJar): 'CurseForge: Sound Physics Remastered "[NEOFORGE][26.1.2] 1.5.1+26.1.2"',
-        (commonsMathJar) : 'https://repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar',
+        [jar: taczJar, what: 'TaCZ: Renovated (name must contain "tacz" and "neoforge")',
+         source: 'https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.1.2_R1'],
+        [jar: yaclJar, what: 'YetAnotherConfigLib (name must contain "config-lib" or "yacl", plus "neoforge")',
+         source: 'CurseForge/Modrinth: YetAnotherConfigLib "3.9.6 for neoforge 26.1"'],
+        [jar: soundPhysicsJar, what: 'Sound Physics Remastered (name must contain "sound-physics" and "neoforge")',
+         source: 'CurseForge: Sound Physics Remastered "[NEOFORGE][26.1.2] 1.5.1+26.1.2"'],
+        [jar: commonsMathJar, what: 'Apache Commons Math (name must contain "commons-math3")',
+         source: 'https://repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar'],
 ]
 
 var checkRequiredDependencies = tasks.register("checkRequiredDependencies") {
     group = 'verification'
     description = 'Fails early with a readable message when a required libs/ jar is missing.'
     doLast {
-        def missing = requiredLocalDependencies.findAll { file, source -> !file.exists() }
+        def missing = requiredLocalDependencies.findAll { it.jar == null }
         if (missing) {
-            def lines = missing.collect { file, source ->
-                "  - libs/${file.name}\n      source: ${source}"
-            }.join('\n')
+            def wanted = missing.collect { "  - ${it.what}\n      source: ${it.source}" }.join('\n')
+            def present = localJars()
+            def found = present.isEmpty()
+                    ? '  (libs/ contains no .jar files)'
+                    : present.collect { "  - ${it.name}" }.join('\n')
             throw new GradleException(
-                    "Missing required compile dependencies. Put these jars in libs/ (they are not\n" +
-                    "committed to Git; see libs/README.txt and RESOURCE_IMPORT_MANIFEST.tsv):\n" +
-                    lines + "\n" +
-                    "Without them the Kotlin/Java compile fails with hundreds of\n" +
+                    "Missing required compile dependencies in libs/ (jars are not committed to Git;\n" +
+                    "see libs/README.txt and BUILD.md). Jars are matched by name pattern, so a\n" +
+                    "renamed download is fine as long as it still contains these tokens:\n" +
+                    wanted + "\n" +
+                    "Currently in libs/:\n" + found + "\n" +
+                    "Note: files whose name contains \"fabric\" are ignored on purpose.\n" +
+                    "Without these jars the Kotlin/Java compile fails with hundreds of\n" +
                     "'Unresolved reference: tacz / dev / com.sonicether' errors.")
         }
+        logger.lifecycle('checkRequiredDependencies: OK\n  ' +
+                requiredLocalDependencies.collect { it.jar.name }.join('\n  ') +
+                (firstAidJar ? "\n  ${firstAidJar.name} (optional)" : '') +
+                (pillagersGunJar ? "\n  ${pillagersGunJar.name} (optional)" : ''))
     }
 }
 
