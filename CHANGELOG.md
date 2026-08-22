@@ -28,6 +28,8 @@ handoff/audit documents.
 
 ### Fixed
 
+- TaCZ `1.1.8+fabric.26.2.R2-hotfix` is accepted alongside the pinned R2 build; the previous
+  startup guard no longer rejects the official hotfix release.
 - Release metadata now includes homepage, source and issue links, plus a separate maintainer
   contributor entry.
 - `LICENSE` and `THIRD_PARTY_NOTICES.md` are packaged into the release jar under `META-INF/`.
@@ -39,7 +41,8 @@ handoff/audit documents.
 - Fabric Loader: `>=0.19.3 <0.20.0`
 - Fabric API: `>=0.155.2+26.2 <0.157.0`
 - Java: `>=25`
-- TaCZ Refabricated Unofficial: exactly `1.1.8+fabric.26.2.R2`
+- TaCZ Refabricated Unofficial: exactly `1.1.8+fabric.26.2.R2` or
+  `1.1.8+fabric.26.2.R2-hotfix`
 - Fabric Language Kotlin: `>=1.13.13 <1.14.0`
 - YetAnotherConfigLib: exactly `3.9.6+26.2-fabric`
 

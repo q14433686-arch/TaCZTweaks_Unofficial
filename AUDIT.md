@@ -27,6 +27,15 @@ python3 scripts/audit_port.py --strict \
 护甲最高等级、Sound Physics 上下文在异步播放前已经清除、airspace 缺 reflectivity 永远无法选中。
 这些均按 26.2 实际调用链重写。
 
+## 版本门禁修复（2026-08-22）
+
+TaCZ R2-hotfix 将版本后缀放在 SemVer 的 build metadata 中，因此 Fabric 的依赖谓词会把它
+视为与 R2 相同的 `1.1.8` 核心版本；但 TaCZ Tweaks 自身此前又比较完整 friendly string，
+导致 hotfix 能通过 Fabric 依赖检查，却在 `TaCZTweaks.onInitialize` 主动崩溃。启动门禁现在
+明确 allow-list `R2` 与 `R2-hotfix`，同时继续拒绝其他 1.1.8 构建。R2 仍是仓库内编译和
+静态 descriptor 审计输入，hotfix 与其共享本项目使用的 R2 命名 hook；该兼容路径由版本
+单测覆盖，未宣称完整游戏内矩阵实测。
+
 ## 逐项结论
 
 | 项目 | 旧结论 | 查证结果 | 本轮处理 |

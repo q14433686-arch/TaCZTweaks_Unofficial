@@ -37,6 +37,11 @@ import java.util.Map;
 public class TaCZTweaks implements ModInitializer {
     public static final String MOD_ID = "tacztweaks";
     public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.2.R2";
+    public static final String SUPPORTED_TACZ_HOTFIX_VERSION = "1.1.8+fabric.26.2.R2-hotfix";
+    private static final List<String> SUPPORTED_TACZ_VERSIONS = List.of(
+        SUPPORTED_TACZ_VERSION,
+        SUPPORTED_TACZ_HOTFIX_VERSION
+    );
     public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
     public static Identifier id(String path) {
@@ -47,16 +52,23 @@ public class TaCZTweaks implements ModInitializer {
         return Component.translatable("%s.%s".formatted(MOD_ID, key), args);
     }
 
+    static boolean isSupportedTaczVersion(String version) {
+        return SUPPORTED_TACZ_VERSIONS.contains(version);
+    }
+
     @Override
     public void onInitialize() {
         String taczVersion = FabricLoader.getInstance().getModContainer("tacz")
             .orElseThrow(() -> new IllegalStateException("TaCZ is required"))
             .getMetadata().getVersion().getFriendlyString();
-        // SemVer ignores build metadata during comparison, but R2 is exactly where the
-        // named hooks used by this port were introduced. Enforce the full friendly string.
-        if (!SUPPORTED_TACZ_VERSION.equals(taczVersion)) {
+        // Fabric's version predicates ignore the part after '+', so both R2 and the
+        // upstream R2-hotfix pass the metadata dependency check. Keep a full friendly
+        // string allow-list here so unrelated 1.1.8 builds cannot silently change the
+        // hook surface used by this port.
+        if (!isSupportedTaczVersion(taczVersion)) {
             throw new IllegalStateException(
-                "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION + ", found " + taczVersion
+                "TaCZ Tweaks requires TaCZ " + String.join(" or ", SUPPORTED_TACZ_VERSIONS)
+                    + ", found " + taczVersion
             );
         }
         Config.INSTANCE.initialize();

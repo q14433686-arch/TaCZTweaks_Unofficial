@@ -85,7 +85,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 | 必需 | Minecraft | 26.2 |
 | 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
 | 必需 | Fabric API | >=0.155.2+26.2、<0.157.0 |
-| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.2.R2**（精确验证完整版本字符串） |
+| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.2.R2** 或 **1.1.8+fabric.26.2.R2-hotfix**（运行时精确校验） |
 | 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
 | 必需 | YetAnotherConfigLib | 3.9.6+26.2-fabric |
 | 可选 | Sound Physics Remastered | 1.5.1+26.2 Fabric |
