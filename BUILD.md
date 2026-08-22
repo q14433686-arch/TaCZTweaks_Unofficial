@@ -67,9 +67,11 @@ libs/firstaid-1.2.8+neoforge26.1.jar
 libs/pillagers_gun-3.2.2-neoforge-26.1.2.jar
 ```
 
-> 文件名**不需要**和上面完全一致：构建脚本按名字里的关键词匹配（`tacz`+`neoforge`、
-> `config-lib`/`yacl`、`sound-physics`+`neoforge`、`commons-math3`、`firstaid`、`pillagers_gun`），
-> 所以 CurseForge/浏览器改过名也没关系。**但名字里带 `fabric` 的会被故意忽略**，避免误用 Fabric 版编译。
+> 文件名**不需要**和上面完全一致：构建脚本会把文件名里的 `-` `_` `.` 空格全部忽略后按关键词匹配
+> （`tacz`+`neoforge`、`configlib`/`yacl`、`soundphysics`+`neoforge`、`commonsmath3`、
+> `firstaid`+`neoforge`、`pillagersgun`+`neoforge`），所以
+> `yet_another_config_lib_v3-3.9.6+26.1-neoforge.jar` 与
+> `yet-another-config-lib-neoforge-3.9.6+26.1.jar` 都能识别。**但名字里带 `fabric` 的会被故意忽略**，避免误用 Fabric 版编译。
 > 如果 `checkRequiredDependencies` 报缺件，它会把 `libs/` 里现有的文件名一并列出来供比对。
 
 校验：

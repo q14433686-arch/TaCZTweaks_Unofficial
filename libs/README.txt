@@ -7,7 +7,7 @@ jar 本身不进入 Git（见 .gitignore 的 libs/*.jar）。
   python3 scripts/download_dependencies.py --check-only
   python3 scripts/download_dependencies.py
 
-文件名按关键词匹配，不要求与下面完全一致（CurseForge / 浏览器改名无所谓）；
+文件名按关键词匹配（匹配前会忽略 - _ . 和空格），不要求与下面完全一致；
 但名字里含 "fabric" 的文件会被构建脚本故意忽略，防止误用 Fabric 版。
 
 NeoForge 26.1.2 线需要的文件：

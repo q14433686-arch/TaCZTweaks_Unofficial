@@ -51,13 +51,25 @@ ext.localJars = { ->
 }
 
 /**
- * Finds one jar in libs/ whose (lower-cased) name contains every token in `mustContain`
- * and none of the tokens in `mustNotContain`. Returns null when nothing matches.
+ * Normalises a file name for matching: lower case, separators removed. This makes
+ * `yet_another_config_lib_v3-3.9.6+26.1-neoforge.jar`,
+ * `yet-another-config-lib-neoforge-3.9.6+26.1.jar` and
+ * `YetAnotherConfigLib 3.9.6 (neoforge).jar` all compare equal for our tokens.
+ */
+ext.normaliseJarName = { String name -> name.toLowerCase().replaceAll('[^a-z0-9]', '') }
+
+/**
+ * Finds one jar in libs/ whose normalised name contains every token in `mustContain`
+ * and none of the tokens in `mustNotContain`. Tokens are normalised the same way, so
+ * 'config-lib', 'config_lib' and 'configlib' are interchangeable.
+ * Returns null when nothing matches.
  */
 ext.findLocalJar = { List<String> mustContain, List<String> mustNotContain = [] ->
+    def wanted = mustContain.collect { normaliseJarName(it) }
+    def rejected = mustNotContain.collect { normaliseJarName(it) }
     def matches = localJars().findAll { jar ->
-        def name = jar.name.toLowerCase()
-        mustContain.every { name.contains(it) } && mustNotContain.every { !name.contains(it) }
+        def name = normaliseJarName(jar.name)
+        wanted.every { name.contains(it) } && rejected.every { !name.contains(it) }
     }
     if (matches.size() > 1) {
         logger.warn("libs/: ${matches*.name} all match ${mustContain}; using ${matches[0].name}")
@@ -68,19 +80,16 @@ ext.findLocalJar = { List<String> mustContain, List<String> mustNotContain = [] 
 // "fabric" is excluded everywhere so a wrong-loader download is reported as missing
 // instead of silently compiling against the Fabric API surface.
 ext.taczJar = findLocalJar(['tacz', 'neoforge'], ['fabric'])
-// YACL ships under several names (yet-another-config-lib-*, YetAnotherConfigLib-*, yacl-*),
-// with or without a loader tag, so try the specific spellings first and then a loose match.
-ext.yaclJar = findLocalJar(['config-lib', 'neoforge'], ['fabric'])
-    ?: findLocalJar(['configlib', 'neoforge'], ['fabric'])
+// YACL ships as yet_another_config_lib_v3-*, yet-another-config-lib-*, YetAnotherConfigLib-*
+// or yacl-*, with or without a loader tag: prefer a neoforge-tagged jar, then fall back.
+ext.yaclJar = findLocalJar(['configlib', 'neoforge'], ['fabric'])
     ?: findLocalJar(['yacl', 'neoforge'], ['fabric'])
-    ?: findLocalJar(['config-lib'], ['fabric'])
     ?: findLocalJar(['configlib'], ['fabric'])
     ?: findLocalJar(['yacl'], ['fabric'])
-ext.soundPhysicsJar = findLocalJar(['sound-physics', 'neoforge'], ['fabric'])
+ext.soundPhysicsJar = findLocalJar(['soundphysics', 'neoforge'], ['fabric'])
 ext.firstAidJar = findLocalJar(['firstaid', 'neoforge'], ['fabric'])
-ext.pillagersGunJar = findLocalJar(['pillagers_gun', 'neoforge'], ['fabric'])
-    ?: findLocalJar(['pillagers-gun', 'neoforge'], ['fabric'])
-ext.commonsMathJar = findLocalJar(['commons-math3'])
+ext.pillagersGunJar = findLocalJar(['pillagersgun', 'neoforge'], ['fabric'])
+ext.commonsMathJar = findLocalJar(['commonsmath3'])
 
 neoForge {
     // ModDevGradle 2.x settings object. disableRecompilation skips Vineflower
@@ -187,9 +196,9 @@ def sha256Of = { File f ->
 ext.requiredLocalDependencies = [
         [jar: taczJar, what: 'TaCZ: Renovated (name must contain "tacz" and "neoforge")',
          source: 'https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.1.2_R1'],
-        [jar: yaclJar, what: 'YetAnotherConfigLib (name must contain "config-lib" or "yacl", plus "neoforge")',
+        [jar: yaclJar, what: 'YetAnotherConfigLib (name must contain "config lib" or "yacl"; separators ignored)',
          source: 'CurseForge/Modrinth: YetAnotherConfigLib "3.9.6 for neoforge 26.1"'],
-        [jar: soundPhysicsJar, what: 'Sound Physics Remastered (name must contain "sound-physics" and "neoforge")',
+        [jar: soundPhysicsJar, what: 'Sound Physics Remastered (name must contain "sound physics" and "neoforge")',
          source: 'CurseForge: Sound Physics Remastered "[NEOFORGE][26.1.2] 1.5.1+26.1.2"'],
         [jar: commonsMathJar, what: 'Apache Commons Math (name must contain "commons-math3")',
          source: 'https://repo1.maven.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar'],
@@ -208,8 +217,9 @@ var checkRequiredDependencies = tasks.register("checkRequiredDependencies") {
                     : present.collect { "  - ${it.name}" }.join('\n')
             throw new GradleException(
                     "Missing required compile dependencies in libs/ (jars are not committed to Git;\n" +
-                    "see libs/README.txt and BUILD.md). Jars are matched by name pattern, so a\n" +
-                    "renamed download is fine as long as it still contains these tokens:\n" +
+                    "see libs/README.txt and BUILD.md). Jars are matched by name pattern with all\n" +
+                    "separators ignored (-, _, ., spaces), so a renamed download is fine as long as\n" +
+                    "it still contains these tokens:\n" +
                     wanted + "\n" +
                     "Currently in libs/:\n" + found + "\n" +
                     "Note: files whose name contains \"fabric\" are ignored on purpose.\n" +
