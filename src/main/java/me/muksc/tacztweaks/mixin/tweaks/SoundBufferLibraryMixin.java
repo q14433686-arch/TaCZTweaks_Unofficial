@@ -21,12 +21,15 @@ import java.nio.ByteBuffer;
 public abstract class SoundBufferLibraryMixin {
     @SuppressWarnings("target")
     @ModifyArg(
-        method = "lambda$getCompleteBuffer$1(Lnet/minecraft/resources/Identifier;)Lcom/mojang/blaze3d/audio/SoundBuffer;",
+        method = "lambda$getCompleteBuffer$*",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/audio/SoundBuffer;<init>(Ljava/nio/ByteBuffer;Ljavax/sound/sampled/AudioFormat;)V"
         ),
-        index = 1
+        index = 1,
+        // The synthetic lambda is not stable across 1.21.11 mappings/builds. If it is absent,
+        // leave the vanilla sound path intact instead of making client startup fatal.
+        require = 0
     )
     private AudioFormat tacztweaks$getCompleteBuffer$monoFormat(AudioFormat format, @Local(argsOnly = true) Identifier id) {
         return MonoConversion.INSTANCE.shouldConvert(format, id) ? MonoConversion.INSTANCE.convertFormat(format) : format;
@@ -34,12 +37,14 @@ public abstract class SoundBufferLibraryMixin {
 
     @SuppressWarnings("target")
     @ModifyArg(
-        method = "lambda$getCompleteBuffer$1(Lnet/minecraft/resources/Identifier;)Lcom/mojang/blaze3d/audio/SoundBuffer;",
+        method = "lambda$getCompleteBuffer$*",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/audio/SoundBuffer;<init>(Ljava/nio/ByteBuffer;Ljavax/sound/sampled/AudioFormat;)V"
         ),
-        index = 0
+        index = 0,
+        // See the format injector above: mono conversion is optional, vanilla audio must remain safe.
+        require = 0
     )
     private ByteBuffer tacztweaks$getCompleteBuffer$monoBuffer(
         ByteBuffer data,
