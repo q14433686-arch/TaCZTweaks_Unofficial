@@ -2,8 +2,8 @@
 
 本模组是 **TaCZ Tweaks 的 Fabric 26.1.2 移植版**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
-`2.14.2+fabric.26.1.2.Beta-1`。
+当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
+`2.14.2+fabric.26.1.2.Beta-1-hotfix`。
 
 ---
 
@@ -52,6 +52,11 @@ TaCZ 本体通过本地文件引用。仓库会用 `RESOURCE_IMPORT_MANIFEST.tsv
 YACL 3.9.6+26.1-fabric 已由 Gradle 从 Modrinth Maven 自动解析，不需要手动下载。
 
 ### TaCZ 本体（compileOnly，提供 mixin 目标类）
+
+> 说明：编译期仍使用 **R2 基线包** `TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar`
+> 作为 mixin 目标和 API 表面。运行时版本门禁放宽为接受同发布系列的
+> `1.1.8+fabric.26.1.2.R<n>`（`n >= 2`，包括 `R2-hotfix`、`R3`、`R10` 等）；因此构建和
+> 静态审计基线保持 R2，无需更换这份依赖包，也不要把它替换为其它哈希的文件。
 
 从 TaCZ 的 Release 页下载：
 ```
@@ -107,8 +112,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.1.2.Beta-1.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.1.2.Beta-1-hotfix.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁

@@ -17,6 +17,18 @@ python3 scripts/audit_port.py --strict \
   --upstream-root /path/to/MUKSC-TaCZTweaks-v2.14.2
 ```
 
+## 版本门禁（TaCZ R2+）
+
+- 审计和编译基线仍是 **R2 包** `TACZ-Refabricated-26.1.2-1.1.8+fabric.26.1.2.R2.jar`；
+- 运行时版本门禁从“仅等于完整 friendly string `1.1.8+fabric.26.1.2.R2`”放宽为接受
+  `1.1.8+fabric.26.1.2.R<n>`，其中 `n >= 2`（含同系列后缀版本，如 `R2-hotfix`、`R10-preview`）；
+- revision 采用数字比较，`R10` 不会被误判为低于 `R2`；
+- 错误的 Minecraft 版本、TaCZ 核心版本、错误 fabric release family、pre-R2 revision 和
+  畸形版本字符串仍然拒绝。
+- 该门禁由 `TaCZTweaks.isSupportedTaczVersion` 实现，并有
+  `src/test/kotlin/me/muksc/tacztweaks/TaCZTweaksVersionTest.kt` 覆盖；当前仅静态/单元验证，
+  未进行客户端、集成服、独立服游戏矩阵实测。
+
 ## 总结
 
 用户的判断基本正确：旧文档把“原注入点/原 Forge 类型不存在”误写成了“功能不能做”。

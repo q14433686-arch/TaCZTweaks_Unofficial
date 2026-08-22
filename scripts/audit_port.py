@@ -722,7 +722,7 @@ def audit_versions(config: dict) -> list[str]:
     if not mod_version:
         errors.append("gradle.properties is missing mod_version")
         return errors
-    version_pattern = r"\d+\.\d+\.\d+\+fabric\.26\.1\.2\.(?:R\d+|Beta-\d+)"
+    version_pattern = r"\d+\.\d+\.\d+\+fabric\.26\.1\.2\.(?:R\d+|Beta-\d+)(?:-[A-Za-z0-9]+)?"
     if not re.fullmatch(version_pattern, mod_version):
         errors.append(f"mod_version has an unexpected 26.1.2 format: {mod_version}")
 
@@ -796,6 +796,7 @@ def audit_release_guards() -> list[str]:
         "src/test/kotlin/me/muksc/tacztweaks/client/sound/MonoConversionTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/data/CodecSmokeTest.kt",
         "src/test/kotlin/me/muksc/tacztweaks/data/ExamplePackTest.kt",
+        "src/test/kotlin/me/muksc/tacztweaks/TaCZTweaksVersionTest.kt",
     }
     for name in sorted(required_tests):
         if not (ROOT / name).is_file():
