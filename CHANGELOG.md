@@ -4,7 +4,7 @@ All notable changes to this unofficial Fabric port are tracked here. Release ent
 be user-facing and concise; keep detailed process notes in `docs/maintenance/` or the
 handoff/audit documents.
 
-## 2.14.2+fabric.26.1.2.Beta-1 - Unreleased
+## 2.14.2+fabric.26.1.2.Beta-1-hotfix - Unreleased
 
 ### Added
 
@@ -34,6 +34,8 @@ handoff/audit documents.
   Minecraft version, wrong TaCZ core version, wrong Fabric release family, pre-R2 revisions and
   malformed strings. `R10` is compared numerically so it is never mistaken for a version below
   `R2`.
+- The self/host artifact version was renamed to `2.14.2+fabric.26.1.2.Beta-1-hotfix` to mark this
+  as a hotfix revision of the same 26.1.2 beta line.
 - Release metadata now includes homepage, source and issue links, plus a separate maintainer
   contributor entry.
 - `LICENSE` and `THIRD_PARTY_NOTICES.md` are packaged into the release jar under `META-INF/`.
