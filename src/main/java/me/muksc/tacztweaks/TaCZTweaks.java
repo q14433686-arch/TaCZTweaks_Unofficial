@@ -51,7 +51,13 @@ import java.util.Map;
 @Mod(TaCZTweaks.MOD_ID)
 public class TaCZTweaks {
     public static final String MOD_ID = "tacztweaks";
-    public static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+neoforge.1.21.11";
+    /**
+     * @deprecated Use {@link TaczVersionSupport#isSupportedTaczVersion(String)} for strict
+     *             release-family validation. Retained as a display prefix only.
+     */
+    @Deprecated
+    public static final String SUPPORTED_TACZ_VERSION_PREFIX =
+            TaczVersionSupport.EXPECTED_CORE_VERSION + "+" + TaczVersionSupport.EXPECTED_FAMILY;
     public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("tacztweaks");
 
     public static Identifier id(String path) {
@@ -66,9 +72,9 @@ public class TaCZTweaks {
         ModContainer tacz = ModList.get().getModContainerById("tacz")
                 .orElseThrow(() -> new IllegalStateException("TaCZ is required"));
         String taczVersion = tacz.getModInfo().getVersion().toString();
-        if (!taczVersion.startsWith(SUPPORTED_TACZ_VERSION_PREFIX)) {
+        if (!TaczVersionSupport.isSupportedTaczVersion(taczVersion)) {
             throw new IllegalStateException(
-                    "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION_PREFIX + ", found " + taczVersion);
+                    "TaCZ Tweaks requires TaCZ " + TaczVersionSupport.expectedDisplay() + ", found " + taczVersion);
         }
 
         ModStatusEffects.INSTANCE.EFFECTS.register(modEventBus);
