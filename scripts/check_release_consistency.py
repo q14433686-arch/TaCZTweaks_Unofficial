@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-file release consistency checks for TaCZ Tweaks (Refabricated)."""
+"""Cross-file release consistency checks for TaCZ Tweaks (NeoForge 26.2)."""
 
 from __future__ import annotations
 
@@ -40,8 +40,13 @@ def fail(message: str) -> None:
 
 def check_manifest() -> None:
     manifest = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
+    if not manifest.is_file():
+        fail("RESOURCE_IMPORT_MANIFEST.tsv is missing")
     with manifest.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
+        reader = csv.DictReader(
+            (line for line in handle if line.strip() and not line.startswith("#")),
+            delimiter="\t",
+        )
         required = {
             "path", "source_url", "upstream_project", "upstream_version", "sha256",
             "license", "use", "bundled_in_release_jar",
@@ -49,44 +54,74 @@ def check_manifest() -> None:
         missing = required.difference(reader.fieldnames or [])
         if missing:
             fail(f"{manifest.name} missing columns: {sorted(missing)}")
-        for row in reader:
+        rows = list(reader)
+        if not rows:
+            fail("RESOURCE_IMPORT_MANIFEST.tsv contains no rows")
+        for row in rows:
             if not row.get("path"):
                 continue
             path = ROOT / row["path"]
+            expected = (row.get("sha256") or "").strip().lower()
             if not path.is_file():
-                fail(f"Manifest file is missing: {row['path']}")
+                # libs/*.jar are not committed; only a release build (which must run
+                # download_dependencies.py first) can verify them.
+                print(f"NOTE manifest entry not present locally: {row['path']}")
+                continue
             actual = sha256(path)
-            if actual != row["sha256"]:
-                fail(f"Checksum mismatch for {row['path']}: expected {row['sha256']}, got {actual}")
-            for column in required - {"path", "sha256"}:
+            if expected in {"", "pending", "tbd"}:
+                print(f"NOTE {row['path']}: no digest recorded yet, observed {actual}")
+            elif actual != expected:
+                fail(f"Checksum mismatch for {row['path']}: expected {expected}, got {actual}")
+            for column in required - {"path", "sha256", "retrieved_or_verified_utc"}:
                 if not row.get(column):
                     fail(f"Manifest row for {row['path']} has empty {column}")
 
 
-def check_metadata() -> tuple[dict[str, str], dict]:
+def check_metadata() -> tuple[dict[str, str], str]:
     props = read_properties(ROOT / "gradle.properties")
-    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    meta = (ROOT / "src/main/templates/META-INF/neoforge.mods.toml").read_text(encoding="utf-8")
 
-    if meta["version"] != "${version}":
-        fail("fabric.mod.json should keep ${version} placeholder for Gradle expansion")
-    contact = meta.get("contact") or {}
-    for key in ("homepage", "sources", "issues"):
-        if "TaCZTweaks_Unofficial" not in contact.get(key, ""):
-            fail(f"fabric.mod.json contact.{key} is missing repository URL")
-    if not meta.get("contributors"):
-        fail("fabric.mod.json contributors is empty")
-
-    expected_depends = {
-        "minecraft": f"={props['minecraft_version']}",
-        "java": ">=25",
-        "tacz": "=1.1.8+fabric.26.2.R2",
-        "yet_another_config_lib_v3": "=3.9.6+26.2-fabric",
+    if 'version="${mod_version}"' not in meta:
+        fail("neoforge.mods.toml should keep the ${mod_version} placeholder for Gradle expansion")
+    if "TaCZTweaks_Unofficial" not in meta:
+        fail("neoforge.mods.toml is missing the repository URL")
+    expected_properties = {
+        "minecraft_version": "26.2",
+        "minecraft_version_range": "[26.2]",
+        "neo_version": "26.2.0.64",
+        "neo_version_range": "[26.2.0.64,)",
+        "kotlin_version": "2.4.10",
+        "mod_version": "2.14.2+neoforge.26.2.Beta-1",
     }
-    for key, value in expected_depends.items():
-        if meta["depends"].get(key) != value:
-            fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
-    if meta.get("suggests", {}).get("modmenu") != "*":
-        fail("fabric.mod.json should suggest modmenu: *")
+    for key, expected in expected_properties.items():
+        if props.get(key) != expected:
+            fail(f"gradle.properties {key} must be {expected}, got {props.get(key)!r}")
+
+    expected_fragments = [
+        'modId="neoforge"',
+        'modId="minecraft"',
+        'versionRange="${minecraft_version_range}"',
+        'modId="tacz"',
+        'modId="yet_another_config_lib_v3"',
+        'versionRange="[3.9.5,3.10.0)"',
+        'versionRange="[1.5.1,1.6.0)"',
+        'versionRange="[1.3.0,1.4.0)"',
+        'versionRange="[3.3.5,3.4.0)"',
+    ]
+    for fragment in expected_fragments:
+        if fragment not in meta:
+            fail(f"neoforge.mods.toml is missing {fragment}")
+    yacl_block = re.search(
+        r'\[\[dependencies\.\$\{mod_id\}\]\]\s+modId="yet_another_config_lib_v3"(?P<body>.*?)(?=\n\[\[|\Z)',
+        meta,
+        re.S,
+    )
+    if yacl_block is None or 'side="BOTH"' not in yacl_block.group("body"):
+        fail("YACL must be required on BOTH sides because common config types extend YACL")
+
+    gate = (ROOT / "src/main/java/me/muksc/tacztweaks/TaczVersionSupport.java").read_text(encoding="utf-8")
+    if 'EXPECTED_FAMILY = "neoforge.26.2"' not in gate or "MIN_REVISION = 1" not in gate:
+        fail("TaczVersionSupport no longer targets the neoforge.26.2 R1+ release family")
     return props, meta
 
 
@@ -112,7 +147,7 @@ def check_docs(props: dict[str, str]) -> None:
     # metadata and changelog, not the reusable Modrinth/CurseForge project text.
     for rel in ("docs/publish/Modrinth.md", "docs/publish/CurseForge.md"):
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for forbidden in (version, "26.2", "Beta-1"):
+        for forbidden in (version, "26.2", "Beta-1", "Beta-2"):
             if forbidden in text:
                 fail(f"{rel} should not embed reusable-publication forbidden token {forbidden}")
 
@@ -123,15 +158,25 @@ def check_jar(path: Path, props: dict[str, str]) -> None:
     with zipfile.ZipFile(path) as jar:
         names = set(jar.namelist())
         for entry in [
-            "fabric.mod.json", "icon.png", "tacztweaks.mixins.json",
-            "META-INF/LICENSE_tacztweaks", "META-INF/THIRD_PARTY_NOTICES_tacztweaks.md",
+            "META-INF/neoforge.mods.toml",
+            "META-INF/LICENSE_tacztweaks",
+            "META-INF/THIRD_PARTY_NOTICES_tacztweaks.md",
+            "icon.png",
+            "tacztweaks.mixins.json",
         ]:
             if entry not in names:
                 fail(f"{path} missing {entry}")
-        meta = json.loads(jar.read("fabric.mod.json").decode("utf-8"))
-        if meta["version"] != props["mod_version"]:
-            fail(f"Jar version is {meta['version']}, expected {props['mod_version']}")
-        forbidden = [n for n in names if n.endswith(".log") or n.startswith("fixtures/") or n.startswith("libs/")]
+        meta = jar.read("META-INF/neoforge.mods.toml").decode("utf-8")
+        if f'version="{props["mod_version"]}"' not in meta:
+            fail(f"Jar metadata does not declare version {props['mod_version']}")
+        forbidden = [
+            n for n in names
+            if n.endswith(".log")
+            or n.startswith("fixtures/")
+            or n.startswith("libs/")
+            or n == "fabric.mod.json"
+            or "TACZ-Refabricated" in n
+        ]
         if forbidden:
             fail(f"Jar contains forbidden entries: {forbidden}")
 

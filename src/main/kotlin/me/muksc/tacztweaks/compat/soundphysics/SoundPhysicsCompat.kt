@@ -3,7 +3,7 @@ package me.muksc.tacztweaks.compat.soundphysics
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.compat.soundphysics.network.message.ServerMessageAirspaceSounds
 import me.muksc.tacztweaks.data.manager.BulletSoundsManager
-import net.fabricmc.loader.api.FabricLoader
+import net.neoforged.fml.ModList
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
 import java.util.UUID
@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 
 /** Client-side bridge to Sound Physics Remastered 1.5.1+26.2. */
 object SoundPhysicsCompat {
-    private val enabled = FabricLoader.getInstance().isModLoaded("sound_physics_remastered")
+    private val enabled = ModList.get().isLoaded("sound_physics_remastered")
     private val triggerId = Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "sound_physics_trigger")
     private val pending = ConcurrentHashMap<PositionKey, ConcurrentLinkedDeque<PendingSound>>()
     private val processing = ThreadLocal<ProcessingSound?>()

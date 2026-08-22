@@ -4,13 +4,13 @@ import com.tacz.guns.api.item.IGun
 import me.muksc.tacztweaks.TaCZTweaks
 import me.muksc.tacztweaks.config.Config
 import me.muksc.tacztweaks.network.NetworkHandler
-import net.fabricmc.fabric.api.networking.v1.PacketSender
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.neoforged.neoforge.network.handling.IPayloadContext
+import net.neoforged.neoforge.server.ServerLifecycleHooks
 import java.util.ArrayDeque
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -50,11 +50,13 @@ class ClientMessageBroadcastSound(
         private const val MAX_SOUNDS_PER_SECOND = 16
         private val recentSounds = ConcurrentHashMap<UUID, ArrayDeque<Long>>()
 
-        fun handle(msg: ClientMessageBroadcastSound, server: MinecraftServer, player: ServerPlayer?, responseSender: PacketSender) {
-            server.execute {
-                if (player == null || !Config.Tweaks.audibleFirstPersonGunSounds()) return@execute
-                if (!player.isAlive || player.isRemoved || !IGun.mainHandHoldGun(player)) return@execute
-                val gun = IGun.getIGunOrNull(player.mainHandItem) ?: return@execute
+        fun handle(msg: ClientMessageBroadcastSound, ctx: IPayloadContext) {
+            ctx.enqueueWork {
+                val player = ctx.player() as? ServerPlayer ?: return@enqueueWork
+                val server = ServerLifecycleHooks.getCurrentServer() ?: return@enqueueWork
+                if (!Config.Tweaks.audibleFirstPersonGunSounds()) return@enqueueWork
+                if (!player.isAlive || player.isRemoved || !IGun.mainHandHoldGun(player)) return@enqueueWork
+                val gun = IGun.getIGunOrNull(player.mainHandItem) ?: return@enqueueWork
                 val gunId = gun.getGunId(player.mainHandItem)
                 val displayId = gun.getGunDisplayId(player.mainHandItem)
                 val allowedNamespaces = setOf(
@@ -63,9 +65,9 @@ class ClientMessageBroadcastSound(
                     gunId.namespace,
                     displayId.namespace
                 )
-                if (msg.soundName.namespace !in allowedNamespaces) return@execute
+                if (msg.soundName.namespace !in allowedNamespaces) return@enqueueWork
                 if (msg.distance !in 1..MAX_DISTANCE || !msg.volume.isFinite() || msg.volume !in 0.0F..4.0F ||
-                    !msg.pitch.isFinite() || msg.pitch !in 0.01F..4.0F || !allowSound(player.uuid)) return@execute
+                    !msg.pitch.isFinite() || msg.pitch !in 0.01F..4.0F || !allowSound(player.uuid)) return@enqueueWork
 
                 val pos = player.position()
                 val distanceSqr = msg.distance.toDouble() * msg.distance.toDouble()

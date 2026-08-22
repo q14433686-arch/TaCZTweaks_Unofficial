@@ -2,8 +2,9 @@
 
 Config file: `config/tacztweaks.json`.
 
-The YACL/Mod Menu screen is the preferred editor. Options marked **synced** are sent by the
-server to joining clients and require permission to change while connected to that server.
+The YACL screen opened from NeoForge's mod list is the preferred editor. YACL is also required on
+the server because the shared persistence/sync types extend its config classes. Options marked
+**synced** are sent by the server to joining clients and require permission to change there.
 Client-only options are local UI/audio/rendering preferences. Most values apply immediately
 after saving; data-pack driven systems still reload through Minecraft resource reload.
 
@@ -65,8 +66,8 @@ Empty modifiers leave the TaCZ baseline unchanged. Available modifier keys are:
 |---|---:|---|---|
 | `compat.firstAidCompat` | `true` | synced | Enables First Aid New hit-location compatibility when that mod is loaded. |
 
-Sound Physics Remastered and Pillager's Gun integration is auto-detected; no stale no-op
-compatibility switch is kept for unavailable Fabric 26.2 targets.
+Sound Physics Remastered and Pillager's Gun integration is auto-detected. Optional targets without
+a verified NeoForge release are listed as unsupported instead of receiving stale no-op switches.
 
 ## Tweaks
 
@@ -99,6 +100,6 @@ for diagnosis because they may increase log volume.
 
 The following old Forge/legacy options are intentionally absent and should be removed from old
 config files if encountered: `thirdPersonGunRenderingFix`, `lsoCompat`, `mtsFix`,
-`vsCollisionCompat`, and `vsExplosionCompat`. TaCZ Refabricated R2 already contains the third
-person rendering fix; the other targets do not currently have supported Fabric 26.2 mods to
-inject into.
+`vsCollisionCompat`, and `vsExplosionCompat`. The inherited Fabric line removed the third-person
+switch; it has not been reintroduced without a demonstrated Renovated defect. The remaining
+NeoForge targets were not verified for this port, so no dormant switches are exposed.

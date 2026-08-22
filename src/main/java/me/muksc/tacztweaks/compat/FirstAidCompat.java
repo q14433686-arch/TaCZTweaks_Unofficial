@@ -4,7 +4,7 @@ import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.util.TacHitResult;
 import me.muksc.tacztweaks.TaCZTweaks;
 import me.muksc.tacztweaks.config.Config;
-import net.fabricmc.loader.api.FabricLoader;
+import net.neoforged.fml.ModList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -13,7 +13,7 @@ import java.lang.reflect.Method;
 
 /** Reflection-only bridge so First Aid remains an optional dependency. */
 public final class FirstAidCompat {
-    private static final boolean LOADED = FabricLoader.getInstance().isModLoaded("firstaid");
+    private static final boolean LOADED = ModList.get().isLoaded("firstaid");
     private static Method recordProjectileHit;
     private static boolean lookupFailed;
 

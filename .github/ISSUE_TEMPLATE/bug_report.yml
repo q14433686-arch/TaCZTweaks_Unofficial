@@ -8,7 +8,7 @@ body:
       value: |
         ## 提交前请确认 / Before submitting
 
-        本仓库只处理 **TaCZ Tweaks (Refabricated)** 移植本身的问题。请不要把本移植产生的问题提交给原版 TaCZ Tweaks、TaCZ 或兼容模组的作者。
+        本仓库只处理 **TaCZ Tweaks (Renovated)** 移植本身的问题。请不要把本移植产生的问题提交给原版 TaCZ Tweaks、TaCZ 或兼容模组的作者。
 
         请先搜索 open 和 closed issues。中文或 English 均可。
 
@@ -21,7 +21,7 @@ body:
           required: true
         - label: 我使用的是本项目发布页提供的文件，而不是自行编译或第三方转载文件 / I use a file published by this project, not a third-party build.
           required: true
-        - label: 我确认问题涉及 TaCZ Tweaks (Refabricated)，而不是仅安装 TaCZ 时也会发生的问题 / I confirmed the issue involves this port and is not reproducible with TaCZ alone.
+        - label: 我确认问题涉及 TaCZ Tweaks (Renovated)，而不是仅安装 TaCZ 时也会发生的问题 / I confirmed the issue involves this port and is not reproducible with TaCZ alone.
           required: true
 
   - type: input
@@ -44,7 +44,7 @@ body:
     id: dependency_versions
     attributes:
       label: 加载器与必需依赖版本 / Loader and required dependency versions
-      description: Fabric Loader、Fabric API、Fabric Language Kotlin、TaCZ Refabricated Unofficial、YACL；每行一个 / One exact name and version per line.
+      description: NeoForge、TaCZ: Renovated、YACL（服务端也需要）；每行一个 / One exact name and version per line.
       render: text
     validations:
       required: true

@@ -1,31 +1,29 @@
 # Compatibility matrix
 
-This matrix separates implementation state from evidence. Do not promote an integration from
-static/build verification to game or server validation until the matching test has actually been
-run for the stated versions.
+This matrix separates source evidence from tests that actually ran. The target is the NeoForge 26.2
+line; results from the 26.1.2 NeoForge skeleton are useful porting evidence but do not count as 26.2
+runtime validation.
 
-| Project | Type | Supported range | Auto enabled | Current evidence | Known boundary |
-|---|---|---|---:|---|---|
-| Minecraft | hard platform | `26.2` | yes | compile/test/build | No other Minecraft versions are declared. |
-| Fabric Loader | hard dependency | `>=0.19.3 <0.20.0` | yes | compile/test/build | Loader API drift outside this range is not claimed. |
-| Fabric API | hard dependency | `>=0.155.2+26.2 <0.157.0` | yes | compile/test/build | Keep release metadata and Gradle property aligned. |
-| Fabric Language Kotlin | hard dependency | `>=1.13.13 <1.14.0` | yes | compile/test/build | Runtime Kotlin stdlib comes through FLK. |
-| TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same release family | required | compile/test/static descriptor audit; startup accepts revisions >= R2 | Minecraft/core version and `fabric.26.2` family remain strict; pre-R2 and unrelated builds are rejected. |
-| YetAnotherConfigLib | hard dependency | exactly `3.9.6+26.2-fabric` | required | compile/build/checksum | Runtime mod is not nested; users must install it. |
-| Mod Menu | optional UI entry | `*` suggested; compiled against `20.0.1` | when present | compile-only | Absence must not break startup. |
-| Sound Physics Remastered | optional compat | `>=1.5.1 <1.6.0` | when present | source/static/build; airspace codec fixture | Airspace behavior depends on its runtime ray data. |
-| First Aid New | optional compat | `>=1.3.0 <1.4.0` Fabric 26.2 | config controlled | source/static/build; shader resource override audited | Shader override is limited to this range. |
-| Pillager's Gun | optional compat | `>=3.3.5 <3.4.0` Fabric 26.2 | when present | source/static/build | Friendly-fire behavior follows that mod's config. |
-| Legendary Survival Overhaul | no current target | unsupported | no | documented absence | No supported Fabric 26.2 target. |
-| Valkyrien Skies | no current target | unsupported | no | documented absence | Public Fabric target does not match 26.2. |
-| MTS / Immersive Vehicles | no current target | unsupported | no | documented absence | No supported Fabric 26.2 target found. |
+| Project | Type | Declared range | Current evidence | Boundary |
+|---|---|---|---|---|
+| Minecraft | hard platform | exactly `26.2` | compile/test/build PASS; maintainer client/core gameplay smoke | No other Minecraft version is declared. |
+| NeoForge | hard dependency | `[26.2.0.64,)` | 26.2.x patches checked; build PASS; maintainer client/core gameplay smoke | Dedicated-server startup is still pending. |
+| TaCZ: Renovated | hard dependency | `1.1.8+neoforge.26.2.R<n>`, n >= 1 | actual R1 jar used for successful build and maintainer client/core gameplay smoke | The gameplay report is non-exhaustive; wrong core/loader/MC family remains rejected at startup. |
+| YetAnotherConfigLib | hard dependency (both physical sides) | `[3.9.5,3.10.0)`; maintainer used 3.9.6 NeoForge 26.2 | compile/build and general client startup PASS | Config-screen behavior was not itemized; dedicated servers also need the jar. |
+| Kotlin stdlib | embedded | `2.4.10` via `jarJar` | jar-content build gate and general client startup PASS | Coexistence with arbitrary other Kotlin embedders is untested. |
+| Sound Physics Remastered | optional | `[1.5.1,1.6.0)` NeoForge 26.2 | 1.5.1+26.2 source call sites checked | Shipped jar and airspace behavior untested. |
+| First Aid New | optional | `[1.3.0,1.4.0)` NeoForge 26.2 | `EventHandler#handleCustomPlayerDamage(Player, DamageSource, float)` and `#recordProjectileHit(Player, Entity, Vec3)` located in the NeoForge 26.2 source module | 1.3.0-patched release jar and gameplay untested; 1.2.8 exists but is outside the declared range because the 1.3.x shader override was not verified against it. |
+| Pillager’s Gun (Unofficial Port) | optional | `[3.3.5,3.4.0)` NeoForge 26.2 | 3.3.5 release located; `PillagersGunConfig#values()` / `Values#friendlyFire()` located in source | Shipped 3.3.5 jar and friendly-fire behavior untested. |
+| LRTactical | bundled in TaCZ: Renovated | target dependency's built-in version | target classes/method names located in Renovated 26.2 source | Melee scenario untested. |
+| Legendary Survival Overhaul / Valkyrien Skies / MTS | unsupported in this port | none | not re-verified for NeoForge 26.2 | No dormant/no-op switches are shipped. |
 
 ## Evidence categories
 
-- **Source/static**: mixin descriptors, target classes, config uses, or package names were checked.
-- **Compile/test/build**: `./gradlew build` and unit/codec tests pass against pinned dependencies.
-- **Game validation**: a client or integrated server scenario was launched and manually exercised.
-- **Dedicated-server validation**: a headless server was launched and checked with
-  `scripts/check_server_log.py`.
+- **Source/static**: a source file, patch, declaration or method/call site was inspected.
+- **Compile/test/build**: `./gradlew test` and `./gradlew build` completed against the pinned jars.
+- **Client validation**: a NeoForge 26.2 client reached the main menu without mixin/injection failure.
+- **Dedicated-server validation**: `scripts/check_server_log.py` accepted a log containing `Done (...)!`.
+- **Gameplay validation**: gun, ADS, reload, unload, config screen and datapack reload were exercised.
 
-Release notes must state which categories were completed for that release.
+The core platform/dependency rows now have build and maintainer-reported client/game smoke evidence.
+Optional integrations and dedicated-server startup remain at source/static or untested status.

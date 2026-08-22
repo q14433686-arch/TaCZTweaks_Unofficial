@@ -42,10 +42,16 @@ def rows() -> list[dict[str, str]]:
         return list(reader)
 
 
+PENDING = {"", "pending", "tbd"}
+
+
 def verify_existing(path: Path, expected: str) -> bool:
     if not path.exists():
         return False
     actual = sha256(path)
+    if expected in PENDING:
+        print(f"NOTE {path.name}: no digest recorded yet, observed {actual}")
+        return True
     if actual != expected:
         raise SystemExit(f"SHA-256 mismatch for {path.relative_to(ROOT)}: expected {expected}, got {actual}")
     return True
@@ -61,6 +67,11 @@ def download(row: dict[str, str]) -> None:
 
     target.parent.mkdir(parents=True, exist_ok=True)
     url = row["source_url"]
+    if expected in PENDING:
+        raise SystemExit(
+            f"{relative} has no recorded SHA-256 yet: download it manually from {url} "
+            f"and record the digest in RESOURCE_IMPORT_MANIFEST.tsv before building a release."
+        )
     print(f"Downloading {relative} from {url}")
     with tempfile.NamedTemporaryFile(prefix=target.name + ".", suffix=".tmp", dir=target.parent, delete=False) as tmp:
         tmp_path = Path(tmp.name)

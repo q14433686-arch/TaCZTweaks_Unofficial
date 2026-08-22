@@ -1,153 +1,141 @@
-# 构建指南（BUILD.md）
+# 构建指南
 
-本模组是 **TaCZ Tweaks 的 Fabric 26.2 移植版**，适配
-[TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
-`2.14.2+fabric.26.2.Beta-1-hotfix`。
+目标：Minecraft 26.2、NeoForge 26.2.0.64、Java 25、
+TaCZ: Renovated `1.1.8+neoforge.26.2.R1`。当前产物版本：
+`2.14.2+neoforge.26.2.Beta-1`。
 
----
+> 当前沙箱没有 JDK 25，无法本地复跑；维护者已在 Windows / JDK 25 上报告
+> `gradlew build` PASS，并进入游戏完成大多数核心功能的非穷尽 Beta 测试。以下流程仍是复现构建、
+> 专服与逐项验证的标准步骤；现有游戏报告不构成全面兼容保证。
 
-## 0. 你需要什么
+## 1. 环境
 
 | 项目 | 要求 |
 |---|---|
-| JDK | **Java 25**（必须，低于 25 无法编译/运行） |
-| 网络 | 首次构建要从 Maven 下载依赖（Gradle 会缓存到 `%USERPROFILE%\.gradle`） |
-| 磁盘 | 约 500MB（Minecraft 26.2 + Fabric API 等依赖） |
+| JDK | Java 25；`java -version` 与 `./gradlew --version` 都必须显示 25 |
+| 网络 | 首次构建需访问 Gradle、Maven Central 和 NeoForged Maven |
+| 磁盘 | 建议至少 2 GB 空闲 |
+| 内存 | 建议至少 4 GB；低内存环境可下调 `org.gradle.jvmargs` |
 
----
+ModDevGradle 版本固定为 `2.0.144`。Minecraft 26.2 未混淆，不配置 mappings。
 
-## 1. 装 JDK 25
+## 2. 获取源码
 
-下载 **Eclipse Temurin JDK 25**（免费开源）：
-
-- Windows x64 安装包：https://adoptium.net/temurin/releases/?version=25
-- 装完在命令行验证：
-  ```powershell
-  java -version
-  ```
-  应显示 `openjdk version "25.0.x"`。
-
-> 如果系统里还有别的旧 JDK，构建时 Gradle 会优先用 `JAVA_HOME` 指向的那个。
-> 保险起见把 `JAVA_HOME` 设成 JDK 25 的安装目录。
-
----
-
-## 2. 拿到源码
-
-两种方式任选：
-
-- **下载 zip**：从本仓库 Release 页下载 `tacztweaks-...-src.zip`，解压；
-- **git clone**：
-  ```powershell
-  git clone https://github.com/q14433686-arch/TaCZTweaks_Unofficial.git
-  cd TaCZTweaks_Unofficial
-  ```
-
----
-
-## 3. 放两个「编译期依赖」到 libs/ 目录
-
-这两个大 jar 是通过 `flatDir` / `files(...)` 引用的。仓库会用 `RESOURCE_IMPORT_MANIFEST.tsv` 固定来源、许可证和 SHA-256；其余依赖会自动从 Maven 拉。
-
-进入项目根目录下的 `libs/` 文件夹，放入这两个文件（**文件名要完全一致**）：
-
-### ① TaCZ 本体（compileOnly，提供 mixin 目标类）
-
-从 TaCZ 的 Release 页下载：
-```
-https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2
-```
-下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）。R2 及之后的
-同一 `1.1.8+fabric.26.2.R<n>` 发布版本（包括 `R2-hotfix`）也受支持，运行时要求 revision 不低于 R2。
-
-### ② YACL 配置库（implementation，配置 GUI）
-
-从 Modrinth 下载 YACL 3.9.6 for 26.2-fabric：
-```
-https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar
-```
-保存为：`yacl-fabric.jar`（约 1MB）
-
-也可以直接让脚本按 manifest 下载并校验：
-
-```powershell
-python scripts/download_dependencies.py
-# Linux/macOS 可用 python3 scripts/download_dependencies.py
+```bash
+git clone https://github.com/q14433686-arch/TaCZTweaks_Unofficial.git
+cd TaCZTweaks_Unofficial
+git checkout 26.2-neoforge
 ```
 
-放好之后 `libs/` 里应该是：
-```
-libs/
-├── README.txt
-├── TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar
-└── yacl-fabric.jar
-```
+## 3. 准备 `libs/`
 
-发布前必须校验哈希：
+jar 不提交到 Git。来源、用途、许可证和 SHA-256 见
+`RESOURCE_IMPORT_MANIFEST.tsv` 与 `libs/README.txt`。
 
-```powershell
-python scripts/download_dependencies.py --check-only
-```
+### 编译必需
 
----
-
-## 4. 构建
-
-在项目根目录打开命令行（PowerShell / CMD）：
-
-```powershell
-# Windows
-gradlew.bat build
-
-# Linux / macOS
-./gradlew build
+```text
+libs/tacz-1.1.8+neoforge.26.2.R1.jar
+libs/yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar
+libs/sound-physics-remastered-neoforge-1.5.1+26.2.jar
+libs/commons-math3-3.6.1.jar
 ```
 
-- **首次构建**会下载 Gradle 9.5.1、Minecraft 26.2、Fabric API 等，视网速可能要几分钟到十几分钟；
-- `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
-- 成功后输出：
-  ```
-  BUILD SUCCESSFUL
-  ```
+来源：
 
-### 产物位置
+- TaCZ: Renovated：<https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.2_R1>
+- YACL：Modrinth/CurseForge 的 NeoForge 26.2 构建（3.9.5 起；维护者首轮构建使用 3.9.6；双端必需）
+- Sound Physics Remastered：**[NEOFORGE][26.2] 1.5.1+26.2**
+- Commons Math 3.6.1：Maven Central
 
-```
-build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1-hotfix.zip  ← 可重载示例包
-```
+### 可选兼容核对件
 
-### 专用服务器 smoke test 门禁
-
-Loom 在 Minecraft 子进程启动失败时可能仍让 Gradle 任务返回 0，不能只看 `BUILD SUCCESSFUL`。
-对专服的 `latest.log`（或捕获的 stdout）再运行：
-
-```powershell
-python scripts/check_server_log.py run/logs/latest.log
+```text
+libs/firstaid-1.3.0-patched+neoforge26.2.jar  # 1.2.8 存在，但当前 shader override 未核验，故不声明支持
+libs/pillagers_gun-3.3.5-neoforge-26.2.jar
 ```
 
-只有日志出现 `Done (...)!`，且不含 `MixinApplyError`、`InvalidInjectionException` 或
-`Failed to start the minecraft server` 时才通过。
+First Aid 与 Pillager's Gun 通过反射/字符串目标接入，不是编译硬依赖；放入后可让人工/jar 审计更接近
+实际运行组合。
 
----
+构建脚本会忽略 `- _ . +` 与空格后按关键词匹配，并要求目标 jar 名同时包含 `26.2`；任何名字含
+`fabric` 的 jar 都会被故意排除。这样旧 26.1.2 或错误加载器文件不会被静默拿来编译。
 
-## 5. 常见问题
+```bash
+python3 scripts/download_dependencies.py --check-only
+```
 
-| 现象 | 解决 |
+`pending` 摘要只允许用于移植阶段；发布前必须下载真实文件、计算 SHA-256 并写回 manifest。
+TaCZ 行已记录 GitHub release API 公布的摘要，但仍建议发布机本地复算。
+
+## 4. 一致性与静态审计
+
+```bash
+python3 scripts/check_mod_icon.py
+python3 scripts/check_release_consistency.py
+python3 scripts/audit_port.py --strict
+```
+
+如果依赖 jar 尚未放入，`audit_port.py` 会报告无法检查目标类；这不算 mixin 验证通过。
+可以用 `--minecraft-jar <path>` 让脚本检查 MDG 生成的 Minecraft 26.2 jar。
+
+## 5. 单元测试与构建
+
+```bash
+./gradlew test
+./gradlew clean build --stacktrace
+```
+
+`build` 同时执行纯 Groovy 的图标、依赖 manifest 门禁，不依赖 Python。测试源集只包含纯 JDK 的
+版本门、数学、投射物索引和拆栈测试，不经 ModDevGradle。
+
+预期产物：
+
+```text
+build/libs/tacztweaks-2.14.2+neoforge.26.2.Beta-1.jar
+build/example-pack/tacz-tweaks-example-pack-2.14.2+neoforge.26.2.Beta-1.zip
+```
+
+Kotlin stdlib 2.4.10 通过 `jarJar` 内嵌；依赖模组和本地 `libs/*.jar` 不进入发布 jar。
+
+## 6. 客户端验收
+
+把发布 jar 与匹配的 TaCZ: Renovated、YACL 放进一个干净 NeoForge 26.2.0.64 客户端。
+启动日志不得出现：
+
+- `MixinApplyError`
+- `InvalidInjectionException`
+- `Critical injection failure`
+- `Scanned 0 target(s)`
+
+进入主界面后执行最小实测：
+
+1. 进入世界并拿起 TaCZ 枪；
+2. 开镜；
+3. 换弹；
+4. 卸弹；
+5. 从 NeoForge 模组列表打开配置屏并保存；
+6. 执行数据包重载，确认无 reload error。
+
+只有实际完成后才能在兼容矩阵中写“客户端/游戏验证”。
+
+## 7. 专服验收
+
+```bash
+./gradlew runServer --args='--nogui'
+python3 scripts/check_server_log.py run/logs/latest.log
+```
+
+必须出现 `Done (...)!`，且日志中没有 mixin/injection/startup fatal。客户端类使用独立
+`@Mod(..., dist = Dist.CLIENT)` 入口；专服冒烟仍不可省略。
+
+## 8. 常见问题
+
+| 现象 | 处理 |
 |---|---|
-| `Could not resolve ... TACZ-Refabricated ...` | `libs/` 里的 TaCZ jar 缺失或文件名不对，按第 3 步重新放 |
-| `Could not resolve ... yacl ...` | `libs/yacl-fabric.jar` 缺失，按第 3 步重新下载 |
-| `java.lang.UnsupportedClassVersionError` / `invalid source release 25` | 用了旧 JDK，换成 JDK 25 并设好 `JAVA_HOME` |
-| 下载依赖超时 | 重跑一次；国内网络可给 Gradle 配镜像仓库 |
-| `Daemon` 内存不足 | 编辑 `gradle.properties` 的 `org.gradle.jvmargs=-Xmx...` 调大（如 `-Xmx4G`） |
-| 想临时跳过测试 | 加参数：`gradlew.bat build -x test`（发布构建不得跳过；SafeMath、卸弹拆栈、PCM、codec 和 burst/pellet 均有测试） |
-
----
-
-## 6. 只想改代码、不想每次重新下载
-
-依赖只在第一次下载，之后都会走 `%USERPROFILE%\.gradle` 缓存，第二次构建一般只需几十秒。
-
-改完源码后重新 `gradlew.bat build` 即可得到新 jar。
+| `Missing required compile dependencies` | 按第 3 节补齐 26.2 NeoForge jar；检查文件名是否含 `26.2`，且不含 `fabric` |
+| `Unresolved reference: tacz / dev / com.sonicether` | 本地依赖未识别；先看 `checkRequiredDependencies` 列出的文件名 |
+| `invalid source release 25` / `UnsupportedClassVersionError` | Gradle daemon 使用了旧 JDK；`./gradlew --stop` 后修正 `JAVA_HOME` |
+| 启动拒绝 TaCZ 版本 | 只接受 `1.1.8+neoforge.26.2.R1` 及同家族后续 R<n> |
+| Vineflower OOM | 默认已 `disableRecompilation = true`；IDE 反编译只应在大内存机器启用 |
+| `BlocksAttacks#hurtBlockingItem` 注入为 0 | 核对 NeoForge 26.2.x patches；当前主路径必须是 6 参 `(Level, ItemStack, LivingEntity, InteractionHand, float, int)` |
