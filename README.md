@@ -41,16 +41,38 @@ Mod 启动时执行严格校验,仅接受下列 release family 内的 TaCZ NeoFo
 - 环境要求:**JDK 21**;依赖 jar 已随仓库 `libs/` 内置
 - 首次构建由 NeoForm 自动下载 Minecraft / NeoForge 21.11.45
 
+Linux / macOS:
+
 ```bash
 ./gradlew build          # 产物: build/libs/tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix.jar
 ./gradlew test           # 运行版本门禁等纯 JDK 单元测试
 ```
+
+Windows(`cmd.exe` / PowerShell,仓库已补齐 `gradlew.bat`,无需装 Gradle):
+
+```bat
+gradlew.bat build
+gradlew.bat test
+REM 或直接:
+build.bat                :: 默认执行 build
+build.bat test           :: 仅跑单测
+```
+
+> 若 `build.bat` 报 "JAVA_HOME is not set",请将 JDK 21 加入 PATH,或设置环境变量
+> `set "JAVA_HOME=C:\Program Files\Java\jdk-21"`(路径按实际安装位置调整)。
 
 低内存机器(≤2GB):
 
 ```bash
 export JAVA_TOOL_OPTIONS="-Xmx384m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC"
 ./gradlew build --no-parallel
+```
+
+Windows 低内存(cmd):
+
+```bat
+set JAVA_TOOL_OPTIONS=-Xmx384m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC
+gradlew.bat build --no-parallel
 ```
 
 ## 安装
