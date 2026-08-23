@@ -20,10 +20,9 @@ Unofficial Fabric and NeoForge ports providing configurable gunplay, movement, b
 # Unofficial community port
 
 **TaCZ Tweaks (Refabricated) is an unofficial community port of TaCZ Tweaks by MUKSC.**
-Fabric files target TaCZ Refabricated Unofficial; NeoForge files target TaCZ Renovated.
-Separate files exist for Minecraft 26.2, 26.1.2 and 1.21.11. The project is not
-affiliated with, reviewed by, or endorsed by MUKSC, the TaCZ development team, or
-the maintainers of those TaCZ ports.
+It supports Fabric and NeoForge. The project is not affiliated with, reviewed by,
+or endorsed by MUKSC, the TaCZ development team, or the maintainers of the
+underlying TaCZ ports.
 
 ## Overview
 
@@ -76,7 +75,7 @@ This is not an unchanged copy of the original mod. The target environment requir
 port-specific work, including:
 
 - replacing loader-specific events, networking, permissions, tags, and reload APIs;
-- adapting mixins to the methods exposed by the Fabric or NeoForge TaCZ port on that line;
+- adapting mixins to the methods exposed by the target TaCZ port;
 - redesigning mutable sound-request state and cache lifecycles;
 - integrating current shield, enchantment, prone-rendering, and block-break behavior;
 - restoring data-driven managers and legacy-schema conversion;
@@ -85,12 +84,10 @@ port-specific work, including:
 
 ## Requirements
 
-Install the file matching your Minecraft version and loader. Fabric files require
-Fabric API, Fabric Language Kotlin, TaCZ Refabricated Unofficial, and YetAnotherConfigLib.
-NeoForge files require NeoForge, TaCZ Renovated, and YetAnotherConfigLib.
-
-Exact game, loader, Java, and dependency requirements are listed on each uploaded file. Do not
-infer compatibility from the project name or from an old screenshot.
+This project supports Fabric and NeoForge. Install a file that matches your
+environment. Exact game version, loader, Java, and dependency requirements are
+those of the file you download. Do not infer them from the project name or from
+an old screenshot.
 
 Optional integration is available for Mod Menu, Sound Physics Remastered, First Aid New, and
 Pillager's Gun when a compatible release is installed. These integrations do not grant permission
@@ -135,12 +132,10 @@ project maintainer. The licensed upstream project icon is not AI-generated or AI
 ## CurseForge fields and moderation checklist
 
 - **Project type:** Mods
-- **Mod loader:** set per file (Fabric or NeoForge); the project may list both
+- **Mod loader:** Fabric and NeoForge
 - **License:** GNU General Public License v3.0
-- **Required relations:** those of the uploaded file's loader line
-- **Optional relations:** only integrations applicable to the uploaded file
+- **Relations / file metadata:** follow the uploaded file; do not hard-code a version or dependency list on the project page
 - **Source and Issues:** use the dedicated project fields as well as the links at the bottom
-- **Files:** tag every upload with its exact game version, loader and release status
 - **Avatar:** use the licensed square icon from this repository
 - **Description:** do not add external jar download links
 

@@ -27,10 +27,9 @@ Unofficial community ports (Fabric and NeoForge) that add configurable gunplay, 
 
 ## What this project does
 
-TaCZ Tweaks (Refabricated / Renovated lines) brings the configurable gameplay and
-data-driven systems of MUKSC's TaCZ Tweaks to **Fabric and NeoForge**. Files are
-published per Minecraft line (26.2, 26.1.2, 1.21.11). Fabric files target
-TaCZ Refabricated Unofficial; NeoForge files target TaCZ Renovated.
+TaCZ Tweaks (Refabricated) brings the configurable gameplay and data-driven
+systems of MUKSC's TaCZ Tweaks to **Fabric and NeoForge**. Use it with the
+matching unofficial TaCZ port for your loader.
 
 It expands TaCZ with gun-handling options, movement controls, global balance
 modifiers, projectile and melee interactions, sound and particle rules, server
@@ -39,9 +38,9 @@ configuration synchronization, and quality-of-life settings.
 ## Why use it
 
 The original project targets Forge 1.20.1. These ports let Fabric and NeoForge
-players and server owners use the same broad set of tweaks, with implementations
-adapted to each loader and Minecraft line. Always download the file that matches
-your game version and loader.
+players and server owners use the same broad set of tweaks. Download the file
+that matches your environment; supported game versions and required dependencies
+are those listed on that file.
 
 Highlights include:
 
@@ -69,18 +68,16 @@ This is a maintained derivative port, not an unchanged reupload. Port-specific w
 
 ## Requirements and installation
 
-Install the file for your Minecraft version **and** loader (Fabric or NeoForge)
-together with all dependencies listed in that file's **Dependencies** section.
-Fabric files require Fabric API, Fabric Language Kotlin, TaCZ Refabricated
-Unofficial, and YetAnotherConfigLib. NeoForge files require NeoForge, TaCZ
-Renovated, and YetAnotherConfigLib.
+This project supports Fabric and NeoForge. Install a file that matches your
+loader together with every dependency listed in that file's **Dependencies**
+section. Do not infer game versions or required mods from the project title or
+from this description.
 
 Mod Menu is optional. Compatibility integrations are also optional and only activate when
 the corresponding project is installed.
 
 For multiplayer, the server and relevant clients must use mutually compatible files and
-configuration. Do not infer compatibility from the project title; always read the metadata
-attached to the file you download.
+configuration.
 
 ## Optional compatibility
 
