@@ -1,4 +1,7 @@
 # TaCZ Tweaks (Refabricated)
+[![CurseForge Downloads](https://cf.way2muchnoise.eu/full_1659175_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
+[![CurseForge Versions](https://cf.way2muchnoise.eu/versions/1659175.svg)](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated/files)
+[![GitHub Downloads](https://img.shields.io/github/downloads/q14433686-arch/TaCZTweaks_Unofficial/total?logo=github&label=GitHub%20Downloads)](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases)
 
 **English:** an unofficial Fabric 26.1.2 community port of
 [`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks) v2.14.2 for
@@ -18,7 +21,7 @@ authors. Install the exact dependencies listed below before filing issues. Start
 
 当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.1.2.Beta-1-hotfix`）。
 
-[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [已知问题](docs/KNOWN_ISSUES.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
+[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [已知问题](docs/KNOWN_ISSUES.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
 > 本项目是非官方社区移植。请先按支持文档完成最小环境对照测试；本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
 
