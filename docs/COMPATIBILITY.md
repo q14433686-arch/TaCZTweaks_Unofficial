@@ -1,5 +1,8 @@
 # Compatibility matrix
 
+This matrix is for the **`26.2(main)` Fabric 26.2** line only. NeoForge and other Minecraft
+lines have their own matrices on those branches ([branch map](BRANCHES.md)).
+
 This matrix separates implementation state from evidence. Do not promote an integration from
 static/build verification to game or server validation until the matching test has actually been
 run for the stated versions.

@@ -6,7 +6,7 @@ pinned in [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
 
 ## Project code
 
-- Project: TaCZ Tweaks (Refabricated), this unofficial Fabric port.
+- Project: TaCZ Tweaks unofficial ports (Fabric and NeoForge lines in this repository).
 - License: GPL-3.0, inherited from the original MUKSC/TaCZTweaks project.
 - Full text: [`LICENSE`](LICENSE).
 

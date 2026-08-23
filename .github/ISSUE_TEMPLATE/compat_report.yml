@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        此模板用于只在特定第三方内容或可选模组存在时发生的问题。兼容并不代表本项目拥有或维护该第三方内容；请同时确认其作者声明支持你的游戏与加载器环境。
+        此模板用于只在特定第三方内容或可选模组存在时发生的问题。请先对照 [分支表](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/26.2(main)/docs/BRANCHES.md) 标明发行线。兼容并不代表本项目拥有或维护该第三方内容；请同时确认其作者声明支持你的游戏与加载器环境。
 
   - type: checkboxes
     id: checklist
@@ -20,26 +20,41 @@ body:
         - label: 移除该第三方内容后问题不再发生
           required: true
 
+  - type: dropdown
+    id: release_line
+    attributes:
+      label: 发行线 / Release line
+      options:
+        - 26.2(main) — Fabric 26.2
+        - 26.2-neoforge — NeoForge 26.2
+        - 26.1.2 — Fabric 26.1.2
+        - 26.1.2-neoforge — NeoForge 26.1.2
+        - 1.21.11 — Fabric 1.21.11
+        - 1.21.11-neoforge — NeoForge 1.21.11
+        - 不确定 / Unsure
+    validations:
+      required: true
+
   - type: input
     id: game_version
     attributes:
       label: Minecraft 版本
-      description: 请填写完整值，不要写“最新版”
+      description: 完整值，例如 26.2、26.1.2 或 1.21.11，不要写“最新版”
     validations:
       required: true
 
   - type: input
     id: mod_version
     attributes:
-      label: TaCZ Tweaks (Refabricated) 完整版本
+      label: 本模组完整版本（含 fabric/neoforge 与游戏版本后缀）
     validations:
       required: true
 
   - type: textarea
     id: dependency_versions
     attributes:
-      label: 加载器、TaCZ 与必需依赖版本
-      description: 每行一个准确名称与完整版本
+      label: 加载器、TaCZ 移植与必需依赖版本
+      description: Fabric 或 NeoForge 线各写该线 README 中的必需项；每行一个准确名称与完整版本
       render: text
     validations:
       required: true

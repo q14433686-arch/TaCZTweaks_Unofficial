@@ -1,24 +1,25 @@
 # TaCZ Tweaks (Refabricated)
 
-**English:** an unofficial Fabric 26.2 community port of
-[`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks) v2.14.2 for
+**English:** unofficial community ports of
+[`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks) v2.14.2.
+This default branch (`26.2(main)`) is the **Fabric 26.2** line for
 [`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial).
-It is not affiliated with or endorsed by MUKSC, the TACZ Dev Team, or optional compatibility mod
-authors. Install the exact dependencies listed below before filing issues. Start with
-[documentation](docs/README.md), [configuration](docs/CONFIGURATION.md),
-[compatibility](docs/COMPATIBILITY.md), [known issues](docs/KNOWN_ISSUES.md), and
-[support requirements](docs/SUPPORT.md).
+The same repository also maintains Fabric/NeoForge lines for 26.2, 26.1.2 and 1.21.11 — see
+[branch map](docs/BRANCHES.md). Not affiliated with or endorsed by MUKSC, the TACZ Dev Team, or
+optional compatibility mod authors. Install the exact dependencies for **your** branch before
+filing issues.
 
-**中文：TaCZ Tweaks 的 Fabric 26.2 社区移植版**，适配
+**中文：TaCZ Tweaks 非官方社区移植。** 默认分支 `26.2(main)` 是 **Fabric 26.2** 线，适配
 [`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
+仓库同时维护 NeoForge 与其它 Minecraft 版本线，见[分支对照](docs/BRANCHES.md)。
 
 原项目：[MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks) v2.14.2
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.2.Beta-1-hotfix`）。
+本线当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.2.Beta-1-hotfix`）。
 
-[文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
+[分支对照](docs/BRANCHES.md) · [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)
 
 > 本项目是非官方社区移植。请先按支持文档完成最小环境对照测试；本移植产生的问题不要提交给原版 TaCZ Tweaks、TaCZ 或兼容模组作者。
 

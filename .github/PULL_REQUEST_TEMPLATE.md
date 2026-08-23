@@ -1,3 +1,14 @@
+## Target release line
+
+- [ ] `26.2(main)` Fabric 26.2
+- [ ] `26.2-neoforge` NeoForge 26.2
+- [ ] `26.1.2` Fabric 26.1.2
+- [ ] `26.1.2-neoforge` NeoForge 26.1.2
+- [ ] `1.21.11` Fabric 1.21.11
+- [ ] `1.21.11-neoforge` NeoForge 1.21.11
+
+Base this PR on the matching release branch. Do not mix loader or Minecraft lines.
+
 ## Summary
 
 -

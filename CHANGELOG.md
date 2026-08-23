@@ -1,10 +1,15 @@
 # Changelog
 
-All notable changes to this unofficial Fabric port are tracked here. Release entries should
-be user-facing and concise; keep detailed process notes in `docs/maintenance/` or the
-handoff/audit documents.
+All notable changes to the **`26.2(main)` Fabric 26.2** line are tracked here. Other Git
+branches keep their own changelogs. Release entries should be user-facing and concise; keep
+detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
 ## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
+
+### Documentation
+
+- Documented the six maintained release branches (Fabric/NeoForge × 26.2 / 26.1.2 / 1.21.11)
+  and aligned issue templates, PR template and publish copy with that layout.
 
 ### Added
 

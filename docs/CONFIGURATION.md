@@ -65,8 +65,8 @@ Empty modifiers leave the TaCZ baseline unchanged. Available modifier keys are:
 |---|---:|---|---|
 | `compat.firstAidCompat` | `true` | synced | Enables First Aid New hit-location compatibility when that mod is loaded. |
 
-Sound Physics Remastered and Pillager's Gun integration is auto-detected; no stale no-op
-compatibility switch is kept for unavailable Fabric 26.2 targets.
+Sound Physics Remastered and Pillager's Gun integration is auto-detected on this Fabric 26.2
+line; no stale no-op compatibility switch is kept for unavailable targets on **this** line.
 
 ## Tweaks
 
