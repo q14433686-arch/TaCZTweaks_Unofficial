@@ -1,8 +1,19 @@
 # Contributing
 
-Thank you for helping maintain this unofficial Fabric port. This repository is fixed to the
-`arena/01a018df-tacztweaks-unofficial` working branch in Arena sessions; normal GitHub work should
-use feature branches and pull requests against the maintained release branch.
+Thank you for helping maintain these unofficial ports. The repository has six release branches
+(see [`docs/BRANCHES.md`](docs/BRANCHES.md)):
+
+| Branch | Loader | Minecraft |
+|---|---|---|
+| `26.2(main)` (default) | Fabric | 26.2 |
+| `26.2-neoforge` | NeoForge | 26.2 |
+| `26.1.2` | Fabric | 26.1.2 |
+| `26.1.2-neoforge` | NeoForge | 26.1.2 |
+| `1.21.11` | Fabric | 1.21.11 |
+| `1.21.11-neoforge` | NeoForge | 1.21.11 |
+
+Open pull requests against the **matching** release branch. Do not land a NeoForge or 1.21.11
+change only on `26.2(main)`. Arena session branches are temporary and are not release lines.
 
 ## Development environment
 
@@ -26,7 +37,8 @@ python3 scripts/check_mod_icon.py
 - Update `RESOURCE_IMPORT_MANIFEST.tsv`, `LICENSES.md`, and `THIRD_PARTY_NOTICES.md` when changing
   vendored binaries, embedded libraries or redistributed resources.
 - Update docs and `CHANGELOG.md` for user-visible behavior changes.
-- Keep `fabric.mod.json`, `gradle.properties`, README dependency tables and publish docs aligned.
+- Keep loader metadata (`fabric.mod.json` or NeoForge mods toml), `gradle.properties`, README
+  dependency tables and publish docs aligned **on that branch**.
 - For mixins, cite the target class/method descriptors and run the strict audit.
 - Do not claim game, dedicated-server, or optional-mod validation unless you actually ran it.
 - Include or update tests for pure logic, codecs, config serialization or release packaging when

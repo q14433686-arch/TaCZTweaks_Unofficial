@@ -1,7 +1,8 @@
 # Known issues
 
-This page is for user-facing limitations. Porting debates and obsolete investigation notes belong
-in `AUDIT.md`, `PORTING_NOTES.md`, or handoff files.
+This page is for user-facing limitations on the **`26.2(main)` Fabric 26.2** line. Other
+release lines keep their own known-issue lists. Porting debates and obsolete investigation notes
+belong in `AUDIT.md`, `PORTING_NOTES.md`, or handoff files.
 
 ## Dedicated-server startup is not yet automated in CI
 

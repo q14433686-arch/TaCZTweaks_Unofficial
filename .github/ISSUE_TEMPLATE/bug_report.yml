@@ -8,7 +8,7 @@ body:
       value: |
         ## 提交前请确认 / Before submitting
 
-        本仓库只处理 **TaCZ Tweaks (Refabricated)** 移植本身的问题。请不要把本移植产生的问题提交给原版 TaCZ Tweaks、TaCZ 或兼容模组的作者。
+        本仓库按发行线处理问题。请先对照 [分支表](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/26.2(main)/docs/BRANCHES.md) 选择 **Minecraft 版本 + Fabric/NeoForge**，只使用该线发布的文件。请不要把本移植产生的问题提交给原版 TaCZ Tweaks、TaCZ 或兼容模组的作者。
 
         请先搜索 open 和 closed issues。中文或 English 均可。
 
@@ -21,14 +21,30 @@ body:
           required: true
         - label: 我使用的是本项目发布页提供的文件，而不是自行编译或第三方转载文件 / I use a file published by this project, not a third-party build.
           required: true
-        - label: 我确认问题涉及 TaCZ Tweaks (Refabricated)，而不是仅安装 TaCZ 时也会发生的问题 / I confirmed the issue involves this port and is not reproducible with TaCZ alone.
+        - label: 我确认问题涉及本仓库对应发行线，而不是仅安装底层 TaCZ 移植时也会发生的问题 / I confirmed the issue involves this port line and is not reproducible with TaCZ alone.
           required: true
+
+  - type: dropdown
+    id: release_line
+    attributes:
+      label: 发行线 / Release line
+      description: 必须与所用 jar 的 Git 分支一致 / Must match the branch that published the file you installed.
+      options:
+        - 26.2(main) — Fabric 26.2
+        - 26.2-neoforge — NeoForge 26.2
+        - 26.1.2 — Fabric 26.1.2
+        - 26.1.2-neoforge — NeoForge 26.1.2
+        - 1.21.11 — Fabric 1.21.11
+        - 1.21.11-neoforge — NeoForge 1.21.11
+        - 不确定 / Unsure
+    validations:
+      required: true
 
   - type: input
     id: game_version
     attributes:
       label: Minecraft 版本 / Minecraft version
-      description: 请填写完整值；“最新版”不是有效回答 / Give the exact value; “latest” is not sufficient.
+      description: 完整值，例如 26.2、26.1.2 或 1.21.11；“最新版”无效 / Exact value; “latest” is not sufficient.
     validations:
       required: true
 
@@ -44,7 +60,7 @@ body:
     id: dependency_versions
     attributes:
       label: 加载器与必需依赖版本 / Loader and required dependency versions
-      description: Fabric Loader、Fabric API、Fabric Language Kotlin、TaCZ Refabricated Unofficial、YACL；每行一个 / One exact name and version per line.
+      description: 按你的发行线填写。Fabric 线：Fabric Loader、Fabric API、Fabric Language Kotlin、TaCZ Refabricated Unofficial、YACL。NeoForge 线：NeoForge、TaCZ Renovated、YACL。每行一个完整名称与版本 / One exact name and version per line for your loader line.
       render: text
     validations:
       required: true

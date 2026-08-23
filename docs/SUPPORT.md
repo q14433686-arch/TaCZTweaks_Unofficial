@@ -2,7 +2,9 @@
 
 ## 先确定问题属于哪个项目
 
-本仓库只处理 **TaCZ Tweaks (Refabricated)** 的移植、配置、数据驱动功能和兼容接线问题。
+本仓库只处理本移植各发行线的配置、数据驱动功能和兼容接线问题。
+先对照 [分支表](BRANCHES.md) 确认 Minecraft 版本与 Fabric / NeoForge，再按**那条线**的依赖做最小复现。
+本页其余步骤以默认线 **Fabric 26.2（`26.2(main)`）** 为例；其它线把「Fabric API / TaCZ Refabricated」换成该分支 README 列出的加载器与 TaCZ 移植。
 
 提交到本仓库前，先进行一次对照测试：
 
@@ -29,7 +31,7 @@
 
 ## 有效 Bug 报告必须包含
 
-1. Minecraft 和 Fabric Loader 的完整版本；
+1. Minecraft、加载器（Fabric 或 NeoForge）和 **Git 发行分支** 的完整名称；
 2. 本模组及全部必需依赖的完整版本；
 3. 单人、局域网、多人客户端或专用服务器环境；
 4. 实际表现和预期表现；

@@ -2,9 +2,11 @@
 
 ## Supported versions
 
-Only the currently maintained Fabric 26.2 beta line documented in `gradle.properties` and
-`fabric.mod.json` is supported. Older experimental builds may be referenced for diagnosis but are
-not guaranteed to receive fixes.
+Security fixes are considered only for the maintained release branches listed in
+[`docs/BRANCHES.md`](docs/BRANCHES.md): Fabric and NeoForge lines for 26.2, 26.1.2 and 1.21.11.
+This checkout documents the default `26.2(main)` Fabric 26.2 beta (`gradle.properties` /
+`fabric.mod.json`). Older experimental builds and Arena working branches may be referenced for
+diagnosis but are not guaranteed to receive fixes.
 
 ## Reporting a vulnerability
 

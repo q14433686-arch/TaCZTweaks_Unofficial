@@ -11,7 +11,7 @@ TaCZ Tweaks (Refabricated)
 ## Summary
 
 ```text
-A community Fabric port that adds configurable gunplay, movement, balance, interactions, sound, and data-driven customization to TaCZ.
+Unofficial community ports (Fabric and NeoForge) that add configurable gunplay, movement, balance, interactions, sound, and data-driven customization to TaCZ.
 ```
 
 摘要为纯文本，不使用 Markdown，也不重复完整项目标题。
@@ -21,14 +21,16 @@ A community Fabric port that adds configurable gunplay, movement, balance, inter
 ```markdown
 # Unofficial community port
 
-> **This is an unofficial Fabric port of TaCZ Tweaks. It is not affiliated with,
+> **This is an unofficial community port of TaCZ Tweaks. It is not affiliated with,
 > reviewed by, or endorsed by MUKSC, the TaCZ development team, or the maintainers
-> of TaCZ Refabricated Unofficial.**
+> of TaCZ Refabricated Unofficial or TaCZ Renovated.**
 
 ## What this project does
 
-TaCZ Tweaks (Refabricated) brings the configurable gameplay and data-driven systems
-of MUKSC's TaCZ Tweaks to Fabric for use with TaCZ Refabricated Unofficial.
+TaCZ Tweaks (Refabricated / Renovated lines) brings the configurable gameplay and
+data-driven systems of MUKSC's TaCZ Tweaks to **Fabric and NeoForge**. Files are
+published per Minecraft line (26.2, 26.1.2, 1.21.11). Fabric files target
+TaCZ Refabricated Unofficial; NeoForge files target TaCZ Renovated.
 
 It expands TaCZ with gun-handling options, movement controls, global balance
 modifiers, projectile and melee interactions, sound and particle rules, server
@@ -36,9 +38,10 @@ configuration synchronization, and quality-of-life settings.
 
 ## Why use it
 
-The original project targets a different mod-loader environment. This port lets
-Fabric players and server owners use the same broad set of tweaks while providing
-implementations adapted to the current Fabric and TaCZ APIs.
+The original project targets Forge 1.20.1. These ports let Fabric and NeoForge
+players and server owners use the same broad set of tweaks, with implementations
+adapted to each loader and Minecraft line. Always download the file that matches
+your game version and loader.
 
 Highlights include:
 
@@ -66,9 +69,11 @@ This is a maintained derivative port, not an unchanged reupload. Port-specific w
 
 ## Requirements and installation
 
-Install the file for your Minecraft and Fabric environment together with all dependencies
-listed in that file's **Dependencies** section. Required projects include Fabric API,
-Fabric Language Kotlin, TaCZ Refabricated Unofficial, and YetAnotherConfigLib.
+Install the file for your Minecraft version **and** loader (Fabric or NeoForge)
+together with all dependencies listed in that file's **Dependencies** section.
+Fabric files require Fabric API, Fabric Language Kotlin, TaCZ Refabricated
+Unofficial, and YetAnotherConfigLib. NeoForge files require NeoForge, TaCZ
+Renovated, and YetAnotherConfigLib.
 
 Mod Menu is optional. Compatibility integrations are also optional and only activate when
 the corresponding project is installed.
@@ -100,7 +105,8 @@ Please do not ask the original authors to support problems introduced by this po
 
 - Original project and author: [MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks)
 - Fabric TaCZ dependency: [TaCZ Refabricated Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)
-- Port source: [TaCZTweaks Unofficial](https://github.com/q14433686-arch/TaCZTweaks_Unofficial)
+- NeoForge TaCZ dependency: [TaCZ Renovated](https://github.com/q14433686-arch/TaCZ_Renovated)
+- Port source and branch map: [TaCZTweaks Unofficial](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/26.2(main)/docs/BRANCHES.md)
 - License: GNU General Public License v3.0
 - Third-party notices: [THIRD_PARTY_NOTICES.md](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/HEAD/THIRD_PARTY_NOTICES.md)
 
@@ -116,8 +122,10 @@ project maintainer. The licensed upstream project icon is not AI-generated or AI
 ## Modrinth fields
 
 - **License:** GPL-3.0
+- **Loaders:** tag each file as Fabric or NeoForge; do not mark a file for both
+- **Game versions:** only the Minecraft version that file was built for (26.2, 26.1.2, or 1.21.11)
 - **Environment:** client and server
-- **Required dependencies:** Fabric API, Fabric Language Kotlin, TaCZ Refabricated Unofficial, YetAnotherConfigLib
+- **Required dependencies:** those of that file's loader line (never list Fabric API on a NeoForge file)
 - **Optional dependencies:** Mod Menu and only the integrations applicable to the uploaded file
 - **Links:** Source and Issues point to this repository
 - **AI disclosure:** enable the applicable disclosure because the page text was AI-assisted

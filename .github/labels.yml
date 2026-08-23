@@ -28,3 +28,18 @@
 - name: side: server
   color: 006b75
   description: Dedicated server, authority, networking, or synced configuration issue.
+- name: loader: fabric
+  color: dbdbdb
+  description: Fabric release line.
+- name: loader: neoforge
+  color: f97316
+  description: NeoForge release line.
+- name: line: 26.2
+  color: 0e8a16
+  description: Minecraft 26.2 release line.
+- name: line: 26.1.2
+  color: 1d76db
+  description: Minecraft 26.1.2 release line.
+- name: line: 1.21.11
+  color: 5319e7
+  description: Minecraft 1.21.11 release line.

@@ -1,7 +1,8 @@
 # AGENTS.md — TaCZ Tweaks Fabric 26.2 维护规则
 
-供 AI 编码助手和人类协作者使用。当前目标是 Minecraft 26.2 / Java 25 / 未混淆
-`TaCZ_Refabricated_Unofficial` R2。
+供 AI 编码助手和人类协作者使用。**本文件只约束默认分支 `26.2(main)`**：
+Minecraft 26.2 / Java 25 / 未混淆 `TaCZ_Refabricated_Unofficial` R2。
+其它发行线见 [`docs/BRANCHES.md`](docs/BRANCHES.md)，不要把本线的 mixin、Java 或依赖假设套到 NeoForge 或 1.21.11 分支。
 
 ## 1. 事实来源顺序
 

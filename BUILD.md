@@ -1,8 +1,11 @@
 # 构建指南（BUILD.md）
 
-本模组是 **TaCZ Tweaks 的 Fabric 26.2 移植版**，适配
+本文件只适用于仓库默认分支 **`26.2(main)`：Fabric 26.2**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
+NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
+[分支对照](docs/BRANCHES.md)。
+
+本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
 `2.14.2+fabric.26.2.Beta-1-hotfix`。
 
 ---
