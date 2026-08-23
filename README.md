@@ -1,4 +1,7 @@
 # TaCZ Tweaks (Renovated)
+[![CurseForge Downloads](https://cf.way2muchnoise.eu/full_1659175_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
+[![CurseForge Versions](https://cf.way2muchnoise.eu/versions/1659175.svg)](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated/files)
+[![GitHub Downloads](https://img.shields.io/github/downloads/q14433686-arch/TaCZTweaks_Unofficial/total?logo=github&label=GitHub%20Downloads)](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases)
 
 TaCZ Tweaks v2.14.2 的**非官方 NeoForge 26.2 社区移植**，目标依赖为
 [`q14433686-arch/TaCZ_Renovated`](https://github.com/q14433686-arch/TaCZ_Renovated)
@@ -18,7 +21,7 @@ NeoForge 骨架，再针对 26.2 API、依赖和 mixin 目标更新。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) ·
 [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) ·
-[已知问题](docs/KNOWN_ISSUES.md) · [问题反馈要求](docs/SUPPORT.md)
+[已知问题](docs/KNOWN_ISSUES.md) · [问题反馈要求](docs/SUPPORT.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
 ## 功能范围
 
