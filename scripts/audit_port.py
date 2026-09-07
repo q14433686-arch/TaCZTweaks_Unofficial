@@ -487,6 +487,10 @@ def audit_injection_references(
         if not signatures:
             continue  # Reported separately as an absent target method.
 
+        # remap = false names an optional build-specific variant that is expected to be
+        # absent from some target bytecode (see audit_mixins); skip those references.
+        if re.search(r"\bremap\s*=\s*false", body):
+            continue
         targets: list[str] = []
         for target_match in re.finditer(r"\btarget\s*=\s*(\"[^\"]+\"|\w+)", body):
             target_value = target_match.group(1)
@@ -603,6 +607,21 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
         # Validate exact bytecode references used by @At targets whenever the owner is in
         # the supplied Minecraft/TaCZ jars. This catches valid target methods whose inner
         # invocation descriptor drifted (a common source of runtime Mixin apply failures).
+        # An injector whose annotation declares remap = false names an optional,
+        # build-specific call-site variant (e.g. a loader-patched
+        # BlocksAttacks#hurtBlockingItem overload that is absent from the vanilla compile
+        # classpath). Absence of that reference is a warning, not a strict error, matching
+        # Mixin's own semantics: remap = false targets are outside the validated refmap
+        # surface and may legitimately not exist.
+        optional_targets: set[tuple[str, str, str]] = set()
+        for annotation in re.finditer(rf"@(?:{INJECTOR_ANNOTATIONS})\s*\(", text):
+            body = _annotation_body(text, text.index("(", annotation.start()))
+            if body is None or not re.search(r"\bremap\s*=\s*false", body):
+                continue
+            for owner, name, descriptor in re.findall(
+                r'target\s*=\s*"L([^;]+);([^(:\"]+)(\([^\"]+)', body
+            ):
+                optional_targets.add((owner, name, descriptor))
         for owner, name, descriptor in re.findall(
             r'target\s*=\s*"L([^;]+);([^(:\"]+)(\([^\"]+)', text
         ):
@@ -619,7 +638,10 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
                     f"@At method reference is absent: {owner_name}#{name}{descriptor} "
                     f"({path.relative_to(ROOT)})"
                 )
-                (errors if strict else warnings).append(message)
+                if (owner, name, descriptor) in optional_targets:
+                    warnings.append(message + " [remap=false: optional call-site variant]")
+                else:
+                    (errors if strict else warnings).append(message)
         for owner, name, descriptor in re.findall(
             r'target\s*=\s*"L([^;]+);([^:\"]+):([^\"]+)', text
         ):
@@ -805,9 +827,26 @@ def audit_release_guards() -> list[str]:
         if "=" in line and not line.lstrip().startswith("#"):
             key, value = line.split("=", 1)
             gradle_properties[key.strip()] = value.strip()
+    # Publication copy may reference the documented release lines (branch names and their
+    # Minecraft versions): in the six-line layout the line names are the stable identifiers
+    # the publish docs legitimately name. It must not pin a Minecraft version outside the
+    # documented lines (a stale or moving line fact), and it must never embed the current
+    # mod_version release identifier. If no lines can be parsed from docs/BRANCHES.md the
+    # check falls back to the strict behaviour (any current minecraft_version mention fails).
+    line_versions: set[str] = set()
+    branches_path = ROOT / "docs/BRANCHES.md"
+    if branches_path.is_file():
+        for row in branches_path.read_text(encoding="utf-8").splitlines():
+            cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+            if len(cells) >= 3 and cells[1] in ("Fabric", "NeoForge") and re.fullmatch(r"[\d.]+", cells[2]):
+                line_versions.add(cells[2])
     for key in ("minecraft_version", "mod_version"):
         value = gradle_properties.get(key)
-        if value and value in publication_text:
+        if not value:
+            continue
+        if key == "minecraft_version" and line_versions and value in line_versions:
+            continue
+        if value in publication_text:
             errors.append(f"publication copy must not embed current {key}: {value}")
     if re.search(r"(?i)\b(?:alpha|beta|release[ -]candidate)[ -]?\d+\b", publication_text):
         errors.append("publication copy must not embed a numbered release stage")

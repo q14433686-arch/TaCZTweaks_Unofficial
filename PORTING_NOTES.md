@@ -539,6 +539,29 @@ property diagram 注入放在同一个 common mixin，会造成 `InvalidInjectio
 任何 common mixin 注入 `@Environment(CLIENT)` 方法都会失败。另增 `check_server_log.py`，要求专服
 日志真实出现 `Done (...)!` 且不含 fatal mixin/startup marker，避免 Loom 子进程失败但 Gradle 返回 0。
 
+## 7.21 盾牌 Mixin 参数数量崩溃修复（2026-09-07）
+
+用户报告持盾格挡（苦力怕爆炸）时 MixinExtras `IncorrectArgumentCountException`
+（`throwIncorrectArgumentCount`，"Expected 7 but got 6" 一类信息）导致游戏退出。
+
+- 机制：`@WrapOperation` 的生成 bridge 按 **INVOKE 点实参个数（含接收者）** 校验
+  `original.call(...)` 的实参个数；handler 必须按自己所包调用点的个数调用。
+- 根因定位在 `1.21.11-neoforge` 分支：为兼容专服 jar 的
+  `hurtBlockingItem(...;FI)V`（6 参形态）加的 wrap，其 handler 把 6 参调用点的
+  `Operation` 交给共享 helper，helper 以 6 个值调用它 → 期望 7 个值 → 首次格挡崩溃。
+- 本分支（26.2 main，Fabric）对已核实的原版调用点算术正确，但单 descriptor +
+  默认 `require` 在调用点漂移的构建上会整体硬失败（NeoForge 26.2.x 已把调用点改成
+  6 参形态，见 `neoforged/NeoForge` 26.2.x 的 `BlocksAttacks`/`LivingEntity` patch）。
+- 修复：`LivingEntityMixin` 同时包住 5 参（原版）与 6 参（`fixedDamage`）两种调用点，
+  均 `require = 0`，每个 handler 只按自己调用点实参个数调用 `original`；6 参目标
+  `remap = false`（26.2 未混淆且不在原版编译 classpath）；新增
+  `shieldDurabilityApplied` + 一次性告警兜底未来第三种形态（降级不崩）。
+- 证据与验证状态见 `AUDIT.md`「盾牌 Mixin 参数数量崩溃排查与修复（2026-09-07）」；
+  `audit_port.py` 对 `remap = false` 可选目标降级为警告，
+  `scripts/test_audit_optional_targets.py` 以模拟 classpath 覆盖该检查。
+- 1.21.11-neoforge 分支需按同一模式单独修复（6 参 handler 必须 7 值调用 `original`，
+  或不再委托 5 参 helper）；Fabric 1.21.11 / 26.1.2 两条线的同款单 wrap 建议同步加固。
+
 ## 8. 当前待办
 
 ### 8.1 已完成
