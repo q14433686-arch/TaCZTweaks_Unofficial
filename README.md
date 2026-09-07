@@ -9,8 +9,8 @@
 - 语义来源:姊妹项目 [TaCZTweaks_Unofficial](https://github.com/q14433686-arch/TaCZTweaks_Unofficial)
   `1.21.11` 分支(基线同步至 Fabric hotfix `f38f2ff`,2026-08-22)
   ;原项目 MUKSC/TaCZTweaks(Forge 1.20.1,GPL-3.0)
-- 版本:`2.14.2+neoforge.1.21.11.Beta-1-hotfix2`
-  — 本 hotfix2 在 `Beta-1` 基础上补入:① 严格 TaCZ 版本门禁(替换原 startsWith 宽松匹配);
+- 版本:`2.14.2+neoforge.1.21.11.Beta-1-hotfix`
+  — 本 hotfix 在 `Beta-1` 基础上补入:① 严格 TaCZ 版本门禁(替换原 startsWith 宽松匹配);
   ② 音频 `SoundBufferLibraryMixin` 上游通配符修复(`lambda$getCompleteBuffer$*` + `require=0`,
   与 Fabric `f38f2ff` 对齐);
   ③ 修复专服盾牌格挡参数数量崩溃(`LivingEntityMixin` 6 参 handler 参数数量对齐)。
@@ -48,7 +48,7 @@ Mod 启动时执行严格校验,仅接受下列 release family 内的 TaCZ NeoFo
 Linux / macOS:
 
 ```bash
-./gradlew build          # 产物: build/libs/tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix2.jar
+./gradlew build          # 产物: build/libs/tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix.jar
 ./gradlew test           # 运行版本门禁等纯 JDK 单元测试
 ```
 
@@ -97,7 +97,7 @@ build.bat --no-daemon
 
 1. `tacz-1.1.8+neoforge.1.21.11.r0.jar`(TaCZ-Renovated 1.21.11;同 release family 的
    R1/R2/…/hotfix 亦受支持)
-2. `tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix2.jar`(本 mod)
+2. `tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix.jar`(本 mod)
 3. `yet_another_config_lib_v3-3.8.2+1.21.11-neoforge.jar`(必需,配置界面)
 4. 可选:`sound-physics-remastered-neoforge-1.21.11-1.5.1.jar`(音效兼容)
 
