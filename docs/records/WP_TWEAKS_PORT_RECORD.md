@@ -1,8 +1,8 @@
 # WP-TWEAKS 移植执行记录：TaCZTweaks → NeoForge 1.21.11
 
 > 基线：姊妹 TaCZTweaks_Unofficial `1.21.11` 分支，同步至 Fabric hotfix `f38f2ff`（2026-08-22）。
-> 产物：`tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix.jar`。
-> 相对 `Beta-1` 的 hotfix 增量：严格 TaCZ 版本门禁（见 §三.7），音频 mixin 已在 `Beta-1` 时同步上游。
+> 产物：`tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix2.jar`。
+> 相对 `Beta-1` 的 hotfix 增量：① 严格 TaCZ 版本门禁（见 §三.7），音频 mixin 已在 `Beta-1` 时同步上游；② hotfix2 修复专服盾牌格挡参数数量崩溃（`LivingEntityMixin` 6 参 wrap 实参个数对齐）。
 
 ## 一、构建骨架
 
@@ -57,7 +57,7 @@
 - **注意**：本沙箱环境未预装 JDK 21，且外网不可用以安装，`./gradlew test` 与 `./gradlew build`
   未能在 Agent 侧实际执行；维护者需在本地 JDK 21 环境运行以下命令确认：
   - `./gradlew test`（JUnit 平台运行版本门禁单测，期望全部 PASS）
-  - `./gradlew build`（产物 `build/libs/tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix.jar`）
+  - `./gradlew build`（产物 `build/libs/tacztweaks-2.14.2+neoforge.1.21.11.Beta-1-hotfix2.jar`）
 - `Beta-1` 基线已确认：全量源码构建 BUILD SUCCESSFUL；专服冒烟 Done（多次回归 PASS）；
   客户端实机用户 PASS。Hotfix 改动面仅限：版本校验工具类 + 其调用点 + 单测 + 版本号/文档。
 

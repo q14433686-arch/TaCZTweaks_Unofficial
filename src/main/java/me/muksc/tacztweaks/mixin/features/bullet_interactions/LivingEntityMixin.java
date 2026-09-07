@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.tacz.guns.entity.EntityKineticBullet;
 import com.tacz.guns.init.ModDamageTypes;
+import me.muksc.tacztweaks.TaCZTweaks;
 import me.muksc.tacztweaks.data.manager.BulletInteractionManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.stats.Stats;
@@ -31,6 +32,12 @@ public abstract class LivingEntityMixin {
     @Unique
     private int tacztweaks$shieldDisableTicks;
 
+    @Unique
+    private boolean tacztweaks$shieldDurabilityApplied;
+
+    @Unique
+    private static boolean tacztweaks$warnedMissingDurabilityHook;
+
     @Inject(method = "applyItemBlocking", at = @At("HEAD"))
     private void tacztweaks$applyItemBlocking$reset(
         ServerLevel level,
@@ -40,6 +47,7 @@ public abstract class LivingEntityMixin {
     ) {
         tacztweaks$shieldDurability = null;
         tacztweaks$shieldDisableTicks = 0;
+        tacztweaks$shieldDurabilityApplied = false;
     }
 
     @WrapOperation(
@@ -112,10 +120,20 @@ public abstract class LivingEntityMixin {
         LivingEntity entity,
         InteractionHand hand,
         float blockedDamage,
-        int extra,
+        int fixedDamage,
         Operation<Void> original
     ) {
-        tacztweaks$customDurability(attacks, level, stack, entity, hand, blockedDamage, original);
+        tacztweaks$shieldDurabilityApplied = true;
+        IntUnaryOperator durability = tacztweaks$shieldDurability;
+        if (durability == null) {
+            original.call(attacks, level, stack, entity, hand, blockedDamage, fixedDamage);
+            return;
+        }
+        // 见下方“必须先核实”：int 形参按 fixedDamage 语义处理（<0 = 不覆盖）
+        int vanillaDamage = fixedDamage < 0 ? attacks.itemDamage().apply(blockedDamage) : fixedDamage;
+        int customDamage = Math.max(0, durability.applyAsInt(vanillaDamage));
+        original.call(attacks, level, stack, entity, hand, blockedDamage, customDamage);
+        tacztweaks$applyShieldDisable(level, stack, entity);
     }
 
     @Unique
@@ -128,6 +146,7 @@ public abstract class LivingEntityMixin {
         float blockedDamage,
         Operation<Void> original
     ) {
+        tacztweaks$shieldDurabilityApplied = true;
         IntUnaryOperator durability = tacztweaks$shieldDurability;
         if (durability == null) {
             original.call(attacks, level, stack, entity, hand, blockedDamage);
@@ -142,6 +161,11 @@ public abstract class LivingEntityMixin {
         if (customDamage > 0) {
             stack.hurtAndBreak(customDamage, entity, hand.asEquipmentSlot());
         }
+        tacztweaks$applyShieldDisable(level, stack, entity);
+    }
+
+    @Unique
+    private void tacztweaks$applyShieldDisable(Level level, ItemStack stack, LivingEntity entity) {
         if (tacztweaks$shieldDisableTicks > 0 && entity instanceof Player player && !stack.isEmpty()) {
             player.getCooldowns().addCooldown(stack, tacztweaks$shieldDisableTicks);
             player.stopUsingItem();
@@ -155,7 +179,14 @@ public abstract class LivingEntityMixin {
         float amount,
         CallbackInfoReturnable<Float> cir
     ) {
+        if (tacztweaks$shieldDurability != null && !tacztweaks$shieldDurabilityApplied && !tacztweaks$warnedMissingDurabilityHook) {
+            tacztweaks$warnedMissingDurabilityHook = true;
+            TaCZTweaks.LOGGER.warn(
+                "盾牌规则已解析但没有任何 hurtBlockingItem 调用点命中本构建，耐久/禁用覆盖失效，请上报精确的 Minecraft/NeoForge/TaCZ Tweaks 版本"
+            );
+        }
         tacztweaks$shieldDurability = null;
         tacztweaks$shieldDisableTicks = 0;
+        tacztweaks$shieldDurabilityApplied = false;
     }
 }
