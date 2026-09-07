@@ -426,6 +426,34 @@ def _string_constants(text: str) -> dict[str, str]:
     return dict(re.findall(r"\bString\s+(\w+)\s*=\s*\"([^\"]+)\"", text))
 
 
+# Marker appended when an @At reference owned by a `remap = false` injector is absent.
+# Such targets describe optional call-site variants (e.g. the 6-parameter
+# BlocksAttacks#hurtBlockingItem shape): exactly one variant exists per build, so a miss
+# is expected on builds carrying the other shape and must warn instead of fail.
+OPTIONAL_CALL_SITE_MARKER = "[remap=false: optional call-site variant]"
+
+
+def _optional_injector_spans(text: str) -> list[tuple[int, int]]:
+    """Return source spans of injector annotations declaring `remap = false`.
+
+    The span covers the injector's full annotation body, so any @At target inside it
+    can be attributed to its owning injector by match offset.
+    """
+    spans: list[tuple[int, int]] = []
+    for annotation in re.finditer(rf"@({INJECTOR_ANNOTATIONS})\s*\(", text):
+        open_paren = text.index("(", annotation.start())
+        body = _annotation_body(text, open_paren)
+        if body is None:
+            continue
+        if re.search(r"\bremap\s*=\s*false\b", body):
+            spans.append((open_paren, open_paren + 1 + len(body) + 1))
+    return spans
+
+
+def _in_optional_span(spans: list[tuple[int, int]], offset: int) -> bool:
+    return any(start <= offset < end for start, end in spans)
+
+
 def injection_method_targets(text: str) -> set[tuple[str, str | None]]:
     targets: set[tuple[str, str | None]] = set()
     constants = _string_constants(text)
@@ -463,6 +491,11 @@ def audit_injection_references(
     for annotation in re.finditer(rf"@({INJECTOR_ANNOTATIONS})\s*\(", text):
         body = _annotation_body(text, text.index("(", annotation.start()))
         if body is None:
+            continue
+        if re.search(r"\bremap\s*=\s*false\b", body):
+            # Optional call-site variant (e.g. the 6-parameter hurtBlockingItem shape):
+            # this build may legitimately carry the other shape. The owner-reference
+            # check still reports the miss as a marked warning for visibility.
             continue
         method_match = re.search(r"\bmethod\s*=\s*(\"[^\"]+\"|\w+)", body)
         if method_match is None:
@@ -604,9 +637,14 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
         # Validate exact bytecode references used by @At targets whenever the owner is in
         # the supplied Minecraft/TaCZ jars. This catches valid target methods whose inner
         # invocation descriptor drifted (a common source of runtime Mixin apply failures).
-        for owner, name, descriptor in re.findall(
+        # Targets owned by a `remap = false` injector are optional call-site variants:
+        # a miss is expected on builds carrying the other shape, so it warns (marked)
+        # instead of failing.
+        optional_spans = _optional_injector_spans(text)
+        for target_match in re.finditer(
             r'target\s*=\s*"L([^;]+);([^(:\"]+)(\([^\"]+)', text
         ):
+            owner, name, descriptor = target_match.groups()
             owner_name = owner.replace("/", ".")
             owner_info = jars.class_info(owner_name)
             if owner_info is None:
@@ -616,14 +654,22 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
                 for references in info.method_references.values()
             )
             if not jars.has_method(owner_name, (name, descriptor)) and not referenced_by_target:
+                if _in_optional_span(optional_spans, target_match.start()):
+                    warnings.append(
+                        f"@At method reference is absent: {owner_name}#{name}{descriptor} "
+                        f"{OPTIONAL_CALL_SITE_MARKER} "
+                        f"({path.relative_to(ROOT)})"
+                    )
+                    continue
                 message = (
                     f"@At method reference is absent: {owner_name}#{name}{descriptor} "
                     f"({path.relative_to(ROOT)})"
                 )
                 (errors if strict else warnings).append(message)
-        for owner, name, descriptor in re.findall(
+        for target_match in re.finditer(
             r'target\s*=\s*"L([^;]+);([^:\"]+):([^\"]+)', text
         ):
+            owner, name, descriptor = target_match.groups()
             owner_name = owner.replace("/", ".")
             owner_info = jars.class_info(owner_name)
             if owner_info is None:
@@ -633,6 +679,13 @@ def audit_mixins(config: dict, jars: JarIndex, strict: bool) -> tuple[list[str],
                 for references in info.method_references.values()
             )
             if not jars.has_field(owner_name, (name, descriptor)) and not referenced_by_target:
+                if _in_optional_span(optional_spans, target_match.start()):
+                    warnings.append(
+                        f"@At field reference is absent: {owner_name}#{name}:{descriptor} "
+                        f"{OPTIONAL_CALL_SITE_MARKER} "
+                        f"({path.relative_to(ROOT)})"
+                    )
+                    continue
                 message = (
                     f"@At field reference is absent: {owner_name}#{name}:{descriptor} "
                     f"({path.relative_to(ROOT)})"
