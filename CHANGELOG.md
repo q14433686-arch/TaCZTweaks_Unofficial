@@ -33,6 +33,12 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
 ### Fixed
 
+- Shield durability/disable overrides no longer crash the game (`MixinExtras
+  IncorrectArgumentCountException` on shield block, e.g. when a creeper explodes while
+  blocking): `LivingEntityMixin` now wraps both known 26.2 `BlocksAttacks#hurtBlockingItem`
+  call-site variants (vanilla 5-argument and the extra-`fixedDamage` variant used by patched
+  builds), each handler passes exactly its own call site's argument count, and a future
+  unknown variant degrades to a one-time logged warning instead of a hard failure.
 - TaCZ `1.1.8+fabric.26.2.R2-hotfix` is accepted alongside the pinned R2 build; the previous
   startup guard no longer rejects the official hotfix release.
 - Release metadata now includes homepage, source and issue links, plus a separate maintainer

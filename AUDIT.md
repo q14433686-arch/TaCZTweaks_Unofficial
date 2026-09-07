@@ -37,6 +37,72 @@ TaCZ R2-hotfix 将版本后缀放在 SemVer 的 build metadata 中，因此 Fabr
 R2 仍是仓库内编译和静态 descriptor 审计输入；放宽的是版本门禁，不等于已经对每个未来
 R<n> 构建完成游戏内矩阵实测，版本单测覆盖了解析边界。
 
+## 盾牌 Mixin 参数数量崩溃排查与修复（2026-09-07）
+
+**症状**：玩家持盾格挡（如苦力怕爆炸）时游戏立即崩溃，MixinExtras 抛出
+`IncorrectArgumentCountException`（内部 `throwIncorrectArgumentCount`），
+信息形如 “Expected 7 but got 6”——“传入代码的数据量不正确”。
+
+**异常机制（MixinExtras 0.5.4 源码核实）**：`@WrapOperation` 会在 mixin 类里生成
+`mixinextras$bridge$<op>`，先执行
+`WrapOperationRuntime.checkArgumentCount(args, argTypes.length, "[types]")`：
+`argTypes` 是 **INVOKE 点实参（含接收者）**，应用 mixin 时固化；`args.length` 是 handler
+里 `original.call(...)` 的实参个数。两者不等即抛异常——所以 handler 必须按
+**自己所包的那个调用点**的实参个数调用 `original`。
+
+**根因（1.21.11-neoforge 分支）**：该分支为兼容 1.21.11 专服 jar 的
+`hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, float, int)`
+（多一个 `int` 形参）形态，加了一个 6 参数调用点的 `@WrapOperation`
+（`require = 0`）。但其 handler `tacztweaks$applyItemBlocking$customDurabilityServer`
+把 6 参数调用点的 `Operation` 交给共享 helper `tacztweaks$customDurability`，
+helper 里却是 `original.call(attacks, level, stack, entity, hand, blockedDamage)`
+——**6 个值**，而该调用点生成的 bridge 期望 **7 个值**（接收者 + 6 参）。
+首次盾牌格挡（苦力怕爆炸正是常见触发）即
+`Expected 7 but got 6` 崩溃。`require = 0` 只保证应用期不失败，管不到运行期实参个数。
+
+**全版本核对（六条发行线）**：
+
+| 发行线 | 形态 | 结论 |
+|---|---|---|
+| 1.21.11-neoforge | 5 参 + 6 参双 wrap，`require = 0`，但 6 参 handler 委托共享 helper 以 6 值调用 7 值 `Operation` | **运行时崩溃（本次报告的 Bug）**，需在该分支修复 |
+| 26.2-neoforge / 26.1.2-neoforge | 双 wrap，`require = 0`，两个 handler 各自内联、实参个数正确（4 / 7 与 4 / 6） | 正确 |
+| 26.2（本分支）/ 26.1.2 / 1.21.11（Fabric） | 仅 5 参 `hurtBlockingItem` 单 wrap，默认 `require` | 对已核实的原版调用点算术正确；但调用点一旦漂移（NeoForge 26.2.x 已把调用点改成 6 参形态，见 `neoforged/NeoForge` 26.2.x 的 `BlocksAttacks`/`LivingEntity` patch；1.21.11 专服 jar 亦有多参形态）即整体硬失败 |
+
+**本分支修复（26.2 main，Fabric）**：
+
+- `LivingEntityMixin` 同时包住两种已知调用点：原版 5 参
+  `hurtBlockingItem(...;F)V` 与多参形态 `hurtBlockingItem(...;FI)V`
+  （`fixedDamage < 0` 表示不覆盖，沿用组件自带 `itemDamage` 曲线；自定义耐久
+  通过该形参交还补丁后的组件体，破坏回调保持原位执行）；
+- 两个 durability wrap 均 `require = 0`，且**每个 handler 只按自己调用点的实参个数**
+  调用 `original.call`（6 值对 5 参点、7 值对 6 参点）；
+- 6 参目标 `remap = false`：26.2 未混淆、该形参又不存在于原版编译 classpath，
+  不进入 refmap 校验，运行时按原样匹配；
+- 新增 `shieldDurabilityApplied` 标志与一次性告警：若盾牌规则已解析但没有任何
+  durability wrap 命中（未来出现第三种形态），功能降级但游戏不崩，日志提示上报
+  精确的 Minecraft/Fabric/TaCZ Tweaks 版本；
+- `scripts/audit_port.py` 同步：`remap = false` 的可选目标在 strict 模式下由错误降级
+  为警告（与 Mixin 自身语义一致：remap=false 目标本就可能不存在），
+  并在 `audit_injection_references` 中跳过这类引用；发布文案检查改为
+  “`minecraft_version` 只允许以 BRANCHES.md 已登记发行线身份出现”。
+
+**证据来源**：`neoforged/NeoForge` 分支 `26.2.x` 的
+`patches/net/minecraft/world/item/component/BlocksAttacks.java.patch`
+（原版 5 参方法体 + 新增 6 参 overload）与
+`patches/net/minecraft/world/entity/LivingEntity.java.patch`
+（`applyItemBlocking` 内 `resolveBlockedDamage(source, damage, angle)` →
+`hurtBlockingItem(this.level(), blockingWith, this, this.getUsedItemHand(), damageBlocked, ev.shieldDamage())`）；
+`MinecraftForge/MinecraftForge` 分支 `26.2` 同方法上下文；
+Vivecraft `Multiloader-26.2` 的 `@ModifyArg` 目标
+（`resolveBlockedDamage(Lnet/minecraft/world/damagesource/DamageSource;FD)F`）。
+
+**验证状态**：静态核实（26.2 原版调用点、descriptor、实参个数、AP/audit 行为）完成，
+`python3 scripts/audit_port.py --strict` 0 错误 0 警告（本环境无 Minecraft jar，
+`--minecraft-jar` 路径由 `python3 scripts/test_audit_optional_targets.py` 的模拟
+classpath 检查覆盖）；**`./gradlew clean build` 与游戏内盾牌矩阵实测未做**
+（本环境无 Java/网络），发布前必须补齐。
+1.21.11-neoforge 分支的 6 参 handler 需在对应分支单独修复（同一修复模式）。
+
 ## 逐项结论
 
 | 项目 | 旧结论 | 查证结果 | 本轮处理 |
@@ -45,7 +111,7 @@ R<n> 构建完成游戏内矩阵实测，版本单测覆盖了解析边界。
 | Bullet Protection | 类被删除 | JSON 附魔仍从 `EnchantmentHelper` 汇总 `damage_protection` | 按每件护甲累计 `2 × level`，并保持 `bypasses_invulnerability=false` 条件 |
 | Crawl visual | PlayerRenderer 消失 | 26.2 对应 `AvatarRenderer.setupRotations` | 使用准确 descriptor、字段 owner 和 `AvatarRenderState.swimAmount`，不再 `require=0` |
 | melee | Forge/FakePlayer/Share 难迁 | 枪械 `doMelee` 仍在，LRTactical 已内置稳定 `performAttack` | 两条近战链均接入方块规则和 Fabric 破坏事件 |
-| shield | 无 ShieldBlockEvent | 26.2 统一改为 `BlocksAttacks` data component | 在 `resolveBlockedDamage` / `hurtBlockingItem` 处理剩余伤害、耐久、禁用 |
+| shield | 无 ShieldBlockEvent | 26.2 统一改为 `BlocksAttacks` data component | 剩余伤害走 `resolveBlockedDamage`；耐久/禁用走 `hurtBlockingItem`，同时覆盖 5 参原版形态与 6 参（`…;FI)V`）形态（均 `require = 0`，按各自调用点实参个数调用 `original`，未命中形态时一次性告警） |
 | predicates | “26.2 已删除” | 移到 `net.minecraft.advancements.predicates.*` | 恢复 Target/BlockTarget/EntityTarget predicate |
 | tier | 无 Forge TierSortingRegistry | `ToolMaterial.incorrectBlocksForDrops` 是原版替代语义 | 恢复 wood/stone/copper/iron/diamond/gold/netherite codec 和规则 |
 | burst/pellet | 合成 lambda 不稳定 | R2 提供 `runShootCycle` / `spawnProjectiles` | 恢复实体字段和选择器 |
