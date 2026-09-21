@@ -10,3 +10,6 @@ __pycache__/
 
 # Local audit inputs and downloaded archives do not belong in Git.
 *.zip
+
+# Vendored TaCZ jars are restored via scripts/download_dependencies.py and must not be committed.
+libs/TACZ-Refabricated-*.jar

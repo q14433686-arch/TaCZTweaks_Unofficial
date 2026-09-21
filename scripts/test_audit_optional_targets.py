@@ -2,7 +2,7 @@
 
 Run: python3 scripts/test_audit_optional_targets.py
 
-Builds a stub JarIndex that models the unobfuscated vanilla 26.2 classpath:
+Builds a stub JarIndex that models the unobfuscated vanilla 26.3 classpath:
 BlocksAttacks has ONLY the 5-arg hurtBlockingItem + resolveBlockedDamage, and
 LivingEntity#applyItemBlocking references only those two invocations. Then runs
 audit_mixins(strict=True) over the real source tree and asserts that the new
@@ -90,7 +90,7 @@ class StubJars:
 
 
 config = mod.json.loads(mod.MIXIN_JSON.read_text(encoding="utf-8"))
-jars = StubJars([Path("fake/minecraft-26.2.jar")])
+jars = StubJars([Path("fake/minecraft-26.3.jar")])
 errors, warnings = mod.audit_mixins(config, jars, strict=True)
 
 shield_errors = [e for e in errors if "BlocksAttacks" in e or "bullet_interactions" in e]

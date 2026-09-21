@@ -6,13 +6,14 @@ import me.muksc.tacztweaks.TaCZTweaksClient;
 import me.muksc.tacztweaks.config.Config;
 import me.muksc.tacztweaks.network.NetworkHandler;
 import net.minecraft.client.KeyMapping;
-import org.lwjgl.glfw.GLFW;
 
 public class UnloadKey {
+    // 26.3: InputConstants.Type.KEYSYM was renamed to KEYBOARD and key constants moved
+    // from GLFW into InputConstants (same migration TaCZ RefitKey/AimKey applied).
     public static final KeyMapping KEY = new KeyMapping(
         TaCZTweaks.translatable("key.unload").getString(),
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_U,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_U,
         TaCZTweaksClient.CATEGORY
     );
 

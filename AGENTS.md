@@ -1,14 +1,14 @@
-# AGENTS.md — TaCZ Tweaks Fabric 26.2 维护规则
+# AGENTS.md — TaCZ Tweaks Fabric 26.3 维护规则
 
-供 AI 编码助手和人类协作者使用。**本文件只约束默认分支 `26.2(main)`**：
-Minecraft 26.2 / Java 25 / 未混淆 `TaCZ_Refabricated_Unofficial` R2。
-其它发行线见 [`docs/BRANCHES.md`](docs/BRANCHES.md)，不要把本线的 mixin、Java 或依赖假设套到 NeoForge 或 1.21.11 分支。
+供 AI 编码助手和人类协作者使用。**本文件约束本分支 `26.3`**：
+Minecraft 26.3 / Java 25 / 未混淆 `TaCZ_Refabricated_Unofficial` R1（26.3 家族，门禁接受 ≥R1 的 R<n>/-hotfix）。
+仓库默认分支仍是 `26.2(main)`；其它发行线见 [`docs/BRANCHES.md`](docs/BRANCHES.md)，不要把本线的 mixin、Java 或依赖假设套到 NeoForge 或 1.21.11 分支。
 
 ## 1. 事实来源顺序
 
-1. 当前源码调用链与 26.2 class descriptor；
-2. `libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`；
-3. 目标仓库 `q14433686-arch/TaCZ_Refabricated_Unofficial` 的 `26.2(main)` 当前源码/文档；
+1. 当前源码调用链与 26.3 class descriptor；
+2. `libs/TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar`（不入库，由 `scripts/download_dependencies.py` 按 manifest 拉取校验）；
+3. 目标仓库 `q14433686-arch/TaCZ_Refabricated_Unofficial` 的 `26.3` 当前源码/文档；
 4. 原版 MUKSC/TaCZTweaks v2.14.2；
 5. 注释和历史移植笔记只作线索，不能单独作为结论。
 
@@ -27,7 +27,7 @@ python3 scripts/audit_port.py --strict
 有 Loom 生成的 Minecraft jar 时再执行：
 
 ```bash
-python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged-26.2.jar
+python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged-26.3.jar
 ```
 
 审计必须保持 0 error / 0 warning。编译通过仍不代表 mixin 运行时安全；新增 mixin 必须核对：
@@ -47,7 +47,7 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 
 - “实现”“静态验证”“编译通过”“游戏内实测”必须分开表述；
 - 跳过、禁用、默认关闭不能写成修复；
-- 可选模组兼容必须核对真实 Fabric 26.2 发行物与源码/API，不能凭旧文档说不存在；
+- 可选模组兼容必须核对真实 Fabric 26.3 发行物与源码/API，不能凭旧文档说不存在；
 - 尚未完成客户端、集成服、独立服矩阵时，PR 保持 Draft。
 
 ## 5. 生命周期与线程
@@ -58,7 +58,7 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 - 客户端断线、服务器停止、资源重载都要检查缓存是否需要清理；
 - 不假设客户端与服务端在跨维度/重生时以相同方式替换玩家实例。
 
-## 6. 26.2 常用替代写法
+## 6. 26.3 常用替代写法
 
 - 实体/物品标签：`BuiltInRegistries.<REGISTRY>.wrapAsHolder(value).is(tag)`；
 - 数据 reload：`ResourceLoader` v1，不新增 deprecated `ResourceManagerHelper`；

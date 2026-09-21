@@ -39,9 +39,9 @@ import java.util.regex.Pattern;
 
 public class TaCZTweaks implements ModInitializer {
     public static final String MOD_ID = "tacztweaks";
-    public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.2.R2";
-    private static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+fabric.26.2.R";
-    private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(2);
+    public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.3.R1";
+    private static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+fabric.26.3.R";
+    private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(1);
     private static final Pattern SUPPORTED_TACZ_VERSION_PATTERN = Pattern.compile(
         "^" + Pattern.quote(SUPPORTED_TACZ_VERSION_PREFIX)
             + "(\\d+)(?:-[0-9A-Za-z]+)*$"
@@ -69,12 +69,12 @@ public class TaCZTweaks implements ModInitializer {
             .orElseThrow(() -> new IllegalStateException("TaCZ is required"))
             .getMetadata().getVersion().getFriendlyString();
         // Fabric's version predicates ignore the part after '+'. Keep the Minecraft,
-        // TaCZ core version, release family and R2 minimum strict, while accepting R2,
-        // R2-hotfix and later R<n> builds from the same release family.
+        // TaCZ core version, release family and R1 minimum strict, while accepting R1,
+        // R1-hotfix and later R<n> builds from the same release family.
         if (!isSupportedTaczVersion(taczVersion)) {
             throw new IllegalStateException(
                 "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION
-                    + " or a later R<n> build for Minecraft 26.2, found " + taczVersion
+                    + " or a later R<n> build for Minecraft 26.3, found " + taczVersion
             );
         }
         Config.INSTANCE.initialize();

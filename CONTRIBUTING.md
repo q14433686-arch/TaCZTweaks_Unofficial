@@ -5,6 +5,7 @@ Thank you for helping maintain these unofficial ports. The repository has six re
 
 | Branch | Loader | Minecraft |
 |---|---|---|
+| `26.3` | Fabric | 26.3 |
 | `26.2(main)` (default) | Fabric | 26.2 |
 | `26.2-neoforge` | NeoForge | 26.2 |
 | `26.1.2` | Fabric | 26.1.2 |

@@ -1,6 +1,6 @@
 # Known issues
 
-This page is for user-facing limitations on the **`26.2(main)` Fabric 26.2** line. Other
+This page is for user-facing limitations on the **`26.3` Fabric 26.3** line. Other
 release lines keep their own known-issue lists. Porting debates and obsolete investigation notes
 belong in `AUDIT.md`, `PORTING_NOTES.md`, or handoff files.
 
@@ -18,12 +18,12 @@ inside the declared range.
 
 ## Removed legacy compatibility switches
 
-The following old options are intentionally not supported in this Fabric 26.2 port:
+The following old options are intentionally not supported in this Fabric 26.3 port:
 
-- `thirdPersonGunRenderingFix` — TaCZ Refabricated R2 already fixes the target behavior.
-- `lsoCompat` — no supported Legendary Survival Overhaul Fabric 26.2 target.
-- `mtsFix` — no supported MTS / Immersive Vehicles Fabric 26.2 target.
-- `vsCollisionCompat` and `vsExplosionCompat` — no supported Valkyrien Skies Fabric 26.2 target.
+- `thirdPersonGunRenderingFix` — TaCZ Refabricated R1 already fixes the target behavior.
+- `lsoCompat` — no supported Legendary Survival Overhaul Fabric 26.3 target.
+- `mtsFix` — no supported MTS / Immersive Vehicles Fabric 26.3 target.
+- `vsCollisionCompat` and `vsExplosionCompat` — no supported Valkyrien Skies Fabric 26.3 target.
 
 If these keys remain in an old JSON config, remove them to avoid confusion.
 

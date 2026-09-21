@@ -79,8 +79,8 @@ def check_metadata() -> tuple[dict[str, str], dict]:
     expected_depends = {
         "minecraft": f"={props['minecraft_version']}",
         "java": ">=25",
-        "tacz": "=1.1.8+fabric.26.2.R2",
-        "yet_another_config_lib_v3": "=3.9.6+26.2-fabric",
+        "tacz": "=1.1.8+fabric.26.3.R1",
+        "yet_another_config_lib_v3": "=3.9.7+26.3-fabric",
     }
     for key, value in expected_depends.items():
         if meta["depends"].get(key) != value:
@@ -112,7 +112,7 @@ def check_docs(props: dict[str, str]) -> None:
     # metadata and changelog, not the reusable Modrinth/CurseForge project text.
     for rel in ("docs/publish/Modrinth.md", "docs/publish/CurseForge.md"):
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for forbidden in (version, "26.2", "Beta-1"):
+        for forbidden in (version, "26.3", "Beta-1"):
             if forbidden in text:
                 fail(f"{rel} should not embed reusable-publication forbidden token {forbidden}")
 

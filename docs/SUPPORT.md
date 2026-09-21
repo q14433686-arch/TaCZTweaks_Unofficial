@@ -4,7 +4,7 @@
 
 本仓库只处理本移植各发行线的配置、数据驱动功能和兼容接线问题。
 先对照 [分支表](BRANCHES.md) 确认 Minecraft 版本与 Fabric / NeoForge，再按**那条线**的依赖做最小复现。
-本页其余步骤以默认线 **Fabric 26.2（`26.2(main)`）** 为例；其它线把「Fabric API / TaCZ Refabricated」换成该分支 README 列出的加载器与 TaCZ 移植。
+本页其余步骤以 **Fabric 26.3（`26.3`）** 为例；其它线把「Fabric API / TaCZ Refabricated」换成该分支 README 列出的加载器与 TaCZ 移植。
 
 提交到本仓库前，先进行一次对照测试：
 

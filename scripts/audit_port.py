@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static audit for the Fabric 26.2 TaCZ Tweaks port.
+"""Static audit for the Fabric 26.3 TaCZ Tweaks port.
 
 The script deliberately uses only the Python standard library so it can run before
 Gradle in CI.  It catches the easy-to-miss failures that compilation alone does not:
@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src/main"
 MIXIN_ROOT = SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin"
 MIXIN_JSON = SOURCE_ROOT / "resources/tacztweaks.mixins.json"
-TA_CZ_JAR = ROOT / "libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar"
+TA_CZ_JAR = ROOT / "libs/TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar"
 CONFIG = SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt"
 
 # Any intentionally persisted but dormant legacy fields must be justified here. The
@@ -720,7 +720,7 @@ def audit_firstaid_shader_overrides() -> list[str]:
     for name, required_block in expected.items():
         path = shader_dir / name
         if not path.is_file():
-            errors.append(f"missing First Aid 26.2 shader compatibility override: {name}")
+            errors.append(f"missing First Aid shader compatibility override: {name}")
             continue
         text = path.read_text(encoding="utf-8")
         if "dynamictransforms.glsl" in text or "DynamicTransforms" in text:
@@ -764,12 +764,12 @@ def audit_versions(config: dict) -> list[str]:
         errors.append("gradle.properties is missing mod_version")
         return errors
     version_pattern = (
-        r"\d+\.\d+\.\d+\+fabric\.26\.2\."
+        r"\d+\.\d+\.\d+\+fabric\.26\.3\."
         r"(?:R\d+(?:-[0-9A-Za-z]+)*"
         r"|Beta-\d+(?:-[0-9A-Za-z]+)*)"
     )
     if not re.fullmatch(version_pattern, mod_version):
-        errors.append(f"mod_version has an unexpected 26.2 format: {mod_version}")
+        errors.append(f"mod_version has an unexpected 26.3 format: {mod_version}")
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     documented = {
@@ -790,8 +790,8 @@ def audit_release_guards() -> list[str]:
     errors: list[str] = []
     metadata = json.loads((SOURCE_ROOT / "resources/fabric.mod.json").read_text(encoding="utf-8"))
     dependencies = metadata.get("depends", {})
-    if dependencies.get("tacz") != "=1.1.8+fabric.26.2.R2":
-        errors.append("fabric.mod.json must require the exact TaCZ R2 hook surface")
+    if dependencies.get("tacz") != "=1.1.8+fabric.26.3.R1":
+        errors.append("fabric.mod.json must require the exact TaCZ R1 hook surface")
     if metadata.get("suggests", {}).get("firstaid") != ">=1.3.0 <1.4.0":
         errors.append("First Aid shader override is not constrained to the verified 1.3.x range")
     firstaid_breaks = set(metadata.get("breaks", {}).get("firstaid", []))
@@ -916,7 +916,7 @@ def audit_release_guards() -> list[str]:
         ROOT / "tacz-tweaks-example-pack/data/tacztweaks/tags/block/metal.json"
     ).read_text(encoding="utf-8"))
     if "#minecraft:chains" not in metal_tag.get("values", []) or "minecraft:chain" in metal_tag.get("values", []):
-        errors.append("example metal tag does not use the 26.2 #minecraft:chains tag")
+        errors.append("example metal tag does not use the vanilla #minecraft:chains tag")
 
     shield_source = (
         SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/data/manager/BulletInteractionManager.kt"

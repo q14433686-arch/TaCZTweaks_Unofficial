@@ -56,7 +56,7 @@ Empty modifiers leave the TaCZ baseline unchanged. Available modifier keys are:
 | `crawl.pitchUpperLimit` | `25.0` | client/local | Upper pitch bound while crawling. |
 | `crawl.pitchLowerLimit` | `-10.0` | client/local | Lower pitch bound while crawling. |
 | `crawl.dynamicPitchLimit` | `false` | client/local | Dynamically adjusts crawl pitch limits. |
-| `crawl.visualTweak` | `true` | client/local | Smooths 26.2 avatar crawl transition rendering. |
+| `crawl.visualTweak` | `true` | client/local | Smooths 26.3 avatar crawl transition rendering. |
 | `crawl.tiltGun` | `DEFAULT` | client/local | Gun tilt policy: `DEFAULT`, `ALWAYS`, or `NEVER`. |
 
 ## Compatibility
@@ -65,7 +65,7 @@ Empty modifiers leave the TaCZ baseline unchanged. Available modifier keys are:
 |---|---:|---|---|
 | `compat.firstAidCompat` | `true` | synced | Enables First Aid New hit-location compatibility when that mod is loaded. |
 
-Sound Physics Remastered and Pillager's Gun integration is auto-detected on this Fabric 26.2
+Sound Physics Remastered and Pillager's Gun integration is auto-detected on this Fabric 26.3
 line; no stale no-op compatibility switch is kept for unavailable targets on **this** line.
 
 ## Tweaks
@@ -99,6 +99,6 @@ for diagnosis because they may increase log volume.
 
 The following old Forge/legacy options are intentionally absent and should be removed from old
 config files if encountered: `thirdPersonGunRenderingFix`, `lsoCompat`, `mtsFix`,
-`vsCollisionCompat`, and `vsExplosionCompat`. TaCZ Refabricated R2 already contains the third
-person rendering fix; the other targets do not currently have supported Fabric 26.2 mods to
+`vsCollisionCompat`, and `vsExplosionCompat`. TaCZ Refabricated R1 already contains the third
+person rendering fix; the other targets do not currently have supported Fabric 26.3 mods to
 inject into.

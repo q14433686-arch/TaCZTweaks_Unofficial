@@ -34,6 +34,9 @@
 - name: loader: neoforge
   color: f97316
   description: NeoForge release line.
+- name: line: 26.3
+  color: 0e8a16
+  description: Minecraft 26.3 release line.
 - name: line: 26.2
   color: 0e8a16
   description: Minecraft 26.2 release line.

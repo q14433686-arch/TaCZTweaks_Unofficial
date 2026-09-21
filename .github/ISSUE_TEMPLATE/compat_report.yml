@@ -25,6 +25,7 @@ body:
     attributes:
       label: 发行线 / Release line
       options:
+        - 26.3 — Fabric 26.3
         - 26.2(main) — Fabric 26.2
         - 26.2-neoforge — NeoForge 26.2
         - 26.1.2 — Fabric 26.1.2
@@ -39,7 +40,7 @@ body:
     id: game_version
     attributes:
       label: Minecraft 版本
-      description: 完整值，例如 26.2、26.1.2 或 1.21.11，不要写“最新版”
+      description: 完整值，例如 26.3、26.2、26.1.2 或 1.21.11，不要写“最新版”
     validations:
       required: true
 

@@ -30,6 +30,7 @@ body:
       label: 发行线 / Release line
       description: 必须与所用 jar 的 Git 分支一致 / Must match the branch that published the file you installed.
       options:
+        - 26.3 — Fabric 26.3
         - 26.2(main) — Fabric 26.2
         - 26.2-neoforge — NeoForge 26.2
         - 26.1.2 — Fabric 26.1.2
@@ -44,7 +45,7 @@ body:
     id: game_version
     attributes:
       label: Minecraft 版本 / Minecraft version
-      description: 完整值，例如 26.2、26.1.2 或 1.21.11；“最新版”无效 / Exact value; “latest” is not sufficient.
+      description: 完整值，例如 26.3、26.2、26.1.2 或 1.21.11；“最新版”无效 / Exact value; “latest” is not sufficient.
     validations:
       required: true
 

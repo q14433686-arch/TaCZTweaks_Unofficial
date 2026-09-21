@@ -1,7 +1,10 @@
-# 移植笔记 — TaCZ Tweaks → Fabric 26.2
+# 移植笔记 — TaCZ Tweaks → Fabric 26.3
+
+本文件主线已推进到 **Fabric 26.3**（§9 起）。§1–§8 是 26.2 线的完整迁移日志，原样保留作
+为行为规格与历史证据；26.3 相比 26.2 的全部代码/依赖/门禁差异见 §9。
 
 记录从 Forge 1.20.1 原版（MUKSC/TaCZTweaks v2.14.2）移植到
-`TaCZ_Refabricated_Unofficial`（26.2 主分支）的要点，供后续维护者参考。
+`TaCZ_Refabricated_Unofficial`（26.2 主分支，后推进至 26.3）的要点，供后续维护者参考。
 
 > 本文件 §1–§7.16 是按时间保留的迁移日志，其中“砍掉/不存在/暂未实现”描述的是**当轮状态**，
 > 不是最终能力结论。2026-08-18 复审后的当前事实见 §7.17、§8 和 [`AUDIT.md`](AUDIT.md)。
@@ -582,3 +585,87 @@ property diagram 注入放在同一个 common mixin，会造成 `InvalidInjectio
 - [ ] SPR / First Aid / Pillager’s Gun 单独和组合安装测试
 - [ ] mono、四件弹射物保护与 void bullet、盾牌、近战、领地取消破坏、多维度粒子实测
 - [ ] 第三方数据包对 predicate/tier/burst/pellet/airspace 的兼容回归
+
+---
+
+## 9. 26.2 → 26.3 增量移植（2026-09-22）
+
+本节记录 26.3 线（独立分支 `26.3`）相对 26.2 线的**全部**核查与适配。证据基准：
+
+- 目标端：`q14433686-arch/TaCZ_Refabricated_Unofficial` 分支 `26.2(main)` ↔ `26.3`
+  两棵树的全量 diff（129 个源文件变动）——逐一对照本仓库 75 个 mixin 的注册目标；
+- 依赖面：GitHub/Modrinth 当前发行元数据（TaCZ 26.3_R1、FAPI 0.160.7+26.3、FLK
+  1.14.1+kotlin.2.4.20、modmenu 21.0.0-beta.1、SPR 1.5.1+26.3）；
+- 校验工具：`scripts/audit_port.py --strict`、包含 90 处 mixin→TaCZ 方法名存在性核对的
+  一次性批扫（全部通过；详见本节 9.3）。
+
+### 9.1 依赖门禁变化（全部是"门禁收紧到新线"式，无任何放宽）
+
+| 项 | 26.2 线 | 26.3 线 |
+|---|---|---|
+| Minecraft | =26.2 | =26.3 |
+| Fabric Loader | >=0.19.3 <0.20.0 | >=0.19.5 <0.20.0 |
+| Fabric API | >=0.155.2+26.2 <0.157.0 | >=0.160.7+26.3 <0.162.0 |
+| TaCZ Refabricated | =1.1.8+fabric.26.2.R2（运行时接受 ≥R2 同族 R<n>/-hotfix） | =1.1.8+fabric.26.3.R1（运行时接受 ≥R1 同族 R<n>/-hotfix） |
+| Fabric Language Kotlin | >=1.13.13 <1.14.0 | >=1.14.1 <1.15.0 |
+| YetAnotherConfigLib | =3.9.6+26.2-fabric | =3.9.7+26.3-fabric |
+| Mod Menu（可选，编译期） | 20.0.1 | 21.0.0-beta.1 |
+| MixinExtras（内嵌） | 0.5.4 | 0.5.4（无 26.3 强制升级需求；TaCZ 26.3 自身不依赖它） |
+
+### 9.2 代码适配清单（完成项）
+
+1. **键位系统**：`InputConstants.Type.KEYSYM` → `KEYBOARD`；键常量从 `GLFW.GLFW_KEY_*`
+   移到 `InputConstants.KEY_*`（与 TaCZ RefitKey/AimKey/ShootKey 的迁移写法完全镜像）。
+   涉及 `UnloadKey`、`TiltGunKey`、`ReduceSensitivityKey`。
+2. **`EntityBulletRenderer#shouldRender` 签名追加 `float partialTicks`**（基类 26.3 用
+   它算剔除盒）：`mixin/gun/EntityBulletRendererMixin` 的 handler 同步补参。若不同步，
+   本 mixin 会变成对一个不存在方法的重载而静默失效。
+3. **`GunSoundInstance#resolve` → `getOrResolve`**（AbstractSoundInstance 全库改名）：
+   `mixin/tweaks/GunSoundInstanceMixin` 的注入 method 名同步。`TaczSound` 内部类仍存在于
+   R1（26.3 源码核对），`GunSoundInstanceTaczSoundMixin` 无需变动。
+4. **匍匐过渡平滑**：vanilla 26.3 把 `isVisuallySwimming` 声明从 `AvatarRenderState` 上移到
+   `HumanoidRenderState`。`crawl/AvatarRendererMixin` 的 FIELD owner 精确改为
+   `Lnet/minecraft/client/renderer/entity/state/HumanoidRenderState;isVisuallySwimming:Z`。
+5. **末影人锚点复验**：26.3 `hurtServer` 的第一个 `DamageSource#is(TagKey)` 仍是
+   `IS_PROJECTILE` 检查（与 26.2 同序），`tweaks/EnderManMixin` 注解不变，仅证据注释更新。
+6. **运行期 TaCZ 版本门禁**：`TaCZTweaks` 前缀改为 `1.1.8+fabric.26.3.R`、最低 revision
+   2→1；`TaCZTweaksVersionTest` 全部用例换成 26.3 家族（接受 R1/R1-hotfix/R2/R10，拒绝
+   26.2 家族与不匹配 core 版本）。
+
+### 9.3 明确**不需要**改动的项（逐一核查过，不是默认假设）
+
+- 其余全部 63 个指向 `com.tacz.*` / `me.xjqsh.*` / `cn.sh1rocu.*` 目标的 mixin：R1 源码中
+  目标类与 90 处方法名全部存在。其中 lambda 宿主方法逐一比对：GunAnimationStateContext/
+  LocalPlayerInspect/TickAnimationEvent/InaccuracyModifier/SoundPlayManager 的 lambda 结
+  构与 26.2 完全一致（lambda 序号保持稳定）。
+- `EntityKineticBullet` 的三个 mixin：26.3 该类只把两处 `invulnerableTime = 0` 换成
+  `DamageCooldownUtil.clear(...)`，我们织入的方法/字段目标（pierce、headShot、
+  onBulletTick、onHitEntity、createDamageSources、getDamage 等）不变。
+- `CameraSetupEvent`（织入点 `initialCameraRecoil`）、`LocalPlayerDraw`（`resetData`）、
+  `GunSmithTableScreen`（`isSuitableForMainHand`、`mouseScrolled`）、`RefitKey`
+  （`onRefitPress` 内 `hasAttachmentLock` 调用）：26.3 的源变化都在其它方法或方法内无关
+  区域，织入方法仍存在。
+- 6 套 firstaid shader 覆盖文件、meta 目录、示例包结构、`#minecraft:chains` tag：26.3 无
+  相关变更。
+- data 层全部 Kotlin 代码：26.3 未触及 predicate/tool codec 语义（26.1 迁移结论仍成立）。
+
+### 9.4 依赖制品/仓库卫生
+
+- TaCZ R1 jar（58 MB）**不再入库**：`.gitignore` 加入 `libs/TACZ-Refabricated-*.jar`，
+  `scripts/download_dependencies.py` 按 manifest 拉取+校验。R1 SHA-256 =
+  `faa1ce770c184ee2a69ef901a9402f83ee81382372ede07222270fde3530620f`（GitHub release
+  asset digest）。
+- YACL：Modrinth 在本移植环境不可达。现有 `libs/yacl-fabric.jar`（3.9.6+26.2，SHA-256
+  校验在库）保留为**编译期 API 桩**（3.9.x API 面一致）；运行期门禁已钉
+  `=3.9.7+26.3-fabric`（Modrinth 该版本存在，版本页已核实）。**发布前必须**在可达
+  Modrinth 的网络下把桩换成 3.9.7+26.3 jar 并按清单更新 manifest/LICENSES/libs README。
+- First Aid / Pillager's Gun 截至本日无 26.3 构建（接口代码保留，`suggests`/`breaks`
+  范围不变）；SPR 1.5.1+26.3 已有 Fabric 构建。
+
+### 9.5 本线当前验证状态（分层如实记录，未做的一律写明）
+
+- [x] 与 26.3 源码的静态核对（§9.2/§9.3 全部条目）
+- [x] `scripts/audit_port.py --strict` 结构审计（无新增 error；`libs/` 缺 R1 jar 时目标类
+  有效性核对会降级为 warning——见 §9.4 拉取方式）
+- [ ] `./gradlew clean build` 编译（本环境无法访问 Maven 网络仓库；待 CI 或有网环境补）
+- [ ] 客户端/集成服/独立服务端启动与 §8.2 全量行为矩阵

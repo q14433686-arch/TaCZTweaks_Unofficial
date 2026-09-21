@@ -16,9 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Remembers the {@code mono} flag from TaCZ's gun-sound constructors and copies it onto
- * the inner {@code TaczSound} created in {@code resolve()}. Combined with
- * {@link SoundBufferLibraryMixin} this is the 26.2 replacement for marking
- * {@code Identifier} itself.
+ * the inner {@code TaczSound} created in {@code getOrResolve()} ({@code resolve()} in
+ * 26.2). Combined with {@link SoundBufferLibraryMixin} this is the 26.3 replacement for
+ * marking {@code Identifier} itself.
  */
 @Mixin(value = GunSoundInstance.class, remap = false)
 public abstract class GunSoundInstanceMixin {
@@ -35,7 +35,7 @@ public abstract class GunSoundInstanceMixin {
         tacztweaks$mono = mono;
     }
 
-    @ModifyExpressionValue(method = "resolve", at = @At(value = "NEW", target = "com/tacz/guns/client/sound/GunSoundInstance$TaczSound", remap = false), remap = true)
+    @ModifyExpressionValue(method = "getOrResolve", at = @At(value = "NEW", target = "com/tacz/guns/client/sound/GunSoundInstance$TaczSound", remap = false), remap = true)
     private @Coerce Object tacztweaks$resolve$setMono(@Coerce Object original) {
         ((MonoTaczSound) original).tacztweaks$setMono(tacztweaks$mono);
         return original;

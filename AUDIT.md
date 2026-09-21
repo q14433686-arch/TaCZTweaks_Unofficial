@@ -1,19 +1,24 @@
-# “不能做”与完整性审计（2026-08-18）
+# “不能做”与完整性审计（2026-08-18 建立，2026-09-22 推进至 26.3）
+
+> **26.3 线注记（2026-09-22）**：本文件 §基线 已更新到 26.3；其余按日期落款的段落是
+> 26.2 线的审计历史，原样保留。26.2 → 26.3 的代码/依赖差异全量清单与证据见
+> [`PORTING_NOTES.md`](PORTING_NOTES.md) §9（含 90 处 mixin→TaCZ 目标方法名的 26.3
+> 源码存在性核对：全部通过）。
 
 ## 审计基线
 
 - 原版：`MUKSC/TaCZTweaks` tag `v2.14.2`（commit `74ba2412`）；
-- 当前目标：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar` 及
-  `q14433686-arch/TaCZ_Refabricated_Unofficial` 的 `26.2(main)` 源码；
-- Minecraft 26.2 未混淆类文件（逐项读取 class 方法、字段和调用点）；
-- 2026-08-18 的 Fabric 26.2 模组发行情况；
+- 当前目标：`TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar` 及
+  `q14433686-arch/TaCZ_Refabricated_Unofficial` 的 `26.3` 源码；
+- Minecraft 26.3 未混淆类文件（逐项读取 class 方法、字段和调用点）；
+- 2026-09-22 的 Fabric 26.3 模组发行情况；
 - 本仓库所有配置 getter、mixin JSON、Java/Kotlin 源码和三份语言文件。
 
 可复查命令：
 
 ```bash
 python3 scripts/audit_port.py --strict \
-  --minecraft-jar /path/to/minecraft-merged-26.2.jar \
+  --minecraft-jar /path/to/minecraft-merged-26.3.jar \
   --upstream-root /path/to/MUKSC-TaCZTweaks-v2.14.2
 ```
 

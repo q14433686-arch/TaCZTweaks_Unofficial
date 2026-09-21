@@ -1,5 +1,6 @@
 ## Target release line
 
+- [ ] `26.3` Fabric 26.3
 - [ ] `26.2(main)` Fabric 26.2
 - [ ] `26.2-neoforge` NeoForge 26.2
 - [ ] `26.1.2` Fabric 26.1.2

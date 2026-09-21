@@ -1,12 +1,12 @@
 # 构建指南（BUILD.md）
 
-本文件只适用于仓库默认分支 **`26.2(main)`：Fabric 26.2**，适配
+本文件只适用于本分支 **`26.3`：Fabric 26.3**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
 NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
 [分支对照](docs/BRANCHES.md)。
 
-本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
-`2.14.2+fabric.26.2.Beta-1-hotfix`。
+本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
+`2.14.2+fabric.26.3.Beta-1`。
 
 ---
 
@@ -16,7 +16,7 @@ NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支�
 |---|---|
 | JDK | **Java 25**（必须，低于 25 无法编译/运行） |
 | 网络 | 首次构建要从 Maven 下载依赖（Gradle 会缓存到 `%USERPROFILE%\.gradle`） |
-| 磁盘 | 约 500MB（Minecraft 26.2 + Fabric API 等依赖） |
+| 磁盘 | 约 500MB（Minecraft 26.3 + Fabric API 等依赖） |
 
 ---
 
@@ -59,18 +59,22 @@ NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支�
 
 从 TaCZ 的 Release 页下载：
 ```
-https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2
+https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.3_R1
 ```
-下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）。R2 及之后的
-同一 `1.1.8+fabric.26.2.R<n>` 发布版本（包括 `R2-hotfix`）也受支持，运行时要求 revision 不低于 R2。
+下载文件：`TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar`（约 58MB）。R1 及之后的
+同一 `1.1.8+fabric.26.3.R<n>` 发布版本（包括 `R1-hotfix`）也受支持，运行时要求 revision 不低于 R1。
 
 ### ② YACL 配置库（implementation，配置 GUI）
 
-从 Modrinth 下载 YACL 3.9.6 for 26.2-fabric：
+YACL 运行期要求 **=3.9.7+26.3-fabric**（Modrinth 已发布该 26.3 构建）。仓库内保留的
+`libs/yacl-fabric.jar` 是最后一份有校验记录的 3.9.x 副本（3.9.6+26.2，同 3.9.x API 面），
+仅作编译期 API 桩；本次 26.3 移植环境无法访问 Modrinth。**下次发布前**请在可访问 Modrinth
+的网络下从版本页下载 3.9.7+26.3-fabric jar 替换，并同步 RESOURCE_IMPORT_MANIFEST.tsv 与 LICENSES.md：
+
 ```
-https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar
+https://modrinth.com/mod/yacl/version/3.9.7%2B26.3-fabric
 ```
-保存为：`yacl-fabric.jar`（约 1MB）
+替换后的保存名仍须为：`yacl-fabric.jar`（约 1MB）
 
 也可以直接让脚本按 manifest 下载并校验：
 
@@ -83,7 +87,7 @@ python scripts/download_dependencies.py
 ```
 libs/
 ├── README.txt
-├── TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar
+├── TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar
 └── yacl-fabric.jar
 ```
 
@@ -107,7 +111,7 @@ gradlew.bat build
 ./gradlew build
 ```
 
-- **首次构建**会下载 Gradle 9.5.1、Minecraft 26.2、Fabric API 等，视网速可能要几分钟到十几分钟；
+- **首次构建**会下载 Gradle 9.5.1、Minecraft 26.3、Fabric API 等，视网速可能要几分钟到十几分钟；
 - `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
 - 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
 - 成功后输出：
@@ -118,8 +122,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1-hotfix.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁

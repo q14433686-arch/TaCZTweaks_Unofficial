@@ -61,7 +61,7 @@ damage, speed, burst, pellet and random conditions.
 }
 ```
 
-Shield behavior is implemented against Minecraft 26.2 `BlocksAttacks` components, not the old
+Shield behavior is implemented against Minecraft 26.3 `BlocksAttacks` components, not the old
 Forge shield event.
 
 ## Legacy migration

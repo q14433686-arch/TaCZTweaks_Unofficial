@@ -1,15 +1,36 @@
 # Changelog
 
-All notable changes to the **`26.2(main)` Fabric 26.2** line are tracked here. Other Git
+All notable changes to the **`26.3` Fabric 26.3** line are tracked here. Other Git
 branches keep their own changelogs. Release entries should be user-facing and concise; keep
 detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
-## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
+## 2.14.2+fabric.26.3.Beta-1 - Unreleased
 
-### Documentation
+### Ported to Minecraft 26.3
 
-- Documented the six maintained release branches (Fabric/NeoForge × 26.2 / 26.1.2 / 1.21.11)
-  and aligned issue templates, PR template and publish copy with that layout.
+- Rebased the entire Fabric port onto Minecraft 26.3 / Fabric Loader 0.19.5 / Fabric API
+  0.160.7+26.3 / Fabric Language Kotlin 1.14.1+kotlin.2.4.20 against
+  `TaCZ_Refabricated_Unofficial` **R1** (`1.1.8+fabric.26.3.R1`).
+- Runtime gate now accepts the `1.1.8+fabric.26.3.R<n>` release family from R1 onwards
+  (including `-hotfix` suffixes); 26.2-family jars are rejected.
+- Adapted 26.3 API changes: `InputConstants.Type.KEYSYM` → `KEYBOARD` (all three custom
+  keybinds), `EntityRenderer#shouldRender` trailing `partialTicks` (bullet renderer mixin),
+  `SoundInstance#resolve` → `getOrResolve` (gun sound mixin), and the
+  `isVisuallySwimming` field moving from `AvatarRenderState` up to `HumanoidRenderState`
+  (crawl smoothing FIELD owner).
+- Mod Menu updated to 21.0.0-beta.1; YetAnotherConfigLib gate updated to
+  `=3.9.7+26.3-fabric` (the checked-in libs stub remains the last checksummed 3.9.x jar
+  and must be refreshed before release — see BUILD.md).
+- The 57 MB vendored TaCZ jar left the Git index; restore it with
+  `scripts/download_dependencies.py` (manifest-pinned, SHA-256 verified against the
+  GitHub release digest).
+- Changes were verified statically against the TaCZ 26.2→26.3 source diff (all 75 mixins'
+  TaCZ targets still exist in 26.3 sources); full Gradle compilation and in-game testing
+  are still pending on this line.
+
+## 2.14.2+fabric.26.2.Beta-1-hotfix - 26.2(main) lineage (retained for context)
+
+The entries below describe the 26.2 port lineage this branch was forked from.
 
 ### Added
 
