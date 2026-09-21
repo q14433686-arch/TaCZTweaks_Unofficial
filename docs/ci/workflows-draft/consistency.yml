@@ -1,0 +1,69 @@
+name: consistency
+
+# 版本/文档一致性守门：ci.yml 用 paths-ignore 排除了 docs 与 *.md，
+# 「只改 README / CHANGELOG / 文档」的提交必须有一个独立流程兜底，
+# 否则版本号改了一半的提交会全绿（TaCZ 仓库在 consistency.yml 里踩过同一个坑）。
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.3'
+      - '26.2(main)'
+      - '26.2-neoforge'
+      - '26.1.2'
+      - '26.1.2-neoforge'
+      - '1.21.11'
+      - '1.21.11-neoforge'
+    paths:
+      - 'gradle.properties'
+      - 'README.md'
+      - 'BUILD.md'
+      - 'CHANGELOG.md'
+      - 'RESOURCE_IMPORT_MANIFEST.tsv'
+      - 'src/main/resources/fabric.mod.json'
+      - 'scripts/check_release_consistency.py'
+      - 'scripts/download_dependencies.py'
+      - 'docs/**'
+      - 'LICENSES.md'
+      - 'THIRD_PARTY_NOTICES.md'
+  pull_request:
+    paths:
+      - 'gradle.properties'
+      - 'README.md'
+      - 'BUILD.md'
+      - 'CHANGELOG.md'
+      - 'RESOURCE_IMPORT_MANIFEST.tsv'
+      - 'src/main/resources/fabric.mod.json'
+      - 'scripts/check_release_consistency.py'
+      - 'scripts/download_dependencies.py'
+      - 'docs/**'
+      - 'LICENSES.md'
+      - 'THIRD_PARTY_NOTICES.md'
+  workflow_dispatch:
+
+jobs:
+  consistency:
+    name: 版本与发布一致性
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # check_release_consistency.py 校验 manifest 行指向的文件必须存在且校验和匹配，
+      # 所以任何包含它的流程都绕不开依赖下载。
+      - name: Download vendored deps (hash-verified)
+        run: python3 scripts/download_dependencies.py
+
+      - name: Release consistency
+        run: python3 scripts/check_release_consistency.py
+
+      - name: 失败提示
+        if: failure()
+        run: |
+          echo "::error::README/BUILD/CHANGELOG 与 gradle.properties 的 mod_version 未同步，"
+          echo "::error::或 fabric.mod.json depends、manifest 校验和、发布文案 token 有漂移。"
+          echo "::error::对照 AGENTS.md 的同步规则（mod_version / 依赖版本改动必须同分支内连动文档表）修正。"

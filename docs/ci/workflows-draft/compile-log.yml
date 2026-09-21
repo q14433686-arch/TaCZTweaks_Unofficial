@@ -1,0 +1,87 @@
+name: compile-log
+
+# 编译日志回写（只为 arena/** 工作分支服务）：
+# Arena 沙箱拿不到 Actions 日志页面，但能走 GitHub Contents API 读仓库文件。
+# 本流程在 arena/** push 上跑完整 build，把编译/测试日志经 Contents API 写回
+# 本分支 build-reports/build.log —— 沙箱里的 agent 下一轮可以直接
+# `gh api contents build-reports/build.log` 读取，实现「外网构建，沙箱读结果」。
+# 主分支与 PR 不回写（不被 CI 提交污染）；build-reports/** 在触发器 paths-ignore
+# 里，回写 commit 不会引发循环。
+# 结构照抄 TaCZ 移植仓库 v4 版教训：不写 git push（竞争 rebase 易冲突），
+# 用 Contents API 单文件写入。
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+    paths-ignore:
+      - 'build-reports/**'
+  workflow_dispatch:
+
+concurrency:
+  group: compile-log-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download vendored deps (hash-verified)
+        run: python3 scripts/download_dependencies.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Full build (log captured)
+        run: |
+          mkdir -p build-reports
+          {
+            echo "commit: ${{ github.sha }}"
+            echo "branch: ${{ github.ref_name }}"
+            echo "run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "---- python gates ----"
+            python3 scripts/check_release_consistency.py
+            python3 scripts/audit_port.py --strict
+            echo "---- gradle build ----"
+            ./gradlew build --console=plain --stacktrace --no-daemon
+          } > build-reports/build.log 2>&1
+
+      - name: Record YACL sha256 (for manifest 的 sha512->sha256 回换)
+        if: always()
+        run: |
+          if [ -f libs/yacl-fabric.jar ]; then
+            echo "yacl-fabric.jar sha256: $(sha256sum libs/yacl-fabric.jar | cut -d' ' -f1)" >> build-reports/build.log
+          fi
+
+      - name: Push build log back via contents API
+        if: always() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/arena/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LOG=build-reports/build.log
+          LINES=$(wc -l < "$LOG")
+          # 日志可能很大，只保留头 200 行 + 尾 800 行
+          if [ "$LINES" -gt 1000 ]; then
+            { head -n 200 "$LOG"; echo "...[truncated ${LINES} lines total]..."; tail -n 800 "$LOG"; } > /tmp/log-trimmed
+            mv /tmp/log-trimmed "$LOG"
+          fi
+          echo "" >> "$LOG"
+          echo "== job status: ${{ job.status }} ==" >> "$LOG"
+          BRANCH="${{ github.ref_name }}"
+          SHA=$(gh api "repos/${{ github.repository }}/contents/$LOG?ref=$BRANCH" --jq .sha 2>/dev/null || true)
+          ARGS=(-X PUT "repos/${{ github.repository }}/contents/$LOG"
+                -f message="ci-log: build result (${{ job.status }}) for ${{ github.sha }}"
+                -f branch="$BRANCH"
+                -f content="$(base64 -w0 "$LOG")")
+          if [ -n "$SHA" ]; then ARGS+=(-f sha="$SHA"); fi
+          gh api "${ARGS[@]}" --jq .commit.sha

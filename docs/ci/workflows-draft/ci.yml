@@ -1,0 +1,96 @@
+name: ci
+
+# 全量静态门禁 + 构建 + 产物上传。
+# 换线提交必然要动的文件（gradle.properties / build.gradle.kts / fabric.mod.json /
+# manifest / src/**）都在触发面内；docs/**、*.md 被 ignore 由 consistency.yml 单独补盲。
+# 与 TaCZ 移植仓库的 build.yml 同思路，差异点：
+# 1) libs/ 两个 compile dep jar 不随仓库提交，先跑 download_dependencies.py（按
+#    RESOURCE_IMPORT_MANIFEST.tsv 固定 URL + 校验和，sha256 或 sha512 都会验）；
+# 2) 复用仓库自带的 Python 门禁脚本，不再内联临时校验；
+# 3) audit_port.py 需要 libs/ 的 TaCZ jar 做 mixin 目标审计，因此必须排在下载之后。
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.3'
+      - '26.2(main)'
+      - '26.2-neoforge'
+      - '26.1.2'
+      - '26.1.2-neoforge'
+      - '1.21.11'
+      - '1.21.11-neoforge'
+    paths-ignore:
+      - 'build-reports/**'
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - 'build-reports/**'
+      - 'docs/**'
+      - '*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: 静态门禁（audit / icon / consistency / omissions）
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download vendored deps (hash-verified)
+        run: python3 scripts/download_dependencies.py
+
+      - name: Release consistency
+        run: python3 scripts/check_release_consistency.py
+
+      - name: Mod icon gate
+        run: python3 scripts/check_mod_icon.py
+
+      - name: Port audit (mixin 注册/目标、配置死项、语言键、版本一致性)
+        run: python3 scripts/audit_port.py --strict
+
+      - name: Audit self-test (optional remap=false targets)
+        run: python3 scripts/test_audit_optional_targets.py
+
+  build:
+    name: full build (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # build 也隐式覆盖 gates（check 里挂了 checkVendoredDependencies/checkModIcon/checkJarContents），
+    # 但失败时分两个 job 的报错语义更清楚，所以不串 needs。
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download vendored deps (hash-verified)
+        run: python3 scripts/download_dependencies.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Full build
+        run: ./gradlew build --console=plain --stacktrace --no-daemon
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v4
+        with:
+          # artifact 名不能含 '/'（arena/** 分支名带斜杠），名字里只放 sha 前缀
+          name: tacztweaks-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+            build/distributions/*.zip
+          retention-days: 14
+          if-no-files-found: error
