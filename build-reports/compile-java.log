@@ -1,4 +1,4 @@
-commit: 578da204a816903e2d47a149cde1b68696236ee5
+commit: 68c78f82bfdcb745f7ff6d481608ec608cda8389
 ref: arena/01a0c563-tacztweaks-unofficial
 Fetching distribution.
 Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
@@ -26,9 +26,9 @@ Fabric Loom: 1.17.21
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :compileKotlin
 > Task :compileJava
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1790064935404.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1790065560212.json
 
-BUILD SUCCESSFUL in 1m 32s
+BUILD SUCCESSFUL in 2m 4s
 2 actionable tasks: 2 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 
