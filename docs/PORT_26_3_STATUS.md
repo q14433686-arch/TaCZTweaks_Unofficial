@@ -136,6 +136,35 @@ import net.minecraft.world.entity.monster.EnderMan;
 
 ## 4. 还没验证的（按风险从高到低）
 
+> ### ✅ 本节 4.1–4.4 的**静态**部分已于 2026-09-22 全部通过
+>
+> `build.gradle.kts` 新增的 `auditAgainstMinecraft` 任务会把 Loom 拉下来的真实
+> Minecraft jar 喂给 `audit_port.py --strict`。CI（`3b2c88f`）日志确认它**确实跑到了**、
+> 而不是走「找不到 jar」的跳过分支：
+>
+> ```
+> > Task :auditAgainstMinecraft
+> AUDIT(minecraft): using minecraft-merged-a1f5b1e0f5-26.3.jar
+> AUDIT: 0 error(s), 1 warning(s)
+> AUDIT(minecraft): OK
+> ```
+>
+> 也就是说，下面 4.1–4.4 里所有「类名/方法名/descriptor 在 26.3 上还存不存在」的疑问
+> **都已被证伪为「存在」**，包括 4.1 那条硬编码 descriptor。唯一那条 warning 是
+> `LivingEntityMixin` 里 `remap=false` 的可选目标，属于**预期行为**，
+> 由 `scripts/test_audit_optional_targets.py` 专门锁死（见下方注）。
+>
+> ⚠️ **但静态通过 ≠ 行为正确。** 审计只比对符号是否存在，**不检查语义**。
+> `@Local(ordinal = 2)` 取的是不是原来那个插值量、`@ModifyArgs` 命中的是不是原来那次
+> `translate` 调用 —— 这类「顺序/身份」问题静态审计看不出来，**仍必须实机确认**（§6 第 6 步）。
+>
+> 📌 **一处名不副实**：`audit.yml` 里那一步叫「0 error / 0 warning required」，但
+> `audit_port.py` 只在 **error** 非空时返回 1，warning 不影响退出码（见 `main()` 末行
+> `return 1 if errors else 0`）。所以当前这条 warning 是被容忍的。步骤名与实际门禁
+> 不一致，建议改名为「0 error required」，或给脚本加 `--fail-on-warning` 后在
+> workflow 里显式豁免这条已知项。**机器人无 `workflows` 权限，需你手改。**
+
+
 ### ❓ 4.1 原版侧 mixin：`AvatarRendererMixin`（风险最高）
 
 `crawl/AvatarRendererMixin` 硬编码了一个 descriptor：
