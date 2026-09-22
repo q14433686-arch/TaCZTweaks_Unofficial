@@ -66,6 +66,25 @@ Modrinth 只公布 sha1/sha512，本沙箱拿不到文件本体算 sha256。
 `InputConstants.UNKNOWN` **仍然存在**（ModMenu v21.0.0-beta.1 与 CustomPlayerModels 26.3 都在用），
 所以 `TiltGunKey` / `ReduceSensitivityKey` 的 `UNKNOWN.getValue()` 保持不变。
 
+### ✅ 2.4 `FriendlyByteBuf#write/readCollection` 被移除
+
+`Config.kt` 里 `reloadDiscardsMagazineExclusions` 的 encoder/decoder 用了这两个方法，
+26.3 把它们连同 `write/readMap` 一起从 `FriendlyByteBuf` 删了。
+新增 `config/sync/BufCollectionCodec.kt` 顶上，**线格式与 26.2 完全一致**
+（varint 条目数 + 逐条元素），所以同步协议没有任何变化。
+顺带删掉了只为这一行存在的 `com.google.common.collect.Lists` import。
+
+证据来源与其它条目不同，**这条是 CI 编译器报的**，不是比对源码猜的：
+
+```
+e: .../config/Config.kt:70:43 Unresolved reference 'writeCollection'.
+e: .../config/Config.kt:71:36 Unresolved reference 'readCollection'.
+```
+
+（run `35702835805`，日志由 `compile-check` 回推至 `build-reports/compile-java.log`。）
+同批次还有 `writeUtf`/`readUtf` 方法引用的重载歧义报错，改成显式 lambda 后一并消失。
+TaCZ 26.3 侧用 `cn.sh1rocu.tacz.util.BufMapCodec` 解决了 map 那一半，做法与此一致。
+
 ---
 
 ## 3. 交叉核对结论：我们碰的 TaCZ 类里，26.3 改了哪些
@@ -152,12 +171,15 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 
 ## 6. 建议的下一步（按顺序）
 
-1. **先安装 CI**：机器人没有 `workflows` 权限，四条流程暂存在 `ci/workflows/`。
-   执行 `bash ci/install-workflows.sh`，再用**你自己的账号** commit + push
-   （详见 [`ci/README.md`](../ci/README.md)）。
-2. **让四条 CI 跑一遍。** 首跑大概率会红，这是预期的。
-3. 从 `build-reports/compile-java.log` 读第一批编译错误（受限沙箱用 `gh api ... contents` 读）。
+1. ~~**先安装 CI**~~ —— **已完成**。你用网页 UI 装好了 `.github/workflows/` 四条，
+   内容与当时的 `ci/workflows/` 逐字节一致，`ci/` 目录随后删除。
+2. ~~**让四条 CI 跑一遍**~~ —— **已完成**，首跑三条全红（`Restore vendored dependencies`
+   被哨兵大小写 bug 卡死，已修）。
+3. ~~从 `build-reports/compile-java.log` 读第一批编译错误~~ —— **已完成，回推链路验证可用**。
+   第一批只有一个真实破坏（§2.4 的 `write/readCollection`），已修。
+   **下一步是等新一轮 `compile-check` 给出第二批错误**，`Config.kt` 之后的文件此前根本没被编译到。
 4. 回填 YACL 的真实 sha256，把 manifest 里的 `UNVERIFIED_PENDING_CI` 换掉。
+   CI 的 `Restore vendored dependencies` 现在已经能打印真值，从该步日志里抄即可。
 5. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
    `~/.gradle/caches/fabric-loom/` 下产出 26.3 的 Minecraft jar，把它喂给
    `audit_port.py --strict --minecraft-jar <jar>`，才能真正校验 §4 里那些**原版侧** mixin 的
@@ -179,6 +201,10 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 | `RESOURCE_IMPORT_MANIFEST.tsv` | 两条依赖换 26.3 来源/版本/校验和（YACL 待定） |
 | `.gitignore` / `libs/README.txt` | `libs/*.jar` 不再进 Git，改由脚本重建 |
 | `scripts/download_dependencies.py` | 支持 `UNVERIFIED_PENDING_CI`、`--print-sha256`、`--require-pinned` |
+| `src/main/kotlin/.../config/sync/BufCollectionCodec.kt` | **新增**，替代 26.3 删掉的 `FriendlyByteBuf#write/readCollection`，线格式不变 |
+| `src/main/kotlin/.../config/Config.kt` | 改用 `BufCollectionCodec`；删掉多余的 `Lists` import |
+| `scripts/test_audit_optional_targets.py` | 改成 pytest 兼容（断言进 `test_optional_targets()`），仍可 `python3` 直接跑 |
+| `scripts/test_download_dependencies.py` | **新增**，6 个用例锁住 manifest 哨兵/校验和语义 |
 | `scripts/check_release_consistency.py` | 依赖缺失时可跳过（`--require-deps` 才强制）；禁用词改用 `minecraft_version` |
 | `scripts/audit_port.py` | jar 路径 → 26.3；版本正则 → `26.3`；TaCZ 依赖串 → R1；缺 jar 时直接报错退出 2 而非刷 60 条假错误 |
 | `src/main/java/.../EntityBulletRendererMixin.java` | §2.1 |

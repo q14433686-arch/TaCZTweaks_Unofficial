@@ -1,6 +1,5 @@
 package me.muksc.tacztweaks.config
 
-import com.google.common.collect.Lists
 import com.mojang.serialization.Codec
 import com.tacz.guns.resource.modifier.AttachmentPropertyManager
 import com.tacz.guns.resource.pojo.data.attachment.Modifier
@@ -11,6 +10,7 @@ import dev.isxander.yacl3.config.v3.value
 import dev.isxander.yacl3.dsl.*
 import dev.isxander.yacl3.platform.YACLPlatform
 import me.muksc.tacztweaks.TaCZTweaks
+import me.muksc.tacztweaks.config.sync.BufCollectionCodec
 import me.muksc.tacztweaks.config.sync.ESyncDirection
 import me.muksc.tacztweaks.config.sync.SyncableCodecConfig
 import me.muksc.tacztweaks.config.sync.SyncableJsonFileCodecConfig
@@ -67,8 +67,11 @@ object Config : SyncableJsonFileCodecConfig<Config>(
         val reloadDiscardsMagazineExclusions by registerSyncable(
             default = listOf("tacz:m870", "tacz:db_short", "tacz:db_long"),
             codec = Codec.list(STRING),
-            encoder = { buf, value -> buf.writeCollection(value, FriendlyByteBuf::writeUtf) },
-            decoder = { buf -> buf.readCollection(Lists::newArrayListWithCapacity, FriendlyByteBuf::readUtf) }
+            // 26.3 removed FriendlyByteBuf#write/readCollection; BufCollectionCodec keeps
+            // the identical varint-count wire format. The explicit lambdas also resolve the
+            // writeUtf/readUtf overload ambiguity Kotlin reports for the method references.
+            encoder = { buf, value -> BufCollectionCodec.writeList(buf, value) { b, s -> b.writeUtf(s) } },
+            decoder = { buf -> BufCollectionCodec.readList(buf) { b -> b.readUtf() } }
         )
         val fireSelectWhileShooting by registerSyncable(
             default = false,
