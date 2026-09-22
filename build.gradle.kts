@@ -322,6 +322,16 @@ tasks.named("check") {
     dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents)
 }
 
+// Compiling against unverified vendored jars is not meaningful: every mixin target in this
+// mod resolves through libs/, so the jars must be intact before javac/kotlinc run.
+// This also has a practical effect for the restricted porting sandbox described in
+// .github/workflows/compile-check.yml: that workflow pushes its Gradle output back to
+// build-reports/compile-java.log, which is the only build log the sandbox can read. Hanging
+// the verification off compileJava puts the "NOT PINNED -> sha256 ..." line into that file.
+tasks.named("compileJava") {
+    dependsOn(checkVendoredDependencies)
+}
+
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
     group = "distribution"
     description = "Packages the reloadable TaCZ Tweaks example gun pack."
