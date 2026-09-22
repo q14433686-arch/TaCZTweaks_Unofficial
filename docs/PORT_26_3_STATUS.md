@@ -204,29 +204,22 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 3. ~~从 `build-reports/compile-java.log` 读第一批编译错误~~ —— **已完成，回推链路验证可用**。
    第一批只有一个真实破坏（§2.4 的 `write/readCollection`），已修。
    **下一步是等新一轮 `compile-check` 给出第二批错误**，`Config.kt` 之后的文件此前根本没被编译到。
-4. 回填 YACL 的真实 sha256（**未完成，且请先读完这一条**）。
+4. ~~回填 YACL 的真实 sha256~~ —— **已完成**，manifest 现在两行全部 pinned。
 
-   CI 现在会打印 `VENDORED DEPENDENCY NOT PINNED: libs/yacl-fabric.jar -> sha256 <64 位>`，
-   但**两轮 CI 对同一个 URL 打印了两个不同的 sha256**：
+   过程值得记一笔，因为中途出现过一次「看起来像投毒」的假警报：两轮 CI 对同一个
+   Modrinth 链接打印了两个不同的 sha256（`477d5890...` / `c52d41d4...`）。当时没有盲抄
+   任何一个，而是先加了 `sha512_upstream` 列 —— 填 Modrinth 官方公布、且 3 个互不相关的
+   packwiz 锁文件逐字一致的 sha512 —— 让 `download_dependencies.py` 对待定行强制校验。
 
-   | 轮次 | run | 打印的 sha256 |
-   |---|---|---|
-   | 第 1 轮 | `952a64b` | `477d5890...`（当时以「校验和不匹配」的形式报出） |
-   | 第 4 轮 | `4a727fe` | `c52d41d4...` |
+   第 5 轮 CI（`8999fdb`）四条全绿，即这道 sha512 关卡**实际执行且通过**
+   （已本地确认 YACL 行确实落在 `ENFORCED` 分支，不是因为读不到列而被跳过），
+   说明拿到的字节确实是上游发布的那一份。此时 `c52d41d4...` 才从「CI 打印的一个数」
+   升级为「经上游 sha512 佐证的值」，于是写入 manifest。
 
-   同一个不可变的 Modrinth CDN 链接不该给出两种字节。在查清之前**不要把任一值写进 manifest**
-   —— 盲抄等于把一个来源不明的哈希固化成「已验证」。
+   那次 `477d5890...` 最可能的解释是首轮的哨兵 bug 让脚本把**半下完/出错的临时文件**
+   也算了一次哈希（那一轮正是 `Restore vendored dependencies` 崩掉的那轮）。
+   现在这种字节即使出现也会被 sha512 拦下，不会再悄悄进 `libs/`。
 
-   本轮改为先上一道**能证伪**的关卡：manifest 新增 `sha512_upstream` 列，填 Modrinth 官方
-   公布、且 3 个互不相关的 packwiz 锁文件（skywardmc/additive、LCLPYT/mc-modpacks、
-   0byte-coding/mc_sodium_vanilla）逐字一致的 sha512。`download_dependencies.py` 现在对
-   **待定行**强制校验这个 sha512，不匹配就拒收并删除临时文件。也就是说：
-
-   - 若下一轮 CI 通过 → 字节确实是上游发布的那份，届时打印的 sha256 才可信、可以回填；
-   - 若下一轮 CI 报 `SHA-512 mismatch` → 说明拿到的确实不是上游那份，**幸亏没有回填**。
-
-   （为什么非得绕这一圈：沙箱不可达 `cdn.modrinth.com`，无法自行下载核对；而 Modrinth 与
-   packwiz 锁文件只公布 sha1/sha512，从不公布 sha256。）
 5. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
    `~/.gradle/caches/fabric-loom/` 下产出 26.3 的 Minecraft jar，把它喂给
    `audit_port.py --strict --minecraft-jar <jar>`，才能真正校验 §4 里那些**原版侧** mixin 的
