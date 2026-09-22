@@ -1,0 +1,185 @@
+# 26.3 移植状态与待办
+
+> 建立日期：2026-09-22。适用分支：`26.3`（Fabric）。
+> 基线：本仓 `26.2(main)` @ `88738fb` → 目标 TaCZ `q14433686-arch/TaCZ_Refabricated_Unofficial` 分支 `26.3`
+> （发行版 `26.3_R1`，`1.1.8+fabric.26.3.R1`，2026-09-20 发布）。
+
+## 0. 先读这个：本轮到底做了什么、没做什么
+
+**做了**：依赖坐标切到 26.3、三处**有 26.3 源码实证**的 API 破坏已适配、四条 CI 流程落地、
+`libs/*.jar` 改为按 manifest 重建。
+
+**没做**：**任何一行代码都还没被编译器看过**。准备本轮移植的沙箱只能访问 `api.github.com`，
+`maven.fabricmc.net` / `api.modrinth.com` / `piston-meta.mojang.com` 与 GitHub release
+附件域全部不可达 —— `./gradlew` 连 Minecraft 都下不到，本地编译在物理上不可能。
+所以本文件里凡是标 🔧 的都只是「按上游源码推断」，标 ❓ 的是「怀疑但没证据」。
+
+**下一步就是让 CI 跑第一次**，然后按 `build-reports/compile-java.log` 逐条修。
+
+---
+
+## 1. 依赖坐标（已改，待 CI 证实可解析）
+
+| 项 | 26.2 旧值 | 26.3 新值 | 依据 |
+|---|---|---|---|
+| Minecraft | 26.2 | `26.3` | TaCZ 26.3 `gradle.properties` |
+| Fabric Loader | 0.19.3 | `0.19.5` | 同上 |
+| Fabric API | 0.155.2+26.2 | `0.160.7+26.3` | 同上；GitHub 上该 tag 存在 |
+| TaCZ | `1.1.8+fabric.26.2.R2` | `1.1.8+fabric.26.3.R1` | release `26.3_R1` 资产 |
+| YACL | 3.9.6+26.2-fabric | `3.9.7+26.3-fabric` | Modrinth 版本 `s9SjoFu1`（2026-09-20 发布，标 26.3） |
+| ModMenu | 20.0.1 | `21.0.0-beta.1` | 26.3 目前只有 beta 通道，与 TaCZ 同口径 |
+| Kotlin / FLK | 1.13.13+kotlin.2.4.10 | **未动** | FLK 未声明与 MC 绑定；如 CI 报错再升 1.13.14/1.14.x |
+| MixinExtras | 0.5.4 | **未动** | 无 26.3 相关变更证据 |
+
+**YACL 校验和是占位符**：`RESOURCE_IMPORT_MANIFEST.tsv` 里那一行写的是 `UNVERIFIED_PENDING_CI`。
+Modrinth 只公布 sha1/sha512，本沙箱拿不到文件本体算 sha256。
+第一次 CI 会用 `--print-sha256` 打印真实值，回填后把占位符换掉。
+（TaCZ 那一行的 sha256 是真的，取自 GitHub release 资产的 `digest` 字段。）
+
+---
+
+## 2. 已适配的 API 破坏（✅ = 有 26.3 源码实证）
+
+### ✅ 2.1 `EntityRenderer#shouldRender` 新增 `float partialTicks`
+
+`EntityBulletRendererMixin` 的 `@Inject` 形参表尾部补 `float partialTicks`。
+
+证据：TaCZ 26.3 `EntityBulletRenderer.java:379-385` 明确写了
+「26.3: EntityRenderer#shouldRender 尾部新增 float partialTicks……签名必须对上才算覆写」。
+
+> 这条如果不改，`@Inject` 在 APPLY 阶段直接找不到方法；因为 `defaultRequire=1`，会是
+> 启动崩溃而不是静默失效 —— 属于「好发现」的那一类。
+
+### ✅ 2.2 `SoundInstance#resolve` → `getOrResolve`
+
+`GunSoundInstanceMixin` 的注入目标方法名改为 `getOrResolve`。
+
+证据：TaCZ 26.3 `GunSoundInstance.java:64-67` 的注释与 `@Override public WeighedSoundEvents getOrResolve(...)`。
+
+### ✅ 2.3 `InputConstants` 键位常量改名
+
+三个按键类：`Type.KEYSYM` → `Type.KEYBOARD`，`GLFW.GLFW_KEY_U` → `InputConstants.KEY_U`，
+删掉 `org.lwjgl.glfw.GLFW` import。
+
+证据：TaCZ 26.3 `RefitKey.java` 的 diff（`KEYSYM`+`GLFW_KEY_Z` → `KEYBOARD`+`KEY_Z`）、
+`ReloadKey`/`InspectKey`/`CrawlKey` 等同款写法。
+`InputConstants.UNKNOWN` **仍然存在**（ModMenu v21.0.0-beta.1 与 CustomPlayerModels 26.3 都在用），
+所以 `TiltGunKey` / `ReduceSensitivityKey` 的 `UNKNOWN.getValue()` 保持不变。
+
+---
+
+## 3. 交叉核对结论：我们碰的 TaCZ 类里，26.3 改了哪些
+
+把「本仓 `src/` 里 import 的 71 个 `com.tacz.*` 类」与「TaCZ `26.2(main)...26.3` 的 152 个改动文件」
+求交集，只有 **7 个**命中：
+
+| TaCZ 类 | 26.3 改了什么 | 对我们的影响 | 状态 |
+|---|---|---|---|
+| `client.renderer.entity.EntityBulletRenderer` | `shouldRender` 加 `float partialTicks` | 直接破坏 | ✅ 已改（§2.1） |
+| `client.sound.GunSoundInstance` | `resolve` → `getOrResolve` | 直接破坏 | ✅ 已改（§2.2） |
+| `client.input.RefitKey` | `InputConstants` 改名 | 我们的 `RefitKeyMixin` 打在 `onRefitPress` 上，**方法名与参数未变** | 🔧 应无需改动 |
+| `client.event.CameraSetupEvent` | 只改了 `KeepingItemRenderer.getRenderer().getCurrentItem()` → `getCurrentRenderItem()` | 我们的 `CameraSetupEventMixin` 打的是 `initialCameraRecoil`，该方法体内 `getCrawlRecoilMultiplier` / `getClientAimingProgress` / `genPitchSplineFunction` / `genYawSplineFunction` **四个注入点全在**（26.3 源码 189-232 行逐行核对） | 🔧 应无需改动 |
+| `client.gameplay.LocalPlayerDraw` | `doPutAway` 里给 `getRenderer()` 加 null 检查 | 我们只注入 `resetData`（26.3 仍在，134 行） | 🔧 应无需改动 |
+| `client.gui.GunSmithTableScreen` | 开链接改 `Blaze3D.openUri(URI)` | 我们注入 `isSuitableForMainHand`（220 行，内含 `allowAttachment`）与 `mouseScrolled`，并 `@Shadow` `selectedRecipeList`（81 行，仍是 `List<Identifier>`） | 🔧 应无需改动 |
+| `entity.EntityKineticBullet` | `invulnerableTime = 0` → `DamageCooldownUtil.clear(...)` | 我们三个 mixin 打的是 `<init>` / `onBulletTick` / `getDamage` / `onHitEntity` / `createDamageSources`，**都不碰那两行**；`onHitEntity`、`tacAttackEntity`、`createDamageSources` 在 26.3 仍在（401 / 590 / 573 行） | 🔧 应无需改动 |
+
+**其余 64 个我们 import 的 TaCZ 类，26.3 一个字节都没动。** 这是本轮最值得记下的结论：
+我们的 mixin 面主要打在 TaCZ 的逻辑层（modifier / shooter / resource pojo），而 26.3 的改动
+几乎全部集中在渲染层（`Scope*`、`Iris*`、`PolyMesh*`、第一人称拆分），那些类我们一个都没碰。
+
+---
+
+## 4. 还没验证的（按风险从高到低）
+
+### ❓ 4.1 原版侧 mixin：`AvatarRendererMixin`（风险最高）
+
+`crawl/AvatarRendererMixin` 硬编码了一个 descriptor：
+
+```
+setupRotations(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;FF)V
+```
+
+并且 `@ModifyArgs` 打在 `PoseStack;translate(FFF)V` 上、`@Local(ordinal = 2)` 取插值量。
+26.3 把 `com.mojang.blaze3d.*` 大面积搬到 `com.mojang.renderpearl.*`，**但 `PoseStack` 明确
+留在 `blaze3d`**（移植指南 §2.1 原话：「`PoseStack`、`Blaze3D`、`InputConstants`、
+`GraphicsResourceAllocator` 仍在 `blaze3d`」）。所以 descriptor **大概率**仍然成立。
+
+风险在于 `setupRotations` 的形参表或 `translate` 调用次序是否被 Mojang 动过 —— 这个
+**只能靠 Loom 拉下 26.3 的 Minecraft jar 后用 `--minecraft-jar` 审计**，CI 里可以做（见 §6）。
+`@Local(ordinal = 2)` 这种按序号取局部变量的写法对版本变化最敏感。
+
+### ❓ 4.2 `SoundBufferLibraryMixin`：lambda 名与 `blaze3d.audio`
+
+它 `@Invoker("lambda$getCompleteBuffer$1")` 且 `@ModifyArgs` 打在
+`Lcom/mojang/blaze3d/audio/SoundBuffer;<init>(...)`。两个隐患：
+1. **lambda 合成名**随编译产物变化，原版方法体一改就会错位；
+2. `blaze3d.audio` 是否随 renderpearl 迁移未知（移植指南只列了渲染相关子包，音频未提及，
+   且 TaCZ 自身不碰这个类，无从旁证）。
+
+### ❓ 4.3 `RenderCrosshairEventMixin` 的 `Window` 形参
+
+我们的注入形参是 `(GuiGraphicsExtractor graphics, Window window, CallbackInfo ci)`，
+`Window` 来自 `com.mojang.blaze3d.platform.Window`。26.3 TaCZ 侧
+`RenderCrosshairEvent.java:4` 仍 `import com.mojang.blaze3d.platform.Window`，
+且 `renderHitMarker(GuiGraphicsExtractor, Window)` 签名未变 —— 这条**大概率安全**，
+列在这里是因为它依赖原版类未迁移这一前提。
+
+### ❓ 4.4 其它
+
+- `MouseHandlerMixin` 打 `handleAccumulatedMovement` / `turnPlayer`；
+- `EnchantmentHelperMixin`、`EnderManMixin`、`LivingEntity*` 等原版目标；
+- `net.minecraft.client.gui.GuiGraphicsExtractor`、`KeyMapping.Category.register`、
+  `player.permissions()`、`ResourceLoader` v1 等 26.2 期写法在 26.3 是否仍然成立。
+
+以上全部要等 CI 编译 + `--minecraft-jar` 审计才能定性。
+
+---
+
+## 5. 明确**不适用**于本仓的 26.3 改动
+
+TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与本仓无关，别照抄：
+
+- `blaze3d` → `renderpearl` 包迁移、`Scope*` 全家、PIP/掩码/高模、Iris 适配、shaderc/SPIR-V
+  着色器方言 —— **本仓没有自定义渲染管线，也没有 GLSL**（只有两个 First Aid 的 post shader
+  覆盖文件，不属于 26.3 渲染栈）；
+- 第一人称 `ItemInHandRenderer` 拆分 —— 本仓不注入第一人称渲染；
+- 战利品表 schema、`Block#codec()` 删除、`PushReaction.POPPED` —— **本仓不注册任何方块**；
+- `FriendlyByteBuf#readMap/writeMap` 移除 —— 本仓的 payload 没用 map 编解码；
+- `swing(hand, SwingAnimation, boolean)`、`invulnerableTime` 私有化 —— 本仓不调这两处；
+- 配方同步 / JEI —— 本仓不注册配方。
+
+---
+
+## 6. 建议的下一步（按顺序）
+
+1. **把本分支 push 上去，让四条 CI 跑一遍。** 首跑大概率会红，这是预期的。
+2. 从 `build-reports/compile-java.log` 读第一批编译错误（受限沙箱用 `gh api ... contents` 读）。
+3. 回填 YACL 的真实 sha256，把 manifest 里的 `UNVERIFIED_PENDING_CI` 换掉。
+4. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
+   `~/.gradle/caches/fabric-loom/` 下产出 26.3 的 Minecraft jar，把它喂给
+   `audit_port.py --strict --minecraft-jar <jar>`，才能真正校验 §4 里那些**原版侧** mixin 的
+   方法名与 descriptor。这是目前唯一能在不进游戏的前提下发现「mixin 静默不装」的手段。
+5. 进游戏实测。**参考 TaCZ 的教训**（移植指南 §0）：26.3 这一轮他们 17 个实质提交里有 9 个是
+   「CI 绿、进游戏就错」。本仓渲染面小，风险低于他们，但 `AvatarRendererMixin` 的匍匐视觉、
+   准星/命中标记、单声道音频转换这三处必须肉眼确认。
+6. 全绿后再改 README 的「状态」段落，并按 §3 的结论决定哪些 🔧 可以升级成 ✅。
+
+---
+
+## 7. 本轮改动清单
+
+| 文件 | 改动 |
+|---|---|
+| `gradle.properties` | MC/Loader/FabricAPI/ModMenu 版本；`mod_version` → `2.14.2+fabric.26.3.Beta-1` |
+| `build.gradle.kts` | TaCZ jar 文件名 → 26.3 R1 |
+| `src/main/resources/fabric.mod.json` | `depends` 全套 26.3 区间 |
+| `RESOURCE_IMPORT_MANIFEST.tsv` | 两条依赖换 26.3 来源/版本/校验和（YACL 待定） |
+| `.gitignore` / `libs/README.txt` | `libs/*.jar` 不再进 Git，改由脚本重建 |
+| `scripts/download_dependencies.py` | 支持 `UNVERIFIED_PENDING_CI`、`--print-sha256`、`--require-pinned` |
+| `scripts/check_release_consistency.py` | 依赖缺失时可跳过（`--require-deps` 才强制）；禁用词改用 `minecraft_version` |
+| `scripts/audit_port.py` | jar 路径 → 26.3；版本正则 → `26.3`；TaCZ 依赖串 → R1；缺 jar 时直接报错退出 2 而非刷 60 条假错误 |
+| `src/main/java/.../EntityBulletRendererMixin.java` | §2.1 |
+| `src/main/java/.../GunSoundInstanceMixin.java` | §2.2 |
+| `src/main/java/.../input/{UnloadKey,TiltGunKey,ReduceSensitivityKey}.java` | §2.3 |
+| `.github/workflows/*.yml` | 四条新流程 |
+| `README.md` / `BUILD.md` / `CHANGELOG.md` / `AGENTS.md` / `docs/BRANCHES.md` | 版本与流程说明同步 |

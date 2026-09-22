@@ -11,8 +11,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = EntityBulletRenderer.class, remap = false)
 public abstract class EntityBulletRendererMixin {
+    // 26.3: EntityRenderer#shouldRender gained a trailing float partialTicks, and TaCZ's
+    // override follows it (EntityBulletRenderer.java:384). The injector signature must
+    // carry the extra float or the injection point no longer resolves.
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
-    private void tacztweaks$shouldRender$always(EntityKineticBullet bullet, Frustum camera, double pCamX, double pCamY, double pCamZ, CallbackInfoReturnable<Boolean> cir) {
+    private void tacztweaks$shouldRender$always(EntityKineticBullet bullet, Frustum camera, double pCamX, double pCamY, double pCamZ, float partialTicks, CallbackInfoReturnable<Boolean> cir) {
         if (!Config.Gun.INSTANCE.disableBulletCulling()) return;
         cir.setReturnValue(true);
     }

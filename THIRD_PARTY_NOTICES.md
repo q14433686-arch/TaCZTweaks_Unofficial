@@ -26,27 +26,31 @@ The full GPL-3.0 text is included as [`LICENSE`](LICENSE).
 
 ## Vendored compile/runtime input jars
 
-The following local jars are tracked under `libs/` to make this checkout build and test
-against fixed Fabric 26.2 targets. Their source URLs, versions, checksums and release-jar
-inclusion status are pinned in [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
+The following local jars are referenced from `libs/` to make this checkout build and test
+against fixed Fabric 26.3 targets. **They are not committed to Git**; run
+`python3 scripts/download_dependencies.py` to fetch and verify them. Their source URLs,
+versions, checksums and release-jar inclusion status are pinned in
+[`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
 
-### TaCZ Refabricated Unofficial 1.1.8+fabric.26.2.R2
+### TaCZ Refabricated Unofficial 1.1.8+fabric.26.3.R1
 
-- File: `libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`
+- File: `libs/TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar`
 - Project: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial>
-- Release: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2>
+- Release: <https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.3_R1>
 - License declared by its `fabric.mod.json`: `GPL3 / CC BY-NC-ND 4.0`
-- SHA-256: `6c0584ca457acb8403816e61a83260d68639f9bda4b3fc0717038f932325d5b5`
+- SHA-256: `faa1ce770c184ee2a69ef901a9402f83ee81382372ede07222270fde3530620f`
 - Use here: compile-only and test-runtime API/mixin target dependency. It is not nested into
   this project's published jar; users must install the TaCZ Refabricated mod separately.
 
-### YetAnotherConfigLib 3.9.6+26.2-fabric
+### YetAnotherConfigLib 3.9.7+26.3-fabric
 
 - File: `libs/yacl-fabric.jar`
 - Project: <https://github.com/isXander/YetAnotherConfigLib>
-- Modrinth file: <https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar>
+- Modrinth file: <https://cdn.modrinth.com/data/1eAoo2KR/versions/s9SjoFu1/yet_another_config_lib_v3-3.9.7%2B26.3-fabric.jar>
 - License declared by its `fabric.mod.json`: `LGPL-3.0-or-later`
-- SHA-256: `829396c3b3e7d1801ae0e9e2921d0454c5a3078afdb6c6dda6b3d1819dfa0e3f`
+- SHA-256: pending (`UNVERIFIED_PENDING_CI` in the manifest). Modrinth publishes only
+  sha1 `e54d86dd4a78f95cd6ec0309d96fae01e661c00d` and a sha512; the first CI run records the
+  sha256 via `scripts/download_dependencies.py --print-sha256`.
 - Use here: runtime configuration library expected as a separate installed mod. It is not
   nested into this project's published jar.
 
@@ -85,7 +89,7 @@ DEALINGS IN THE SOFTWARE.
   - `assets/firstaid/shaders/post/pain_pulse_blur.fsh`
   - `assets/firstaid/shaders/post/saturation_boost.fsh`
 - Modification: removed the unused `minecraft:dynamictransforms.glsl` import that refers to
-  a uniform block absent from First Aid's 26.2 post chains.
+  a uniform block absent from First Aid's post chains.
 
 The full GPL-3.0 license is included in this repository as [`LICENSE`](LICENSE). These
 compatibility copies are constrained to First Aid `>=1.3.0,<1.4.0`; they should be removed

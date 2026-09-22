@@ -19,7 +19,7 @@ base {
 // ============================================================
 // From Minecraft 26.1+ Minecraft is no longer obfuscated and Loom
 // runs in unobfuscated mode, so no mappings dependency is needed.
-// Same approach as TaCZ_Refabricated_Unofficial's 26.2 branch.
+// Same approach as TaCZ_Refabricated_Unofficial's 26.3 branch.
 // ============================================================
 
 repositories {
@@ -40,12 +40,13 @@ dependencies {
     // putting it on the compile classpath keeps stdlib versions aligned.
     implementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
 
-    // YACL (YetAnotherConfigLib) — Fabric 26.2 build, provided as a hard dependency
+    // YACL (YetAnotherConfigLib) — Fabric 26.3 build, provided as a hard dependency.
+    // Reconstructed by scripts/download_dependencies.py from RESOURCE_IMPORT_MANIFEST.tsv.
     implementation(files("libs/yacl-fabric.jar"))
 
     // The TaCZ refabricated port we integrate with (compile only in production; tests
     // exercise its codecs and therefore need it on their runtime classpath as well).
-    val taczJar = files("libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar")
+    val taczJar = files("libs/TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar")
     compileOnly(taczJar)
     testRuntimeOnly(taczJar)
 

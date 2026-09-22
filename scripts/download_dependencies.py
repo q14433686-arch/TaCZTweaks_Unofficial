@@ -20,6 +20,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
 
+# A manifest row may legitimately not know its SHA-256 yet: Modrinth publishes only
+# sha1/sha512, and the sandbox that prepares a port cannot always reach the CDN. Such a
+# row is downloaded without checksum enforcement and its real digest is printed so a
+# human can pin it. It is never silently accepted by --check-only.
+PENDING_SHA = "UNVERIFIED_PENDING_CI"
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -46,6 +52,9 @@ def verify_existing(path: Path, expected: str) -> bool:
     if not path.exists():
         return False
     actual = sha256(path)
+    if expected == PENDING_SHA:
+        print(f"PENDING {path.relative_to(ROOT)} sha256={actual} (pin this in RESOURCE_IMPORT_MANIFEST.tsv)")
+        return True
     if actual != expected:
         raise SystemExit(f"SHA-256 mismatch for {path.relative_to(ROOT)}: expected {expected}, got {actual}")
     return True
@@ -76,6 +85,10 @@ def download(row: dict[str, str]) -> None:
             raise
 
     actual = sha256(tmp_path)
+    if expected == PENDING_SHA:
+        tmp_path.replace(target)
+        print(f"PENDING {relative} sha256={actual} (pin this in RESOURCE_IMPORT_MANIFEST.tsv)")
+        return
     if actual != expected:
         tmp_path.unlink(missing_ok=True)
         raise SystemExit(f"Downloaded {relative} with wrong SHA-256: expected {expected}, got {actual}")
@@ -86,17 +99,40 @@ def download(row: dict[str, str]) -> None:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-only", action="store_true", help="fail if a dependency is missing; do not download")
+    parser.add_argument(
+        "--print-sha256",
+        action="store_true",
+        help="print the SHA-256 of every present dependency (used to pin UNVERIFIED_PENDING_CI rows)",
+    )
+    parser.add_argument(
+        "--require-pinned",
+        action="store_true",
+        help="fail if any manifest row still carries the UNVERIFIED_PENDING_CI placeholder",
+    )
     args = parser.parse_args(argv)
 
+    pending: list[str] = []
     for row in rows():
         target = ROOT / row["path"]
-        expected = row["sha256"].lower()
+        expected = row["sha256"].strip()
+        if expected != PENDING_SHA:
+            expected = expected.lower()
+        else:
+            pending.append(row["path"])
         if args.check_only:
             if not verify_existing(target, expected):
                 raise SystemExit(f"Missing dependency: {target.relative_to(ROOT)}")
             print(f"OK {target.relative_to(ROOT)} {expected}")
         else:
             download(row)
+        if args.print_sha256 and target.is_file():
+            print(f"SHA256 {row['path']} {sha256(target)}")
+
+    if pending:
+        message = "manifest rows still pending a pinned SHA-256: " + ", ".join(pending)
+        if args.require_pinned:
+            raise SystemExit(message)
+        print(f"WARNING: {message}")
     return 0
 
 

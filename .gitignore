@@ -10,3 +10,8 @@ __pycache__/
 
 # Local audit inputs and downloaded archives do not belong in Git.
 *.zip
+
+# Vendored binary prerequisites are reconstructed from RESOURCE_IMPORT_MANIFEST.tsv by
+# scripts/download_dependencies.py (CI does this on every run). They are not committed:
+# the TaCZ jar alone is ~58 MB per release line.
+libs/*.jar

@@ -1,10 +1,48 @@
 # Changelog
 
-All notable changes to the **`26.2(main)` Fabric 26.2** line are tracked here. Other Git
+All notable changes to the **`26.3` Fabric 26.3** line are tracked here. Other Git
 branches keep their own changelogs. Release entries should be user-facing and concise; keep
 detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
-## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
+## 2.14.2+fabric.26.3.Beta-1 - Unreleased
+
+> Status: dependency coordinates and three source-verified API breaks are ported. **Not yet
+> compiled by CI and not tested in-game**; there is no downloadable build for this line.
+
+### Changed
+
+- Retargeted the line to Minecraft 26.3: Fabric Loader 0.19.5, Fabric API 0.160.7+26.3,
+  TaCZ Refabricated `1.1.8+fabric.26.3.R1`, YACL `3.9.7+26.3-fabric`, Mod Menu 21.0.0-beta.1.
+- `EntityBulletRendererMixin`: 26.3 added a trailing `float partialTicks` to
+  `EntityRenderer#shouldRender`, and TaCZ's override follows it; the injector signature now
+  carries the extra parameter.
+- `GunSoundInstanceMixin`: 26.3 renamed `SoundInstance#resolve` to `getOrResolve`; the
+  injection target was renamed accordingly.
+- Key bindings moved to the 26.3 `InputConstants` names (`Type.KEYSYM` -> `Type.KEYBOARD`,
+  `GLFW.GLFW_KEY_U` -> `InputConstants.KEY_U`); the LWJGL import is gone.
+- `libs/*.jar` are no longer committed. They are reconstructed from
+  `RESOURCE_IMPORT_MANIFEST.tsv` by `scripts/download_dependencies.py`, which every CI job
+  runs first.
+
+### Added
+
+- Four GitHub Actions workflows (`consistency`, `audit`, `compile-check`, `build`). The
+  development sandbox can only reach `api.github.com`, so Actions is the only place this
+  project can be compiled; `compile-check` writes its log back to `build-reports/` on
+  `arena/**` branches so a restricted sandbox can read compile errors.
+- `download_dependencies.py --print-sha256` / `--require-pinned`, and
+  `check_release_consistency.py --require-deps`, so the manifest can carry a not-yet-pinned
+  checksum without either silently passing or blocking the port.
+
+### Known gaps
+
+- The YACL manifest row still carries `UNVERIFIED_PENDING_CI` instead of a SHA-256; the first
+  CI run prints the real digest to pin.
+- Only breaks provable from the TaCZ 26.3 sources were applied. Anything that needs a
+  compiler or the game (mixin descriptors against vanilla 26.3, renderer/Iris behaviour) is
+  still unverified.
+
+## 2.14.2+fabric.26.2.Beta-1-hotfix - 26.2 line (historical)
 
 ### Documentation
 

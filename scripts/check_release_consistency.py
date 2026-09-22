@@ -14,6 +14,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Mirrors scripts/download_dependencies.py: a manifest row whose SHA-256 is not pinned yet.
+PENDING_SHA = "UNVERIFIED_PENDING_CI"
+
 
 def read_properties(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
@@ -38,7 +41,7 @@ def fail(message: str) -> None:
     raise SystemExit(message)
 
 
-def check_manifest() -> None:
+def check_manifest(require_deps: bool) -> None:
     manifest = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
     with manifest.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
@@ -53,11 +56,21 @@ def check_manifest() -> None:
             if not row.get("path"):
                 continue
             path = ROOT / row["path"]
+            expected = row["sha256"].strip()
             if not path.is_file():
-                fail(f"Manifest file is missing: {row['path']}")
+                # libs/*.jar are not committed (see .gitignore); they are rebuilt from this
+                # manifest by scripts/download_dependencies.py. Only the jobs that actually
+                # restored them (build.yml) demand their presence.
+                if require_deps:
+                    fail(f"Manifest file is missing: {row['path']}")
+                print(f"SKIP (not restored) {row['path']}")
+                continue
             actual = sha256(path)
-            if actual != row["sha256"]:
-                fail(f"Checksum mismatch for {row['path']}: expected {row['sha256']}, got {actual}")
+            if expected == PENDING_SHA:
+                print(f"PENDING {row['path']} sha256={actual} (pin this in the manifest)")
+                continue
+            if actual != expected:
+                fail(f"Checksum mismatch for {row['path']}: expected {expected}, got {actual}")
             for column in required - {"path", "sha256"}:
                 if not row.get(column):
                     fail(f"Manifest row for {row['path']} has empty {column}")
@@ -79,8 +92,8 @@ def check_metadata() -> tuple[dict[str, str], dict]:
     expected_depends = {
         "minecraft": f"={props['minecraft_version']}",
         "java": ">=25",
-        "tacz": "=1.1.8+fabric.26.2.R2",
-        "yet_another_config_lib_v3": "=3.9.6+26.2-fabric",
+        "tacz": "=1.1.8+fabric.26.3.R1",
+        "yet_another_config_lib_v3": "=3.9.7+26.3-fabric",
     }
     for key, value in expected_depends.items():
         if meta["depends"].get(key) != value:
@@ -112,7 +125,7 @@ def check_docs(props: dict[str, str]) -> None:
     # metadata and changelog, not the reusable Modrinth/CurseForge project text.
     for rel in ("docs/publish/Modrinth.md", "docs/publish/CurseForge.md"):
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for forbidden in (version, "26.2", "Beta-1"):
+        for forbidden in (version, props["minecraft_version"], "Beta-1"):
             if forbidden in text:
                 fail(f"{rel} should not embed reusable-publication forbidden token {forbidden}")
 
@@ -139,9 +152,14 @@ def check_jar(path: Path, props: dict[str, str]) -> None:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--jar", type=Path, help="optional release jar to inspect")
+    parser.add_argument(
+        "--require-deps",
+        action="store_true",
+        help="fail when a manifest dependency is absent (use after download_dependencies.py)",
+    )
     args = parser.parse_args(argv)
 
-    check_manifest()
+    check_manifest(require_deps=args.require_deps)
     props, _meta = check_metadata()
     check_docs(props)
     if args.jar:
