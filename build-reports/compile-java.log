@@ -1,4 +1,4 @@
-commit: 68c78f82bfdcb745f7ff6d481608ec608cda8389
+commit: 4a727fe8b2b9fc50b33b1161af70fcfbf68b82ac
 ref: arena/01a0c563-tacztweaks-unofficial
 Fetching distribution.
 Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
@@ -23,13 +23,19 @@ Daemon will be stopped at the end of the build
 > Configure project :
 Fabric Loom: 1.17.21
 
+> Task :checkVendoredDependencies
+VENDORED DEPENDENCY NOT PINNED: libs/yacl-fabric.jar -> sha256 c52d41d444522d9abba994cd4c4ee2e71a065d7c31010f92a9959b80ccb4b0f5
+VENDORED DEPENDENCIES: 2 files, 1 NOT pinned:
+  libs/yacl-fabric.jar  c52d41d444522d9abba994cd4c4ee2e71a065d7c31010f92a9959b80ccb4b0f5
+Pin these in RESOURCE_IMPORT_MANIFEST.tsv before publishing a release.
+
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :compileKotlin
 > Task :compileJava
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1790065560212.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1790065881210.json
 
-BUILD SUCCESSFUL in 2m 4s
-2 actionable tasks: 2 executed
+BUILD SUCCESSFUL in 1m 40s
+3 actionable tasks: 3 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 
 == job status: success ==
