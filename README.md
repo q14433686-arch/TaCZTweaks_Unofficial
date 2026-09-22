@@ -22,10 +22,17 @@ filing issues.
 
 本线当前测试版本：**Beta-1**（`2.14.2+fabric.26.3.Beta-1`）。
 
-> **本线状态（2026-09-22）**：依赖坐标已切到 26.3，已适配三处经 26.3 源码核实的 API 破坏
+> **本线状态（2026-09-22）**：依赖坐标已切到 26.3，五处 26.3 API 破坏已适配
 > （`EntityBulletRenderer#shouldRender` 新增 `float partialTicks`、`GunSoundInstance#resolve`
-> → `getOrResolve`、`InputConstants` 键位常量改名）。**尚未经过 CI 编译与实机验证**，
-> 也没有可下载构建；CI 首次跑通前请勿按本文件安装。
+> → `getOrResolve`、`InputConstants` 键位常量改名、`FriendlyByteBuf#write/readCollection`
+> 被移除、`EnderMan` → `Enderman`）。
+>
+> **CI 已全绿**：Java/Kotlin 编译通过、`./gradlew build` 能出包、静态审计在**真实的 26.3
+> Minecraft jar** 上 0 error。
+>
+> ⚠️ **但仍未经过任何游戏内验证**（客户端 / 集成服 / 独立服都没跑过），也没有正式发布构建。
+> 静态审计只能证明 mixin 的目标符号存在，**不能**证明注入行为正确。
+> 现阶段请勿按本文件安装使用。详见 [26.3 移植状态](docs/PORT_26_3_STATUS.md)。
 
 [分支对照](docs/BRANCHES.md) · [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 

@@ -6,19 +6,28 @@
 
 ## 0. 先读这个：本轮到底做了什么、没做什么
 
-**做了**：依赖坐标切到 26.3、三处**有 26.3 源码实证**的 API 破坏已适配、四条 CI 流程落地、
-`libs/*.jar` 改为按 manifest 重建。
+**已经做到的（有 CI 实证）**
 
-**没做**：**任何一行代码都还没被编译器看过**。准备本轮移植的沙箱只能访问 `api.github.com`，
-`maven.fabricmc.net` / `api.modrinth.com` / `piston-meta.mojang.com` 与 GitHub release
-附件域全部不可达 —— `./gradlew` 连 Minecraft 都下不到，本地编译在物理上不可能。
-所以本文件里凡是标 🔧 的都只是「按上游源码推断」，标 ❓ 的是「怀疑但没证据」。
+| 项 | 状态 | 证据 |
+|---|---|---|
+| 四条 CI 流程 | ✅ 全绿 | run `cb516a2` |
+| 依赖坐标全部 26.3 化 | ✅ | manifest 两行均已 pinned |
+| Java + Kotlin 编译 | ✅ 通过 | `compileJava` / `compileKotlin` |
+| `./gradlew build` 出包 | ✅ 通过 | 产物已上传为 artifact |
+| 静态审计（**含真实 26.3 Minecraft jar**） | ✅ 0 error | `AUDIT(minecraft): OK` |
+| 发布一致性检查 | ✅ 通过 | `check_release_consistency.py --jar` |
 
-**下一步就是让 CI 跑第一次**，然后按 `build-reports/compile-java.log` 逐条修。
+**明确还没做的**
 
----
+- ❌ **游戏内实测（客户端 / 集成服 / 独立服三件套）一次都没跑过。**
+  静态审计只证明「符号存在」，不证明「行为正确」——
+  `@Local(ordinal=N)` 绑错变量、`@ModifyArgs` 命中错调用，这两类问题它都看不出来。
+  按仓库规矩，三项矩阵没跑完之前 PR 保持 Draft。
+- ❌ §4 各条的**语义**复核（静态部分已全过，见 §4 顶部）。
+- ❌ `audit.yml` 步骤名「0 error / 0 warning required」名不副实（warning 不影响退出码），
+  需要你手工改 workflow。
 
-## 1. 依赖坐标（已改，待 CI 证实可解析）
+## 1. 依赖坐标（已改，CI 已证实可解析）
 
 | 项 | 26.2 旧值 | 26.3 新值 | 依据 |
 |---|---|---|---|
@@ -249,10 +258,11 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
    也算了一次哈希（那一轮正是 `Restore vendored dependencies` 崩掉的那轮）。
    现在这种字节即使出现也会被 sha512 拦下，不会再悄悄进 `libs/`。
 
-5. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
-   `~/.gradle/caches/fabric-loom/` 下产出 26.3 的 Minecraft jar，把它喂给
-   `audit_port.py --strict --minecraft-jar <jar>`，才能真正校验 §4 里那些**原版侧** mixin 的
-   方法名与 descriptor。这是目前唯一能在不进游戏的前提下发现「mixin 静默不装」的手段。
+5. ~~给 audit 补 `--minecraft-jar`~~ —— **已完成**。因为机器人改不了 workflow，
+   改为在 `build.gradle.kts` 里加 `auditAgainstMinecraft` 任务：从 compile classpath
+   上找 Loom 准备好的 Minecraft jar，喂给 `audit_port.py --strict`。
+   已确认它真的跑到了（日志打印 `using minecraft-merged-a1f5b1e0f5-26.3.jar`），**0 error**。
+   详见 §4 顶部的说明。
 6. 进游戏实测。**参考 TaCZ 的教训**（移植指南 §0）：26.3 这一轮他们 17 个实质提交里有 9 个是
    「CI 绿、进游戏就错」。本仓渲染面小，风险低于他们，但 `AvatarRendererMixin` 的匍匐视觉、
    准星/命中标记、单声道音频转换这三处必须肉眼确认。
