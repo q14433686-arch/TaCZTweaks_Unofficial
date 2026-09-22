@@ -318,8 +318,61 @@ val checkJarContents by tasks.registering {
     }
 }
 
+// The static audit can only check vanilla-side mixin targets (AvatarRendererMixin,
+// MouseHandlerMixin, RenderCrosshairEventMixin, ...) when it is given the actual Minecraft
+// jar; without it those targets are skipped, which is exactly where a silent 26.3 breakage
+// would hide. Loom materialises that jar during configuration, so locate it here and hand it
+// to audit_port.py. Registered as its own task because the audit workflow cannot be edited
+// from this sandbox (no `workflows` token permission) but does run `./gradlew`-adjacent
+// checks through `build`.
+val auditAgainstMinecraft by tasks.registering {
+    group = "verification"
+    description = "Runs scripts/audit_port.py --strict against Loom's Minecraft jar."
+    dependsOn(checkVendoredDependencies)
+
+    // Resolve at configuration time; the compile classpath is where Loom puts the jar.
+    val minecraftJars = providers.provider {
+        configurations.getByName("compileClasspath")
+            .incoming
+            .artifactView { lenient(true) }
+            .files
+            .files
+            .filter { file ->
+                val n = file.name
+                n.endsWith(".jar") && ("minecraft" in n.lowercase()) && "sources" !in n
+            }
+    }
+    val projectRoot = layout.projectDirectory.asFile
+    val auditScript = layout.projectDirectory.file("scripts/audit_port.py").asFile
+
+    doLast {
+        val jars = minecraftJars.get()
+        if (jars.isEmpty()) {
+            // Do not fail the build: `--strict` without the jar already runs in the audit
+            // workflow, so this task adds coverage rather than being load-bearing.
+            logger.warn("AUDIT(minecraft): no Minecraft jar found on the compile classpath; skipping")
+            return@doLast
+        }
+        val command = mutableListOf("python3", auditScript.absolutePath, "--strict")
+        jars.forEach { jar ->
+            logger.lifecycle("AUDIT(minecraft): using ${jar.name}")
+            command += listOf("--minecraft-jar", jar.absolutePath)
+        }
+        val result = providers.exec {
+            commandLine(command)
+            workingDir(projectRoot)
+            isIgnoreExitValue = true
+        }
+        val output = result.standardOutput.asText.get() + result.standardError.asText.get()
+        logger.lifecycle(output)
+        val exit = result.result.get().exitValue
+        check(exit == 0) { "audit_port.py --strict failed against the Minecraft jar (exit $exit)" }
+        logger.lifecycle("AUDIT(minecraft): OK")
+    }
+}
+
 tasks.named("check") {
-    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents)
+    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents, auditAgainstMinecraft)
 }
 
 // Compiling against unverified vendored jars is not meaningful: every mixin target in this
