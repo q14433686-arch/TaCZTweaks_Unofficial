@@ -1,4 +1,4 @@
-commit: 7d0ed420d7941e3f74d19138295128d39bb18ce9
+commit: 3b2c88fa5de870cbdcb95a61effcce2c5e345037
 ref: arena/01a0c563-tacztweaks-unofficial
 Fetching distribution.
 Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
@@ -26,13 +26,20 @@ Fabric Loom: 1.17.21
 > Task :checkVendoredDependencies
 VENDORED DEPENDENCIES: OK (2 files, all pinned)
 
+> Task :auditAgainstMinecraft
+AUDIT(minecraft): using minecraft-merged-a1f5b1e0f5-26.3.jar
+AUDIT: 0 error(s), 1 warning(s)
+WARN:  @At method reference is absent: net.minecraft.world.item.component.BlocksAttacks#hurtBlockingItem(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;FI)V (src/main/java/me/muksc/tacztweaks/mixin/features/bullet_interactions/LivingEntityMixin.java) [remap=false: optional call-site variant]
+
+AUDIT(minecraft): OK
+
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :compileKotlin
 > Task :compileJava
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1790066733509.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1790066988980.json
 
-BUILD SUCCESSFUL in 1m 57s
-3 actionable tasks: 3 executed
+BUILD SUCCESSFUL in 2m 4s
+4 actionable tasks: 4 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 
 == job status: success ==
