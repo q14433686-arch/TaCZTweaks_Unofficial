@@ -152,17 +152,20 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 
 ## 6. 建议的下一步（按顺序）
 
-1. **把本分支 push 上去，让四条 CI 跑一遍。** 首跑大概率会红，这是预期的。
-2. 从 `build-reports/compile-java.log` 读第一批编译错误（受限沙箱用 `gh api ... contents` 读）。
-3. 回填 YACL 的真实 sha256，把 manifest 里的 `UNVERIFIED_PENDING_CI` 换掉。
-4. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
+1. **先安装 CI**：机器人没有 `workflows` 权限，四条流程暂存在 `ci/workflows/`。
+   执行 `bash ci/install-workflows.sh`，再用**你自己的账号** commit + push
+   （详见 [`ci/README.md`](../ci/README.md)）。
+2. **让四条 CI 跑一遍。** 首跑大概率会红，这是预期的。
+3. 从 `build-reports/compile-java.log` 读第一批编译错误（受限沙箱用 `gh api ... contents` 读）。
+4. 回填 YACL 的真实 sha256，把 manifest 里的 `UNVERIFIED_PENDING_CI` 换掉。
+5. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
    `~/.gradle/caches/fabric-loom/` 下产出 26.3 的 Minecraft jar，把它喂给
    `audit_port.py --strict --minecraft-jar <jar>`，才能真正校验 §4 里那些**原版侧** mixin 的
    方法名与 descriptor。这是目前唯一能在不进游戏的前提下发现「mixin 静默不装」的手段。
-5. 进游戏实测。**参考 TaCZ 的教训**（移植指南 §0）：26.3 这一轮他们 17 个实质提交里有 9 个是
+6. 进游戏实测。**参考 TaCZ 的教训**（移植指南 §0）：26.3 这一轮他们 17 个实质提交里有 9 个是
    「CI 绿、进游戏就错」。本仓渲染面小，风险低于他们，但 `AvatarRendererMixin` 的匍匐视觉、
    准星/命中标记、单声道音频转换这三处必须肉眼确认。
-6. 全绿后再改 README 的「状态」段落，并按 §3 的结论决定哪些 🔧 可以升级成 ✅。
+7. 全绿后再改 README 的「状态」段落，并按 §3 的结论决定哪些 🔧 可以升级成 ✅。
 
 ---
 
@@ -181,5 +184,5 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 | `src/main/java/.../EntityBulletRendererMixin.java` | §2.1 |
 | `src/main/java/.../GunSoundInstanceMixin.java` | §2.2 |
 | `src/main/java/.../input/{UnloadKey,TiltGunKey,ReduceSensitivityKey}.java` | §2.3 |
-| `.github/workflows/*.yml` | 四条新流程 |
+| `ci/workflows/*.yml` + `ci/install-workflows.sh` | 四条新流程（待安装到 `.github/workflows/`，见 `ci/README.md`） |
 | `README.md` / `BUILD.md` / `CHANGELOG.md` / `AGENTS.md` / `docs/BRANCHES.md` | 版本与流程说明同步 |

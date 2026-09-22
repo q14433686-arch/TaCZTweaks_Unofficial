@@ -166,10 +166,19 @@ python scripts/check_server_log.py run/logs/latest.log
 
 ## 7. CI：在 GitHub Actions 上构建（网络受限时的唯一途径）
 
-仓库在 `.github/workflows/` 下有四条流程。它们存在的直接原因是：**准备本移植的开发沙箱
-只能访问 `api.github.com`**，`maven.fabricmc.net` / `api.modrinth.com` /
-`piston-meta.mojang.com` 以及 GitHub release 附件域全部不可达，本地 `./gradlew` 根本跑不起来。
-把编译放到 Actions 上，是让改动能被验证的唯一办法。
+仓库有四条流程。它们存在的直接原因是：**准备本移植的开发沙箱只能访问 `api.github.com`**，
+`maven.fabricmc.net` / `api.modrinth.com` / `piston-meta.mojang.com` 以及 GitHub release
+附件域全部不可达，本地 `./gradlew` 根本跑不起来。把编译放到 Actions 上，是让改动能被验证的唯一办法。
+
+> **它们目前还在 `ci/workflows/`，需要安装一次。** 机器人账号（GitHub App）没有 `workflows`
+> 权限，无法直接 push `.github/workflows/` 下的文件。由你执行一次：
+>
+> ```bash
+> bash ci/install-workflows.sh
+> git add -A .github/workflows ci && git commit -m "ci: install workflows" && git push
+> ```
+>
+> 详见 [`ci/README.md`](ci/README.md)。
 
 | 流程 | 文件 | 跑什么 | 大概耗时 |
 |---|---|---|---|
@@ -197,5 +206,4 @@ gh api repos/q14433686-arch/TaCZTweaks_Unofficial/contents/build-reports/compile
 以及全部 PR，并都支持 `workflow_dispatch` 手动触发。
 
 > **权限提示**：`.github/workflows/` 下的文件需要 `workflows` 权限才能推送。
-> 机器人账号（GitHub App）默认没有该权限，首次落地这四个文件需要由仓库维护者本人
-> push，或给对应 App 勾上 Workflows 权限。
+> 机器人账号（GitHub App）默认没有该权限 —— 这正是它们先落在 `ci/workflows/` 的原因。
