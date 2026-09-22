@@ -116,5 +116,60 @@ def test_gradle_properties_and_fabric_mod_json_agree() -> None:
         )
 
 
+def _java_source() -> str:
+    return (ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java").read_text(encoding="utf-8")
+
+
+def test_runtime_gate_matches_declared_dependency() -> None:
+    """The repo as it stands must pass the runtime-gate cross-check."""
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    consistency.check_runtime_version_gate(meta)  # must not raise/exit
+
+
+def test_runtime_gate_catches_a_stale_release_family(tmp_path, monkeypatch) -> None:
+    """Reintroducing the 2026-09-22 crash must be caught.
+
+    The gate read 1.1.8+fabric.26.2.R2 on the 26.3 branch, so the mod threw during
+    entrypoint init while every CI workflow stayed green.
+    """
+    java_path = ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java"
+    original = _java_source()
+    stale = (
+        original.replace('"1.1.8+fabric.26.3.R1"', '"1.1.8+fabric.26.2.R2"')
+        .replace('"1.1.8+fabric.26.3.R"', '"1.1.8+fabric.26.2.R"')
+    )
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    try:
+        java_path.write_text(stale, encoding="utf-8")
+        raised = False
+        try:
+            consistency.check_runtime_version_gate(meta)
+        except SystemExit:
+            raised = True
+        assert raised, "a stale runtime gate must fail the consistency check"
+    finally:
+        java_path.write_text(original, encoding="utf-8")
+
+
+def test_runtime_gate_catches_too_high_a_minimum_revision() -> None:
+    """26.3 shipped as R1, so a leftover 'minimum R2' floor must be rejected too."""
+    java_path = ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java"
+    original = _java_source()
+    stale = original.replace(
+        "MIN_SUPPORTED_TACZ_REVISION = BigInteger.ONE",
+        "MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(2)",
+    )
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    try:
+        java_path.write_text(stale, encoding="utf-8")
+        raised = False
+        try:
+            consistency.check_runtime_version_gate(meta)
+        except SystemExit:
+            raised = True
+        assert raised, "an unreachable minimum revision must fail the consistency check"
+    finally:
+        java_path.write_text(original, encoding="utf-8")
+
 if __name__ == "__main__":
     raise SystemExit(__import__("pytest").main([__file__, "-q"]))

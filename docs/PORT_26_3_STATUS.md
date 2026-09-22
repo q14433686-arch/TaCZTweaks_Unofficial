@@ -15,6 +15,7 @@
 | Java + Kotlin 编译 | ✅ 通过 | `compileJava` / `compileKotlin` |
 | `./gradlew build` 出包 | ✅ 通过 | 产物已上传为 artifact |
 | 静态审计（**含真实 26.3 Minecraft jar**） | ✅ 0 error | `AUDIT(minecraft): OK` |
+| 实机启动 | ⚠️ 已修两处启动崩溃（§2.6 FLK 区间、§2.7 版本闸门），**待你复测** | 用户实测日志 |
 | 发布一致性检查 | ✅ 通过 | `check_release_consistency.py --jar` |
 
 **明确还没做的**
@@ -159,6 +160,45 @@ Mod 'TaCZ Tweaks (Refabricated)' 需要 'Fabric Language Kotlin'
 **补的门禁**（见 §6 第 6 步）：新增 `scripts/check_dependency_availability.py`，
 直接问 Modrinth「你给 26.3 发了哪些版本」，再判断我们声明的区间能不能命中其中之一。
 已用真实 API 数据验证：**对当前仓库通过，对当初那个区间报错退出 1**。
+
+---
+
+### ✅ 2.7 运行时 TaCZ 版本闸门仍写死 26.2，进游戏即崩（用户第二次实测发现）
+
+修好 FLK 之后再启动，崩在另一处 —— **同一类错误的第二个实例**：
+
+```
+java.lang.IllegalStateException: TaCZ Tweaks requires TaCZ 1.1.8+fabric.26.2.R2
+or a later R<n> build for Minecraft 26.2, found 1.1.8+fabric.26.3.R1
+    at me.muksc.tacztweaks.TaCZTweaks.onInitialize(TaCZTweaks.java:75)
+```
+
+**根因**：`TaCZTweaks.java` 里有一道硬编码的运行时闸门，我全程没动过它：
+
+| 常量 | 改前 | 改后 |
+|---|---|---|
+| `SUPPORTED_TACZ_VERSION` | `1.1.8+fabric.26.2.R2` | `1.1.8+fabric.26.3.R1` |
+| `SUPPORTED_TACZ_VERSION_PREFIX` | `1.1.8+fabric.26.2.R` | `1.1.8+fabric.26.3.R` |
+| `MIN_SUPPORTED_TACZ_REVISION` | `2` | **`1`** |
+
+最后一行是关键：26.2 那条线要求 ≥R2（因为它的 R1 早于本模组需要的 API），
+但 **26.3 就是以 R1 发布的**。只改前缀、不改下限，照样起不来。
+
+**这次为什么连单元测试都没拦住**：`TaCZTweaksVersionTest.kt` 里写着
+`assertFalse(isSupportedTaczVersion("...26.2.R1"))` —— 它把 26.2 的期望固化了下来，
+包括「R1 必须被拒绝」。**一个断言了错误期望的测试，比没有测试更糟**：
+它让 `./gradlew build` 一路绿灯，反而给了「已验证」的错觉。该测试已重写为对
+`SUPPORTED_TACZ_VERSION` 本身求值，不再手抄版本号。
+
+**补的门禁**：`check_release_consistency.py` 新增 `check_runtime_version_gate()`，
+从 Java 源码里解析这三个常量，验证 `fabric.mod.json` 声明的 tacz 版本**能通过这道闸门**。
+两种失效都验证过会被拦下（家族写错、下限过高），消息里直接点明
+「The mod would refuse to start against its own declared dependency」。
+
+> 🔑 **两次崩溃的共同教训**：真正危险的不是编译错误，而是**只在运行时才生效的约束** ——
+> `depends` 区间（§2.6）和这道版本闸门（§2.7）都属于此类。
+> 编译、mixin 静态审计、打包**三者都不读它们**。这类约束必须有专门的门禁去交叉验证，
+> 否则「四条 CI 全绿」只能证明代码编得过，证明不了游戏起得来。
 
 ---
 

@@ -173,6 +173,72 @@ def check_metadata() -> tuple[dict[str, str], dict]:
     return props, meta
 
 
+def check_runtime_version_gate(meta: dict) -> None:
+    """The hardcoded runtime TaCZ gate must agree with the declared dependency.
+
+    TaCZTweaks.java refuses to initialise unless the installed TaCZ matches
+    SUPPORTED_TACZ_VERSION_PREFIX + a revision >= MIN_SUPPORTED_TACZ_REVISION. That check
+    runs only inside the game, so a stale value survives compilation, the mixin audit and
+    packaging untouched, and then hard-crashes every user at startup.
+
+    That is exactly what happened on 2026-09-22: the 26.3 branch still gated on
+    "1.1.8+fabric.26.2.R2" and threw
+
+        TaCZ Tweaks requires TaCZ 1.1.8+fabric.26.2.R2 or a later R<n> build for
+        Minecraft 26.2, found 1.1.8+fabric.26.3.R1
+
+    So: parse the constants out of the Java source and require that the version we declare
+    in fabric.mod.json would actually pass the gate.
+    """
+    source = (ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java").read_text(encoding="utf-8")
+
+    def constant(name: str) -> str | None:
+        match = re.search(rf'{name}\s*=\s*"([^"]+)"', source)
+        return match.group(1) if match else None
+
+    prefix = constant("SUPPORTED_TACZ_VERSION_PREFIX")
+    supported = constant("SUPPORTED_TACZ_VERSION")
+    if prefix is None or supported is None:
+        fail("could not parse the TaCZ version gate constants from TaCZTweaks.java")
+
+    revision_match = re.search(
+        r"MIN_SUPPORTED_TACZ_REVISION\s*=\s*BigInteger\.(?:valueOf\((\d+)\)|(ONE)|(ZERO))", source
+    )
+    if not revision_match:
+        fail("could not parse MIN_SUPPORTED_TACZ_REVISION from TaCZTweaks.java")
+    if revision_match.group(1) is not None:
+        minimum = int(revision_match.group(1))
+    else:
+        minimum = 1 if revision_match.group(2) else 0
+
+    declared = meta.get("depends", {}).get("tacz", "")
+    required = declared.lstrip("=").strip()
+    if not required:
+        fail("fabric.mod.json does not declare a tacz dependency")
+
+    if not required.startswith(prefix):
+        fail(
+            f"runtime gate accepts only '{prefix}<n>' but fabric.mod.json requires "
+            f"'{required}'. The mod would refuse to start against its own declared "
+            f"dependency."
+        )
+    revision_text = required[len(prefix):].split("-", 1)[0]
+    if not revision_text.isdigit():
+        fail(f"cannot read the R-revision out of the declared tacz version '{required}'")
+    if int(revision_text) < minimum:
+        fail(
+            f"runtime gate demands revision >= R{minimum} but fabric.mod.json requires "
+            f"'{required}'. The mod would refuse to start against its own declared "
+            f"dependency."
+        )
+    # The advertised constant should itself be the version we depend on.
+    if supported != required:
+        fail(
+            f"TaCZTweaks.SUPPORTED_TACZ_VERSION ('{supported}') disagrees with the declared "
+            f"tacz dependency ('{required}')"
+        )
+
+
 def check_docs(props: dict[str, str]) -> None:
     version = props["mod_version"]
     required_docs = [
@@ -230,7 +296,8 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     check_manifest(require_deps=args.require_deps)
-    props, _meta = check_metadata()
+    props, meta = check_metadata()
+    check_runtime_version_gate(meta)
     check_docs(props)
     if args.jar:
         check_jar(args.jar, props)

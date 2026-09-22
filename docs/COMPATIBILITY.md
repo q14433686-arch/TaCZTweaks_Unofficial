@@ -13,7 +13,7 @@ run for the stated versions.
 | Fabric Loader | hard dependency | `>=0.19.3 <0.20.0` | yes | compile/test/build | Loader API drift outside this range is not claimed. |
 | Fabric API | hard dependency | `>=0.155.2+26.2 <0.157.0` | yes | compile/test/build | Keep release metadata and Gradle property aligned. |
 | Fabric Language Kotlin | hard dependency | `>=1.14.1+kotlin.2.4.20 <2.0.0` | yes | compile/test/build | Runtime Kotlin stdlib comes through FLK. 1.14.1 is the first (and currently only) FLK build tagged for 26.3. |
-| TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same release family | required | compile/test/static descriptor audit; startup accepts revisions >= R2 | Minecraft/core version and `fabric.26.2` family remain strict; pre-R2 and unrelated builds are rejected. |
+| TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.26.3.R1` and later `R<n>` builds in the same release family | required | compile/test/static descriptor audit; startup accepts revisions >= R1 | Minecraft/core version and `fabric.26.3` family remain strict; other families (including any `fabric.26.2` build) are rejected at startup. |
 | YetAnotherConfigLib | hard dependency | exactly `3.9.6+26.2-fabric` | required | compile/build/checksum | Runtime mod is not nested; users must install it. |
 | Mod Menu | optional UI entry | `*` suggested; compiled against `20.0.1` | when present | compile-only | Absence must not break startup. |
 | Sound Physics Remastered | optional compat | `>=1.5.1 <1.6.0` | when present | source/static/build; airspace codec fixture | Airspace behavior depends on its runtime ray data. |
