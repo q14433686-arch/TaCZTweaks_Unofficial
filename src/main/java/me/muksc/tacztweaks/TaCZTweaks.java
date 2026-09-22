@@ -39,9 +39,12 @@ import java.util.regex.Pattern;
 
 public class TaCZTweaks implements ModInitializer {
     public static final String MOD_ID = "tacztweaks";
-    public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.2.R2";
-    private static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+fabric.26.2.R";
-    private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.valueOf(2);
+    public static final String SUPPORTED_TACZ_VERSION = "1.1.8+fabric.26.3.R1";
+    private static final String SUPPORTED_TACZ_VERSION_PREFIX = "1.1.8+fabric.26.3.R";
+    // 26.3 shipped as R1, so R1 is the floor for this release family. (The 26.2 line
+    // required R2 because its R1 predated the APIs this mod needs; that does not carry
+    // over to a new family.)
+    private static final BigInteger MIN_SUPPORTED_TACZ_REVISION = BigInteger.ONE;
     private static final Pattern SUPPORTED_TACZ_VERSION_PATTERN = Pattern.compile(
         "^" + Pattern.quote(SUPPORTED_TACZ_VERSION_PREFIX)
             + "(\\d+)(?:-[0-9A-Za-z]+)*$"
@@ -69,12 +72,15 @@ public class TaCZTweaks implements ModInitializer {
             .orElseThrow(() -> new IllegalStateException("TaCZ is required"))
             .getMetadata().getVersion().getFriendlyString();
         // Fabric's version predicates ignore the part after '+'. Keep the Minecraft,
-        // TaCZ core version, release family and R2 minimum strict, while accepting R2,
-        // R2-hotfix and later R<n> builds from the same release family.
+        // TaCZ core version, release family and minimum revision strict, while accepting
+        // R<n>, R<n>-hotfix and later builds from the same release family.
+        // NOTE: this string is the release FAMILY gate and must be bumped with every
+        // Minecraft line. It is enforced only at runtime, so neither compilation nor the
+        // static audit can catch a stale value -- see scripts/check_runtime_version_gate.py.
         if (!isSupportedTaczVersion(taczVersion)) {
             throw new IllegalStateException(
                 "TaCZ Tweaks requires TaCZ " + SUPPORTED_TACZ_VERSION
-                    + " or a later R<n> build for Minecraft 26.2, found " + taczVersion
+                    + " or a later R<n> build for Minecraft 26.3, found " + taczVersion
             );
         }
         Config.INSTANCE.initialize();

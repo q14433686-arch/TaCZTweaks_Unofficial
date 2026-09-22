@@ -1,7 +1,12 @@
-# 移植笔记 — TaCZ Tweaks → Fabric 26.2
+# 移植笔记 — TaCZ Tweaks → Fabric（26.2 基线 + 26.3 增量）
 
 记录从 Forge 1.20.1 原版（MUKSC/TaCZTweaks v2.14.2）移植到
-`TaCZ_Refabricated_Unofficial`（26.2 主分支）的要点，供后续维护者参考。
+`TaCZ_Refabricated_Unofficial` 的要点，供后续维护者参考。
+
+> ⚠️ **版本范围**：§1–§8 是 **26.2** 那一轮写下的，**原样保留**（它记录的是当时的事实，
+> 改写会让历史失真）。当前分支是 **26.3**，两者的差异集中在 §9；
+> 凡 §1–§8 与 §9 冲突的，以 §9 为准。26.3 的完整状态见
+> [`docs/PORT_26_3_STATUS.md`](docs/PORT_26_3_STATUS.md)。
 
 > 本文件 §1–§7.16 是按时间保留的迁移日志，其中“砍掉/不存在/暂未实现”描述的是**当轮状态**，
 > 不是最终能力结论。2026-08-18 复审后的当前事实见 §7.17、§8 和 [`AUDIT.md`](AUDIT.md)。
@@ -582,3 +587,45 @@ property diagram 注入放在同一个 common mixin，会造成 `InvalidInjectio
 - [ ] SPR / First Aid / Pillager’s Gun 单独和组合安装测试
 - [ ] mono、四件弹射物保护与 void bullet、盾牌、近战、领地取消破坏、多维度粒子实测
 - [ ] 第三方数据包对 predicate/tier/burst/pellet/airspace 的兼容回归
+
+---
+
+## 9. 26.2 → 26.3 增量（2026-09-22）
+
+本节只记 **26.3 相对 26.2 的差异**；§1–§8 的结论除非在此被推翻，否则继续有效。
+
+### 9.1 实际需要改的代码（三处，全部有实证）
+
+| 位置 | 26.3 变化 | 证据来源 |
+|---|---|---|
+| `EntityBulletRendererMixin` | TaCZ `shouldRender` 尾部新增 `float partialTicks` | TaCZ 26.3 源码 diff |
+| `GunSoundInstanceMixin` | TaCZ `resolve` → `getOrResolve` | TaCZ 26.3 源码 diff |
+| 三个按键类 | `Type.KEYSYM` → `Type.KEYBOARD`；`GLFW.GLFW_KEY_*` → `InputConstants.KEY_*` | TaCZ 26.3 源码 + LWJGL 改用 SDL |
+| `Config.kt` | `FriendlyByteBuf#write/readCollection` 被删 → 新增 `BufCollectionCodec`（线格式不变） | **CI 编译器报错** |
+| `EnderManMixin` | `EnderMan` → `Enderman`（同包，仅大小写） | **CI 编译器报错** + NeoForged 26.3 指南 |
+
+> `InputConstants` 本身仍在 `blaze3d`，`UNKNOWN` 也仍存在，所以两个默认未绑定的键位保持原样。
+
+### 9.2 特别注意：LWJGL 从 GLFW 换成 SDL
+
+26.3 的 LWJGL 底层改用 SDL，键位码**数值本身变了**。只要坚持用 `InputConstants.KEY_*`
+常量（而不是写死数字或 `GLFW_KEY_*`）就不受影响 —— 本仓已全部改为常量。
+
+### 9.3 不适用于本仓的 26.3 大改
+
+26.3 最大的改动是渲染层：Blaze3D 的渲染 API 整体拆分为 **Renderpearl**
+（`com.mojang.renderpearl.*`）、着色器 `#moj_import` 改 `#include`、
+`RenderSystem#outputColorTextureOverride` 移除等。本仓不碰这些 API，故无影响。
+`PoseStack` / `Blaze3D` / `InputConstants` **仍留在 `blaze3d`**，
+所以 `AvatarRendererMixin` 硬编码的 descriptor 依然成立（已由 `--minecraft-jar` 审计证实）。
+
+### 9.4 验证状态（务必区分）
+
+- ✅ **编译通过**：`compileJava` + `compileKotlin`，CI 全绿。
+- ✅ **静态审计通过**：`audit_port.py --strict` **且喂了真实的 26.3 Minecraft jar**
+  （`minecraft-merged-a1f5b1e0f5-26.3.jar`），0 error。
+- ✅ **完整构建通过**：`./gradlew build` 出包，产物校验与发布一致性检查均通过。
+- ❌ **游戏内实测：未做。** 静态审计只证明符号存在，不证明行为正确 ——
+  `@Local(ordinal = 2)`、`@ModifyArgs` 命中的调用次序这类问题它看不出来。
+  §8.2 的验证清单对 26.3 **仍然全部未勾选**。
+

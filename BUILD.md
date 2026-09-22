@@ -1,12 +1,12 @@
 # 构建指南（BUILD.md）
 
-本文件只适用于仓库默认分支 **`26.2(main)`：Fabric 26.2**，适配
+本文件只适用于分支 **`26.3`：Fabric 26.3**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
+NeoForge 线以及 26.2 / 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
 [分支对照](docs/BRANCHES.md)。
 
-本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
-`2.14.2+fabric.26.2.Beta-1-hotfix`。
+本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
+`2.14.2+fabric.26.3.Beta-1`。
 
 ---
 
@@ -16,7 +16,7 @@ NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支�
 |---|---|
 | JDK | **Java 25**（必须，低于 25 无法编译/运行） |
 | 网络 | 首次构建要从 Maven 下载依赖（Gradle 会缓存到 `%USERPROFILE%\.gradle`） |
-| 磁盘 | 约 500MB（Minecraft 26.2 + Fabric API 等依赖） |
+| 磁盘 | 约 500MB（Minecraft 26.3 + Fabric API 等依赖） |
 
 ---
 
@@ -49,41 +49,44 @@ NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支�
 
 ---
 
-## 3. 放两个「编译期依赖」到 libs/ 目录
+## 3. 准备两个「编译期依赖」（libs/ 目录）
 
-这两个大 jar 是通过 `flatDir` / `files(...)` 引用的。仓库会用 `RESOURCE_IMPORT_MANIFEST.tsv` 固定来源、许可证和 SHA-256；其余依赖会自动从 Maven 拉。
+这两个大 jar 通过 `flatDir` / `files(...)` 引用，**不在 Git 里**（见 `.gitignore` 的 `libs/*.jar`）——
+TaCZ 本体约 58MB，每条发行线各存一份会把仓库撑大。来源、许可证和 SHA-256 固定在
+`RESOURCE_IMPORT_MANIFEST.tsv`；其余依赖会自动从 Maven 拉。
 
-进入项目根目录下的 `libs/` 文件夹，放入这两个文件（**文件名要完全一致**）：
-
-### ① TaCZ 本体（compileOnly，提供 mixin 目标类）
-
-从 TaCZ 的 Release 页下载：
-```
-https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2_R2
-```
-下载文件：`TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar`（约 58MB）。R2 及之后的
-同一 `1.1.8+fabric.26.2.R<n>` 发布版本（包括 `R2-hotfix`）也受支持，运行时要求 revision 不低于 R2。
-
-### ② YACL 配置库（implementation，配置 GUI）
-
-从 Modrinth 下载 YACL 3.9.6 for 26.2-fabric：
-```
-https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar
-```
-保存为：`yacl-fabric.jar`（约 1MB）
-
-也可以直接让脚本按 manifest 下载并校验：
+**推荐做法：让脚本按 manifest 下载并逐个校验 SHA-256。**
 
 ```powershell
 python scripts/download_dependencies.py
 # Linux/macOS 可用 python3 scripts/download_dependencies.py
 ```
 
+CI 每条流程开头跑的也是这一条命令，所以本地与 CI 拿到的是同一份字节。
+
+想手动放也可以，文件名必须完全一致：
+
+### ① TaCZ 本体（compileOnly，提供 mixin 目标类）
+
+从 TaCZ 的 Release 页下载：
+```
+https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.3_R1
+```
+下载文件：`TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar`（约 58MB）。
+
+### ② YACL 配置库（implementation，配置 GUI）
+
+从 Modrinth 下载 YACL 3.9.7 for 26.3-fabric：
+```
+https://cdn.modrinth.com/data/1eAoo2KR/versions/s9SjoFu1/yet_another_config_lib_v3-3.9.7%2B26.3-fabric.jar
+```
+保存为：`yacl-fabric.jar`（约 1MB）
+
 放好之后 `libs/` 里应该是：
 ```
 libs/
 ├── README.txt
-├── TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar
+├── TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar
 └── yacl-fabric.jar
 ```
 
@@ -92,6 +95,10 @@ libs/
 ```powershell
 python scripts/download_dependencies.py --check-only
 ```
+
+> YACL 那一行的 `sha256` 目前仍是占位符 `UNVERIFIED_PENDING_CI`：Modrinth 只公布 sha1/sha512，
+> 准备本次移植的沙箱访问不到 CDN。第一次 CI 运行会用 `--print-sha256` 打印真实摘要，
+> 回填 manifest 后这条提示即可删除。
 
 ---
 
@@ -107,7 +114,7 @@ gradlew.bat build
 ./gradlew build
 ```
 
-- **首次构建**会下载 Gradle 9.5.1、Minecraft 26.2、Fabric API 等，视网速可能要几分钟到十几分钟；
+- **首次构建**会下载 Gradle 9.5.1、Minecraft 26.3、Fabric API 等，视网速可能要几分钟到十几分钟；
 - `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
 - 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
 - 成功后输出：
@@ -118,8 +125,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1-hotfix.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁
@@ -154,3 +161,49 @@ python scripts/check_server_log.py run/logs/latest.log
 依赖只在第一次下载，之后都会走 `%USERPROFILE%\.gradle` 缓存，第二次构建一般只需几十秒。
 
 改完源码后重新 `gradlew.bat build` 即可得到新 jar。
+
+---
+
+## 7. CI：在 GitHub Actions 上构建（网络受限时的唯一途径）
+
+仓库有四条流程。它们存在的直接原因是：**准备本移植的开发沙箱只能访问 `api.github.com`**，
+`maven.fabricmc.net` / `api.modrinth.com` / `piston-meta.mojang.com` 以及 GitHub release
+附件域全部不可达，本地 `./gradlew` 根本跑不起来。把编译放到 Actions 上，是让改动能被验证的唯一办法。
+
+> **它们目前还在 `ci/workflows/`，需要安装一次。** 机器人账号（GitHub App）没有 `workflows`
+> 权限，无法直接 push `.github/workflows/` 下的文件。由你执行一次：
+>
+> ```bash
+> bash ci/install-workflows.sh
+> git add -A .github/workflows ci && git commit -m "ci: install workflows" && git push
+> ```
+>
+> 详见 [`ci/README.md`](ci/README.md)。
+
+| 流程 | 文件 | 跑什么 | 大概耗时 |
+|---|---|---|---|
+| `Version consistency` | `consistency.yml` | `check_release_consistency.py`：版本号在 gradle.properties / README / BUILD / fabric.mod.json 之间是否一致 | 最快，不需要依赖 |
+| `audit` | `audit.yml` | `audit_port.py --strict`（mixin 登记与目标方法、配置项死开关、语言键、图标）+ 审计脚本自测 | 分钟级 |
+| `compile-check` | `compile-check.yml` | `compileJava compileKotlin`；**arena/** 分支上把日志回推到 `build-reports/compile-java.log` | 中等 |
+| `build` | `build.yml` | `./gradlew build`（含 JUnit 与三个 jar 门禁）+ 上传 jar 与示例包 artifact（留 14 天） | 最慢 |
+
+四条流程都先跑 `python3 scripts/download_dependencies.py`，按 manifest 重建 `libs/`。
+
+### 在受限沙箱里读编译错误
+
+Actions 的日志 blob 域在沙箱里同样不可达，所以 `compile-check` 会把日志写回分支文件：
+
+```bash
+gh api repos/q14433686-arch/TaCZTweaks_Unofficial/contents/build-reports/compile-java.log?ref=<分支名> \
+  --jq '.content' | base64 -d
+```
+
+只有 `arena/**` 分支会回推日志（发行线分支不接受 CI commit，状态直接看 Actions 页）。
+
+### 触发分支
+
+四条流程都监听 `arena/**` 与发行线分支（`26.3` / `26.2(main)` / `26.1.2` / `1.21.11`）的 push，
+以及全部 PR，并都支持 `workflow_dispatch` 手动触发。
+
+> **权限提示**：`.github/workflows/` 下的文件需要 `workflows` 权限才能推送。
+> 机器人账号（GitHub App）默认没有该权限 —— 这正是它们先落在 `ci/workflows/` 的原因。

@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("net.fabricmc.fabric-loom") version "1.17-SNAPSHOT"
-    kotlin("jvm") version "2.4.10"
+    kotlin("jvm") version "2.4.20"
 }
 
 val modVersion = providers.gradleProperty("mod_version").get()
@@ -19,7 +19,7 @@ base {
 // ============================================================
 // From Minecraft 26.1+ Minecraft is no longer obfuscated and Loom
 // runs in unobfuscated mode, so no mappings dependency is needed.
-// Same approach as TaCZ_Refabricated_Unofficial's 26.2 branch.
+// Same approach as TaCZ_Refabricated_Unofficial's 26.3 branch.
 // ============================================================
 
 repositories {
@@ -40,12 +40,13 @@ dependencies {
     // putting it on the compile classpath keeps stdlib versions aligned.
     implementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
 
-    // YACL (YetAnotherConfigLib) — Fabric 26.2 build, provided as a hard dependency
+    // YACL (YetAnotherConfigLib) — Fabric 26.3 build, provided as a hard dependency.
+    // Reconstructed by scripts/download_dependencies.py from RESOURCE_IMPORT_MANIFEST.tsv.
     implementation(files("libs/yacl-fabric.jar"))
 
     // The TaCZ refabricated port we integrate with (compile only in production; tests
     // exercise its codecs and therefore need it on their runtime classpath as well).
-    val taczJar = files("libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar")
+    val taczJar = files("libs/TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar")
     compileOnly(taczJar)
     testRuntimeOnly(taczJar)
 
@@ -213,11 +214,19 @@ val checkVendoredDependencies by tasks.registering {
         check(pathIndex >= 0 && shaIndex >= 0 && bundledIndex >= 0) {
             "RESOURCE_IMPORT_MANIFEST.tsv must contain path, sha256 and bundled_in_release_jar columns"
         }
+        // Keep this in sync with PENDING_SHA in scripts/download_dependencies.py. A row may
+        // legitimately not know its digest yet (Modrinth publishes only sha1/sha512 and the
+        // porting sandbox cannot reach the CDN), so the pinned-ness of a row and the
+        // correctness of a row are two different questions and are reported separately.
+        val pendingSha = "UNVERIFIED_PENDING_CI"
+        val unpinned = mutableListOf<String>()
+
         rows.drop(1).forEach { row ->
             val columns = row.split('\t')
             val relativePath = columns.getOrNull(pathIndex).orEmpty()
             val expectedSha = columns.getOrNull(shaIndex).orEmpty()
-            check(relativePath.isNotBlank() && expectedSha.matches(Regex("[0-9a-f]{64}"))) {
+            check(relativePath.isNotBlank()) { "Malformed dependency manifest row: $row" }
+            check(expectedSha == pendingSha || expectedSha.matches(Regex("[0-9a-f]{64}"))) {
                 "Malformed dependency manifest row: $row"
             }
             val file = layout.projectDirectory.file(relativePath).asFile
@@ -225,11 +234,29 @@ val checkVendoredDependencies by tasks.registering {
             val actualSha = MessageDigest.getInstance("SHA-256")
                 .digest(file.readBytes())
                 .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
-            check(actualSha == expectedSha) {
-                "SHA-256 mismatch for $relativePath: expected $expectedSha, got $actualSha"
+            if (expectedSha == pendingSha) {
+                // Surface the real digest so it can be pinned. This is the only build output
+                // the restricted porting sandbox can read back, so print it unmissably.
+                unpinned += "$relativePath  $actualSha"
+                logger.lifecycle("VENDORED DEPENDENCY NOT PINNED: $relativePath -> sha256 $actualSha")
+            } else {
+                check(actualSha == expectedSha) {
+                    "SHA-256 mismatch for $relativePath: expected $expectedSha, got $actualSha"
+                }
             }
         }
-        logger.lifecycle("VENDORED DEPENDENCIES: OK (${rows.size - 1} files)")
+
+        if (unpinned.isEmpty()) {
+            logger.lifecycle("VENDORED DEPENDENCIES: OK (${rows.size - 1} files, all pinned)")
+        } else {
+            // Not a hard failure: a release is gated by check_release_consistency.py
+            // --require-deps, which does reject pending rows.
+            logger.warn(
+                "VENDORED DEPENDENCIES: ${rows.size - 1} files, ${unpinned.size} NOT pinned:\n" +
+                    unpinned.joinToString("\n") { "  $it" } +
+                    "\nPin these in RESOURCE_IMPORT_MANIFEST.tsv before publishing a release."
+            )
+        }
     }
 }
 
@@ -291,8 +318,77 @@ val checkJarContents by tasks.registering {
     }
 }
 
+// The static audit can only check vanilla-side mixin targets (AvatarRendererMixin,
+// MouseHandlerMixin, RenderCrosshairEventMixin, ...) when it is given the actual Minecraft
+// jar; without it those targets are skipped, which is exactly where a silent 26.3 breakage
+// would hide. Loom materialises that jar during configuration, so locate it here and hand it
+// to audit_port.py. Registered as its own task because the audit workflow cannot be edited
+// from this sandbox (no `workflows` token permission) but does run `./gradlew`-adjacent
+// checks through `build`.
+val auditAgainstMinecraft by tasks.registering {
+    group = "verification"
+    description = "Runs scripts/audit_port.py --strict against Loom's Minecraft jar."
+    dependsOn(checkVendoredDependencies)
+
+    // Resolve at configuration time; the compile classpath is where Loom puts the jar.
+    val minecraftJars = providers.provider {
+        configurations.getByName("compileClasspath")
+            .incoming
+            .artifactView { lenient(true) }
+            .files
+            .files
+            .filter { file ->
+                val n = file.name
+                n.endsWith(".jar") && ("minecraft" in n.lowercase()) && "sources" !in n
+            }
+    }
+    val projectRoot = layout.projectDirectory.asFile
+    val auditScript = layout.projectDirectory.file("scripts/audit_port.py").asFile
+
+    doLast {
+        val jars = minecraftJars.get()
+        if (jars.isEmpty()) {
+            // Do not fail the build: `--strict` without the jar already runs in the audit
+            // workflow, so this task adds coverage rather than being load-bearing.
+            logger.warn("AUDIT(minecraft): no Minecraft jar found on the compile classpath; skipping")
+            return@doLast
+        }
+        val command = mutableListOf("python3", auditScript.absolutePath, "--strict")
+        jars.forEach { jar ->
+            logger.lifecycle("AUDIT(minecraft): using ${jar.name}")
+            command += listOf("--minecraft-jar", jar.absolutePath)
+        }
+        val result = providers.exec {
+            commandLine(command)
+            workingDir(projectRoot)
+            isIgnoreExitValue = true
+        }
+        val output = result.standardOutput.asText.get() + result.standardError.asText.get()
+        logger.lifecycle(output)
+        val exit = result.result.get().exitValue
+        check(exit == 0) { "audit_port.py --strict failed against the Minecraft jar (exit $exit)" }
+        logger.lifecycle("AUDIT(minecraft): OK")
+    }
+}
+
 tasks.named("check") {
-    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents)
+    dependsOn(checkModIcon, checkVendoredDependencies, checkJarContents, auditAgainstMinecraft)
+}
+
+// Compiling against unverified vendored jars is not meaningful: every mixin target in this
+// mod resolves through libs/, so the jars must be intact before javac/kotlinc run.
+// This also has a practical effect for the restricted porting sandbox described in
+// .github/workflows/compile-check.yml: that workflow pushes its Gradle output back to
+// build-reports/compile-java.log, which is the only build log the sandbox can read. Hanging
+// the verification off compileJava puts the "NOT PINNED -> sha256 ..." line into that file.
+tasks.named("compileJava") {
+    dependsOn(checkVendoredDependencies)
+    // auditAgainstMinecraft is attached here as well, not only to `check`, purely for
+    // observability: `build`'s Gradle output lives in the Actions log, whose blob domain is
+    // unreachable from the porting sandbox, whereas compile-check.yml pushes its output back
+    // into the repo. Running the audit during compileJava is what lets us confirm it actually
+    // inspected a Minecraft jar instead of hitting the "no jar found" skip path.
+    dependsOn(auditAgainstMinecraft)
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {

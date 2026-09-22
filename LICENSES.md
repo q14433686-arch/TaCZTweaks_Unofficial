@@ -28,15 +28,17 @@ pinned in [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv).
 The build includes `META-INF/LICENSE_tacztweaks` and
 `META-INF/THIRD_PARTY_NOTICES_tacztweaks.md` in the release jar.
 
-## Vendored binary inputs tracked in `libs/`
+## Binary inputs referenced from `libs/` (not committed)
 
 | Path | Upstream | Version | License | Build use | In this mod jar? |
 |---|---|---:|---|---|---|
-| `libs/TACZ-Refabricated-26.2-1.1.8+fabric.26.2.R2.jar` | `q14433686-arch/TaCZ_Refabricated_Unofficial` | `1.1.8+fabric.26.2.R2` | `GPL3 / CC BY-NC-ND 4.0` as declared by its `fabric.mod.json` | `compileOnly`, `testRuntimeOnly` target API/mixin surface | No |
-| `libs/yacl-fabric.jar` | `isXander/YetAnotherConfigLib` | `3.9.6+26.2-fabric` | `LGPL-3.0-or-later` as declared by its `fabric.mod.json` | `implementation` runtime dependency expected to be installed separately | No |
+| `libs/TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar` | `q14433686-arch/TaCZ_Refabricated_Unofficial` | `1.1.8+fabric.26.3.R1` | `GPL3 / CC BY-NC-ND 4.0` as declared by its `fabric.mod.json` | `compileOnly`, `testRuntimeOnly` target API/mixin surface | No |
+| `libs/yacl-fabric.jar` | `isXander/YetAnotherConfigLib` | `3.9.7+26.3-fabric` | `LGPL-3.0-or-later` as declared by its `fabric.mod.json` | `implementation` runtime dependency expected to be installed separately | No |
 
-These jars are kept only to make this checkout buildable and testable against the exact
-26.2 targets used by the port. They are not nested into the TaCZ Tweaks release jar;
+These jars only make this checkout buildable and testable against the exact 26.3 targets
+used by the port. **They are not committed to Git** (see `.gitignore`); they are downloaded
+and checksum-verified from [`RESOURCE_IMPORT_MANIFEST.tsv`](RESOURCE_IMPORT_MANIFEST.tsv) by
+`scripts/download_dependencies.py`. They are not nested into the TaCZ Tweaks release jar;
 players must install the corresponding runtime mods themselves.
 
 ## Modified compatibility resources

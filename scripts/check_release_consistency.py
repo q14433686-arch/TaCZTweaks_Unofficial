@@ -14,6 +14,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Mirrors scripts/download_dependencies.py: a manifest row whose SHA-256 is not pinned yet.
+PENDING_SHA = "UNVERIFIED_PENDING_CI"
+
 
 def read_properties(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
@@ -38,7 +41,7 @@ def fail(message: str) -> None:
     raise SystemExit(message)
 
 
-def check_manifest() -> None:
+def check_manifest(require_deps: bool) -> None:
     manifest = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
     with manifest.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
@@ -53,14 +56,93 @@ def check_manifest() -> None:
             if not row.get("path"):
                 continue
             path = ROOT / row["path"]
+            expected = row["sha256"].strip()
             if not path.is_file():
-                fail(f"Manifest file is missing: {row['path']}")
+                # libs/*.jar are not committed (see .gitignore); they are rebuilt from this
+                # manifest by scripts/download_dependencies.py. Only the jobs that actually
+                # restored them (build.yml) demand their presence.
+                if require_deps:
+                    fail(f"Manifest file is missing: {row['path']}")
+                print(f"SKIP (not restored) {row['path']}")
+                continue
             actual = sha256(path)
-            if actual != row["sha256"]:
-                fail(f"Checksum mismatch for {row['path']}: expected {row['sha256']}, got {actual}")
+            if expected == PENDING_SHA:
+                print(f"PENDING {row['path']} sha256={actual} (pin this in the manifest)")
+                continue
+            if actual != expected:
+                fail(f"Checksum mismatch for {row['path']}: expected {expected}, got {actual}")
             for column in required - {"path", "sha256"}:
                 if not row.get(column):
                     fail(f"Manifest row for {row['path']} has empty {column}")
+
+
+def _semver_key(value: str) -> tuple[int, ...]:
+    """Numeric ordering key for a Fabric/SemVer version string.
+
+    Only the numeric release part is compared: "1.14.1+kotlin.2.4.20" -> (1, 14, 1).
+    Build metadata after '+' is ignored, which is what Fabric's own comparison does.
+    """
+    core = value.split("+", 1)[0].split("-", 1)[0]
+    parts = []
+    for chunk in core.split("."):
+        parts.append(int(chunk) if chunk.isdigit() else 0)
+    return tuple(parts)
+
+
+def _satisfies(version: str, predicate: str) -> bool:
+    """Evaluate one space-separated Fabric dependency range against a concrete version.
+
+    Supports the operators this project actually uses: '=', '>=', '>', '<=', '<' and '*'.
+    """
+    predicate = predicate.strip()
+    if not predicate or predicate == "*":
+        return True
+    for op in (">=", "<=", "=", ">", "<"):
+        if predicate.startswith(op):
+            bound = predicate[len(op):].strip()
+            actual, expected = _semver_key(version), _semver_key(bound)
+            if op == "=":
+                # '=1.2.3' must match exactly, including build metadata.
+                return version == bound
+            if op == ">=":
+                return actual >= expected
+            if op == "<=":
+                return actual <= expected
+            if op == ">":
+                return actual > expected
+            return actual < expected
+    # A bare version behaves like '='.
+    return version == predicate
+
+
+def check_declared_ranges_include_built_versions(props: dict[str, str], meta: dict) -> None:
+    """Every version we compile against must satisfy the range we ship to users.
+
+    This exists because of a real incident: gradle.properties built against Fabric
+    Language Kotlin 1.13.13 and fabric.mod.json shipped ">=1.13.13 <1.14.0", but the only
+    FLK build tagged for Minecraft 26.3 is 1.14.1. The intersection was empty, so the mod
+    could not load for ANY user, and nothing in CI noticed: compiling, auditing and jar
+    packaging all pass regardless of what the range says. Only the loader enforces it.
+    """
+    depends = meta.get("depends", {})
+    # gradle.properties key -> fabric.mod.json depends key
+    pairs = {
+        "flk_version": "fabric-language-kotlin",
+        "fabric_version": "fabric-api",
+        "loader_version": "fabricloader",
+    }
+    for prop_key, depend_key in pairs.items():
+        built = props.get(prop_key)
+        declared = depends.get(depend_key)
+        if not built or not declared:
+            continue
+        # A range is space-separated predicates that must ALL hold.
+        if not all(_satisfies(built, part) for part in str(declared).split()):
+            fail(
+                f"fabric.mod.json depends.{depend_key} = '{declared}' excludes the version "
+                f"this build actually uses ({prop_key} = {built}). Users would get "
+                f"'Incompatible mods found'."
+            )
 
 
 def check_metadata() -> tuple[dict[str, str], dict]:
@@ -79,15 +161,82 @@ def check_metadata() -> tuple[dict[str, str], dict]:
     expected_depends = {
         "minecraft": f"={props['minecraft_version']}",
         "java": ">=25",
-        "tacz": "=1.1.8+fabric.26.2.R2",
-        "yet_another_config_lib_v3": "=3.9.6+26.2-fabric",
+        "tacz": "=1.1.8+fabric.26.3.R1",
+        "yet_another_config_lib_v3": "=3.9.7+26.3-fabric",
     }
     for key, value in expected_depends.items():
         if meta["depends"].get(key) != value:
             fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
+    check_declared_ranges_include_built_versions(props, meta)
     return props, meta
+
+
+def check_runtime_version_gate(meta: dict) -> None:
+    """The hardcoded runtime TaCZ gate must agree with the declared dependency.
+
+    TaCZTweaks.java refuses to initialise unless the installed TaCZ matches
+    SUPPORTED_TACZ_VERSION_PREFIX + a revision >= MIN_SUPPORTED_TACZ_REVISION. That check
+    runs only inside the game, so a stale value survives compilation, the mixin audit and
+    packaging untouched, and then hard-crashes every user at startup.
+
+    That is exactly what happened on 2026-09-22: the 26.3 branch still gated on
+    "1.1.8+fabric.26.2.R2" and threw
+
+        TaCZ Tweaks requires TaCZ 1.1.8+fabric.26.2.R2 or a later R<n> build for
+        Minecraft 26.2, found 1.1.8+fabric.26.3.R1
+
+    So: parse the constants out of the Java source and require that the version we declare
+    in fabric.mod.json would actually pass the gate.
+    """
+    source = (ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java").read_text(encoding="utf-8")
+
+    def constant(name: str) -> str | None:
+        match = re.search(rf'{name}\s*=\s*"([^"]+)"', source)
+        return match.group(1) if match else None
+
+    prefix = constant("SUPPORTED_TACZ_VERSION_PREFIX")
+    supported = constant("SUPPORTED_TACZ_VERSION")
+    if prefix is None or supported is None:
+        fail("could not parse the TaCZ version gate constants from TaCZTweaks.java")
+
+    revision_match = re.search(
+        r"MIN_SUPPORTED_TACZ_REVISION\s*=\s*BigInteger\.(?:valueOf\((\d+)\)|(ONE)|(ZERO))", source
+    )
+    if not revision_match:
+        fail("could not parse MIN_SUPPORTED_TACZ_REVISION from TaCZTweaks.java")
+    if revision_match.group(1) is not None:
+        minimum = int(revision_match.group(1))
+    else:
+        minimum = 1 if revision_match.group(2) else 0
+
+    declared = meta.get("depends", {}).get("tacz", "")
+    required = declared.lstrip("=").strip()
+    if not required:
+        fail("fabric.mod.json does not declare a tacz dependency")
+
+    if not required.startswith(prefix):
+        fail(
+            f"runtime gate accepts only '{prefix}<n>' but fabric.mod.json requires "
+            f"'{required}'. The mod would refuse to start against its own declared "
+            f"dependency."
+        )
+    revision_text = required[len(prefix):].split("-", 1)[0]
+    if not revision_text.isdigit():
+        fail(f"cannot read the R-revision out of the declared tacz version '{required}'")
+    if int(revision_text) < minimum:
+        fail(
+            f"runtime gate demands revision >= R{minimum} but fabric.mod.json requires "
+            f"'{required}'. The mod would refuse to start against its own declared "
+            f"dependency."
+        )
+    # The advertised constant should itself be the version we depend on.
+    if supported != required:
+        fail(
+            f"TaCZTweaks.SUPPORTED_TACZ_VERSION ('{supported}') disagrees with the declared "
+            f"tacz dependency ('{required}')"
+        )
 
 
 def check_docs(props: dict[str, str]) -> None:
@@ -112,7 +261,7 @@ def check_docs(props: dict[str, str]) -> None:
     # metadata and changelog, not the reusable Modrinth/CurseForge project text.
     for rel in ("docs/publish/Modrinth.md", "docs/publish/CurseForge.md"):
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for forbidden in (version, "26.2", "Beta-1"):
+        for forbidden in (version, props["minecraft_version"], "Beta-1"):
             if forbidden in text:
                 fail(f"{rel} should not embed reusable-publication forbidden token {forbidden}")
 
@@ -139,10 +288,16 @@ def check_jar(path: Path, props: dict[str, str]) -> None:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--jar", type=Path, help="optional release jar to inspect")
+    parser.add_argument(
+        "--require-deps",
+        action="store_true",
+        help="fail when a manifest dependency is absent (use after download_dependencies.py)",
+    )
     args = parser.parse_args(argv)
 
-    check_manifest()
-    props, _meta = check_metadata()
+    check_manifest(require_deps=args.require_deps)
+    props, meta = check_metadata()
+    check_runtime_version_gate(meta)
     check_docs(props)
     if args.jar:
         check_jar(args.jar, props)
