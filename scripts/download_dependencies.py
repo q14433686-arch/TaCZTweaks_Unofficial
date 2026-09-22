@@ -38,11 +38,41 @@ def expected_sha(row: dict[str, str]) -> str:
 
 
 def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
+    return _digest(path, "sha256")
+
+
+def _digest(path: Path, algorithm: str) -> str:
+    digest = hashlib.new(algorithm)
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def upstream_sha512(row: dict[str, str]) -> str:
+    """The publisher-attested SHA-512 for this row, or "" when none is recorded.
+
+    Modrinth (and the packwiz lockfiles that mirror it) publish sha1/sha512 but never
+    sha256, so a row awaiting a pinned sha256 can still be authenticated against this.
+    """
+    return row.get("sha512_upstream", "").strip().lower()
+
+
+def check_upstream_sha512(path: Path, row: dict[str, str]) -> None:
+    """Fail unless the bytes match the publisher-attested SHA-512, when one is recorded.
+
+    This is what makes PENDING_SHA rows safe: without it, a pending row would accept
+    whatever bytes the URL happened to serve.
+    """
+    expected = upstream_sha512(row)
+    if not expected:
+        return
+    actual = _digest(path, "sha512")
+    if actual != expected:
+        raise SystemExit(
+            f"SHA-512 mismatch for {path.relative_to(ROOT)} against the upstream-attested "
+            f"digest:\n  expected {expected}\n  got      {actual}"
+        )
 
 
 def rows() -> list[dict[str, str]]:
@@ -51,18 +81,19 @@ def rows() -> list[dict[str, str]]:
             (line for line in handle if line.strip() and not line.startswith("#")),
             delimiter="\t",
         )
-        required = {"path", "source_url", "sha256"}
+        required = {"path", "source_url", "sha256"}  # sha512_upstream is optional
         missing = required.difference(reader.fieldnames or [])
         if missing:
             raise SystemExit(f"{MANIFEST} is missing columns: {', '.join(sorted(missing))}")
         return list(reader)
 
 
-def verify_existing(path: Path, expected: str) -> bool:
+def verify_existing(path: Path, expected: str, row: dict[str, str]) -> bool:
     if not path.exists():
         return False
     actual = sha256(path)
     if expected == PENDING_SHA:
+        check_upstream_sha512(path, row)
         print(f"PENDING {path.relative_to(ROOT)} sha256={actual} (pin this in RESOURCE_IMPORT_MANIFEST.tsv)")
         return True
     if actual != expected:
@@ -74,7 +105,7 @@ def download(row: dict[str, str]) -> None:
     relative = row["path"]
     target = ROOT / relative
     expected = expected_sha(row)
-    if verify_existing(target, expected):
+    if verify_existing(target, expected, row):
         print(f"OK existing {relative} {expected}")
         return
 
@@ -96,6 +127,11 @@ def download(row: dict[str, str]) -> None:
 
     actual = sha256(tmp_path)
     if expected == PENDING_SHA:
+        try:
+            check_upstream_sha512(tmp_path, row)
+        except SystemExit:
+            tmp_path.unlink(missing_ok=True)
+            raise
         tmp_path.replace(target)
         print(f"PENDING {relative} sha256={actual} (pin this in RESOURCE_IMPORT_MANIFEST.tsv)")
         return
@@ -128,7 +164,7 @@ def main(argv: list[str]) -> int:
         if expected == PENDING_SHA:
             pending.append(row["path"])
         if args.check_only:
-            if not verify_existing(target, expected):
+            if not verify_existing(target, expected, row):
                 raise SystemExit(f"Missing dependency: {target.relative_to(ROOT)}")
             print(f"OK {target.relative_to(ROOT)} {expected}")
         else:

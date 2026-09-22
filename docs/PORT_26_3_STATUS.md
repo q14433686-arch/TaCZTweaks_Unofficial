@@ -204,12 +204,29 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 3. ~~从 `build-reports/compile-java.log` 读第一批编译错误~~ —— **已完成，回推链路验证可用**。
    第一批只有一个真实破坏（§2.4 的 `write/readCollection`），已修。
    **下一步是等新一轮 `compile-check` 给出第二批错误**，`Config.kt` 之后的文件此前根本没被编译到。
-4. 回填 YACL 的真实 sha256，把 manifest 里的 `UNVERIFIED_PENDING_CI` 换掉。
-   **本轮已把真值送到沙箱唯一读得到的地方**：`build` 流程的 `checkVendoredDependencies`
-   现在会打印 `VENDORED DEPENDENCY NOT PINNED: libs/yacl-fabric.jar -> sha256 <64 位>`。
-   （沙箱不可达 `cdn.modrinth.com`，而 Modrinth 与各 packwiz 锁文件都只给 sha1/sha512，
-   所以这个值只能由 CI 算。）拿到后替换 manifest 第 3 行的 `sha256` 列即可，
-   `check_release_consistency.py --require-deps` 会在发版前把关（当前对 YACL 返回 1）。
+4. 回填 YACL 的真实 sha256（**未完成，且请先读完这一条**）。
+
+   CI 现在会打印 `VENDORED DEPENDENCY NOT PINNED: libs/yacl-fabric.jar -> sha256 <64 位>`，
+   但**两轮 CI 对同一个 URL 打印了两个不同的 sha256**：
+
+   | 轮次 | run | 打印的 sha256 |
+   |---|---|---|
+   | 第 1 轮 | `952a64b` | `477d5890...`（当时以「校验和不匹配」的形式报出） |
+   | 第 4 轮 | `4a727fe` | `c52d41d4...` |
+
+   同一个不可变的 Modrinth CDN 链接不该给出两种字节。在查清之前**不要把任一值写进 manifest**
+   —— 盲抄等于把一个来源不明的哈希固化成「已验证」。
+
+   本轮改为先上一道**能证伪**的关卡：manifest 新增 `sha512_upstream` 列，填 Modrinth 官方
+   公布、且 3 个互不相关的 packwiz 锁文件（skywardmc/additive、LCLPYT/mc-modpacks、
+   0byte-coding/mc_sodium_vanilla）逐字一致的 sha512。`download_dependencies.py` 现在对
+   **待定行**强制校验这个 sha512，不匹配就拒收并删除临时文件。也就是说：
+
+   - 若下一轮 CI 通过 → 字节确实是上游发布的那份，届时打印的 sha256 才可信、可以回填；
+   - 若下一轮 CI 报 `SHA-512 mismatch` → 说明拿到的确实不是上游那份，**幸亏没有回填**。
+
+   （为什么非得绕这一圈：沙箱不可达 `cdn.modrinth.com`，无法自行下载核对；而 Modrinth 与
+   packwiz 锁文件只公布 sha1/sha512，从不公布 sha256。）
 5. 编译绿之后，**给 audit 流程补一步 `--minecraft-jar`**：Loom 会在
    `~/.gradle/caches/fabric-loom/` 下产出 26.3 的 Minecraft jar，把它喂给
    `audit_port.py --strict --minecraft-jar <jar>`，才能真正校验 §4 里那些**原版侧** mixin 的
@@ -235,6 +252,8 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 | `src/main/kotlin/.../config/Config.kt` | 改用 `BufCollectionCodec`；删掉多余的 `Lists` import |
 | `src/main/java/.../mixin/tweaks/EnderManMixin.java` | `EnderMan` → `Enderman`（26.3 改名），注入点语义待复验 |
 | `build.gradle.kts` | `checkVendoredDependencies` 接受 `UNVERIFIED_PENDING_CI` 并打印真实 sha256（此前正则硬卡 64 位十六进制，导致 `build` 必挂） |
+| `RESOURCE_IMPORT_MANIFEST.tsv` | 新增 `sha512_upstream` 列（上游公布的 sha512，用于给待定行做真伪校验） |
+| `scripts/download_dependencies.py` | 待定行现在强制比对 `sha512_upstream`，不符即拒收；该列留空则维持原行为 |
 | `scripts/test_audit_optional_targets.py` | 改成 pytest 兼容（断言进 `test_optional_targets()`），仍可 `python3` 直接跑 |
 | `scripts/test_download_dependencies.py` | **新增**，6 个用例锁住 manifest 哨兵/校验和语义 |
 | `scripts/check_release_consistency.py` | 依赖缺失时可跳过（`--require-deps` 才强制）；禁用词改用 `minecraft_version` |
