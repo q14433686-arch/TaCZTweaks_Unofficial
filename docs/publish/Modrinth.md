@@ -103,7 +103,7 @@ Please do not ask the original authors to support problems introduced by this po
 - Original project and author: [MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks)
 - Fabric TaCZ dependency: [TaCZ Refabricated Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)
 - NeoForge TaCZ dependency: [TaCZ Renovated](https://github.com/q14433686-arch/TaCZ_Renovated)
-- Port source and branch map: [TaCZTweaks Unofficial](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/26.2(main)/docs/BRANCHES.md)
+- Port source and branch map: [TaCZTweaks Unofficial](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/HEAD/docs/BRANCHES.md)
 - License: GNU General Public License v3.0
 - Third-party notices: [THIRD_PARTY_NOTICES.md](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/blob/HEAD/THIRD_PARTY_NOTICES.md)
 
@@ -120,7 +120,7 @@ project maintainer. The licensed upstream project icon is not AI-generated or AI
 
 - **License:** GPL-3.0
 - **Loaders:** tag each file as Fabric or NeoForge; do not mark a file for both
-- **Game versions:** only the Minecraft version that file was built for (26.2, 26.1.2, or 1.21.11)
+- **Game versions:** only the Minecraft version that file was built for (the version that file targets; see docs/BRANCHES.md for the current lines)
 - **Environment:** client and server
 - **Required dependencies:** those of that file's loader line (never list Fabric API on a NeoForge file)
 - **Optional dependencies:** Mod Menu and only the integrations applicable to the uploaded file

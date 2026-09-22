@@ -1,4 +1,40 @@
-# “不能做”与完整性审计（2026-08-18）
+# “不能做”与完整性审计（2026-08-18；2026-09-22 补 26.3 结果）
+
+> ⚠️ **本文主体是 2026-08-18 在 Minecraft 26.2 上做的审计，原样保留。**
+> 当前分支是 26.3。26.3 的审计结果见下方「26.3 审计结果」一节；
+> 与主体冲突时以该节为准。完整移植状态见
+> [`docs/PORT_26_3_STATUS.md`](docs/PORT_26_3_STATUS.md)。
+
+## 26.3 审计结果（2026-09-22）
+
+审计基线改为 `TACZ-Refabricated-26.3-1.1.8+fabric.26.3.R1.jar`（tag `26.3_R1`）
+与 Minecraft **26.3** 未混淆 jar。
+
+在 CI 上执行（沙箱不可达 Maven/Mojang，本地跑不了 Gradle，故 Minecraft jar 由
+Loom 在 Actions 里准备，再经 `build.gradle.kts` 的 `auditAgainstMinecraft` 任务喂给审计脚本）：
+
+```
+> Task :auditAgainstMinecraft
+AUDIT(minecraft): using minecraft-merged-a1f5b1e0f5-26.3.jar
+AUDIT: 0 error(s), 1 warning(s)
+AUDIT(minecraft): OK
+```
+
+- **0 error** —— 全部 75 个 mixin（36 common + 39 client）的目标类/方法/descriptor 在 26.3 上都能解析，
+  含此前标为最高风险的 `AvatarRendererMixin` 硬编码 descriptor。
+- **1 warning** —— `LivingEntityMixin` 里 `remap=false` 的 6 参 `hurtBlockingItem`
+  可选目标缺失。这是**本文下方 2026-09-07 那条修复刻意设计的行为**（可选调用点变体），
+  不是回归；`scripts/test_audit_optional_targets.py` 专门锁住这个不变量。
+
+> 📌 `audit.yml` 里那一步名为「0 error / 0 warning required」，但 `audit_port.py`
+> 只在 error 非空时返回 1，**warning 不影响退出码**。步骤名与真实门禁不符，待修。
+
+> ⚠️ **静态通过 ≠ 行为正确**：审计只核对符号存在性，不核对语义。
+> `@Local(ordinal = N)` 绑的是不是原来那个局部变量、`@ModifyArgs` 命中的是不是原来
+> 那次调用，**只能实机验证**，目前仍未做。
+
+---
+
 
 ## 审计基线
 
