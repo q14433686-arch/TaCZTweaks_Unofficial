@@ -102,7 +102,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据实际发行版更
 | 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
 | 必需 | Fabric API | >=0.160.7+26.3、<0.162.0 |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.3.R1**（运行时按当前 26.3 发布系列校验） |
-| 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
+| 必需 | Fabric Language Kotlin | >=1.14.1+kotlin.2.4.20、<2.0.0 |
 | 必需 | YetAnotherConfigLib | 3.9.7+26.3-fabric |
 | 可选 | Sound Physics Remastered | Fabric 版（26.3 构件请自查） |
 | 可选 | First Aid New | >=1.3.0、<1.4.0 Fabric（shader 覆盖仅验证此范围） |

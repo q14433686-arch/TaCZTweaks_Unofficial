@@ -76,6 +76,75 @@ def check_manifest(require_deps: bool) -> None:
                     fail(f"Manifest row for {row['path']} has empty {column}")
 
 
+def _semver_key(value: str) -> tuple[int, ...]:
+    """Numeric ordering key for a Fabric/SemVer version string.
+
+    Only the numeric release part is compared: "1.14.1+kotlin.2.4.20" -> (1, 14, 1).
+    Build metadata after '+' is ignored, which is what Fabric's own comparison does.
+    """
+    core = value.split("+", 1)[0].split("-", 1)[0]
+    parts = []
+    for chunk in core.split("."):
+        parts.append(int(chunk) if chunk.isdigit() else 0)
+    return tuple(parts)
+
+
+def _satisfies(version: str, predicate: str) -> bool:
+    """Evaluate one space-separated Fabric dependency range against a concrete version.
+
+    Supports the operators this project actually uses: '=', '>=', '>', '<=', '<' and '*'.
+    """
+    predicate = predicate.strip()
+    if not predicate or predicate == "*":
+        return True
+    for op in (">=", "<=", "=", ">", "<"):
+        if predicate.startswith(op):
+            bound = predicate[len(op):].strip()
+            actual, expected = _semver_key(version), _semver_key(bound)
+            if op == "=":
+                # '=1.2.3' must match exactly, including build metadata.
+                return version == bound
+            if op == ">=":
+                return actual >= expected
+            if op == "<=":
+                return actual <= expected
+            if op == ">":
+                return actual > expected
+            return actual < expected
+    # A bare version behaves like '='.
+    return version == predicate
+
+
+def check_declared_ranges_include_built_versions(props: dict[str, str], meta: dict) -> None:
+    """Every version we compile against must satisfy the range we ship to users.
+
+    This exists because of a real incident: gradle.properties built against Fabric
+    Language Kotlin 1.13.13 and fabric.mod.json shipped ">=1.13.13 <1.14.0", but the only
+    FLK build tagged for Minecraft 26.3 is 1.14.1. The intersection was empty, so the mod
+    could not load for ANY user, and nothing in CI noticed: compiling, auditing and jar
+    packaging all pass regardless of what the range says. Only the loader enforces it.
+    """
+    depends = meta.get("depends", {})
+    # gradle.properties key -> fabric.mod.json depends key
+    pairs = {
+        "flk_version": "fabric-language-kotlin",
+        "fabric_version": "fabric-api",
+        "loader_version": "fabricloader",
+    }
+    for prop_key, depend_key in pairs.items():
+        built = props.get(prop_key)
+        declared = depends.get(depend_key)
+        if not built or not declared:
+            continue
+        # A range is space-separated predicates that must ALL hold.
+        if not all(_satisfies(built, part) for part in str(declared).split()):
+            fail(
+                f"fabric.mod.json depends.{depend_key} = '{declared}' excludes the version "
+                f"this build actually uses ({prop_key} = {built}). Users would get "
+                f"'Incompatible mods found'."
+            )
+
+
 def check_metadata() -> tuple[dict[str, str], dict]:
     props = read_properties(ROOT / "gradle.properties")
     meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
@@ -100,6 +169,7 @@ def check_metadata() -> tuple[dict[str, str], dict]:
             fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
+    check_declared_ranges_include_built_versions(props, meta)
     return props, meta
 
 

@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("net.fabricmc.fabric-loom") version "1.17-SNAPSHOT"
-    kotlin("jvm") version "2.4.10"
+    kotlin("jvm") version "2.4.20"
 }
 
 val modVersion = providers.gradleProperty("mod_version").get()

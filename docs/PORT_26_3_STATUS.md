@@ -37,7 +37,7 @@
 | TaCZ | `1.1.8+fabric.26.2.R2` | `1.1.8+fabric.26.3.R1` | release `26.3_R1` 资产 |
 | YACL | 3.9.6+26.2-fabric | `3.9.7+26.3-fabric` | Modrinth 版本 `s9SjoFu1`（2026-09-20 发布，标 26.3） |
 | ModMenu | 20.0.1 | `21.0.0-beta.1` | 26.3 目前只有 beta 通道，与 TaCZ 同口径 |
-| Kotlin / FLK | 1.13.13+kotlin.2.4.10 | **未动** | FLK 未声明与 MC 绑定；如 CI 报错再升 1.13.14/1.14.x |
+| Kotlin / FLK | 1.13.13+kotlin.2.4.10 | **1.14.1+kotlin.2.4.20** | ⚠️ 起初误判为「未动」，实机启动即崩（见 §2.6）。FLK **确实**按 MC 版本打标签：Modrinth 上只有 1.14.1 带 26.3 标签 |
 | MixinExtras | 0.5.4 | **未动** | 无 26.3 相关变更证据 |
 
 **YACL 校验和是占位符**：`RESOURCE_IMPORT_MANIFEST.tsv` 里那一行写的是 `UNVERIFIED_PENDING_CI`。
@@ -117,6 +117,48 @@ import net.minecraft.world.entity.monster.EnderMan;
 > `hurtServer` 里第一个 `DamageSource#is(TagKey)` 是否仍是 `IS_PROJECTILE` 判断
 > **尚未在 26.3 上验证**，留待 §6 第 5 步的 `--minecraft-jar` 审计与实机确认。
 > 这条注入即使静默失效也只是「末影人不再躲子弹」，不会崩游戏。
+
+---
+
+### ✅ 2.6 FLK 版本区间写错，导致游戏直接启动不了（用户实测发现）
+
+**这是本次移植唯一一个「CI 全绿但游戏根本起不来」的问题，也是最严重的一个。**
+
+```
+Mod 'TaCZ Tweaks (Refabricated)' 需要 'Fabric Language Kotlin'
+从 1.13.13（含）到 1.14.0（不含）的任意版本，但已经安装了的版本 1.14.1+kotlin.2.4.20 不对！
+```
+
+**根因**：我升级依赖坐标时，把 minecraft / loader / fabric-api / tacz / yacl 都改成了 26.3，
+**唯独漏了 `flk_version`** —— 它从 26.2 基线原样继承下来。更糟的是我还在本文档里写下了错误结论：
+「FLK 未声明与 MC 绑定；如 CI 报错再升」。**这个判断是错的**，而且 CI 永远不可能报错。
+
+查 Modrinth 的实际发布情况：
+
+| FLK 版本 | 打了 26.3 标签？ |
+|---|---|
+| **1.14.1+kotlin.2.4.20** | ✅ **只有这一个** |
+| 1.14.0+kotlin.2.4.20 | ❌ 到 26.2 为止 |
+| 1.13.14+kotlin.2.4.20 | ❌ 到 26.2 为止 |
+| 1.13.13+kotlin.2.4.10 | ❌ 到 26.2 为止（我们声明的就是它） |
+
+我们声明 `>=1.13.13 <1.14.0`，26.3 上唯一可用的是 `1.14.1` ——
+**交集为空**，任何人装上都必崩，100% 复现。
+
+**修复**：
+
+- `fabric.mod.json`：`>=1.13.13 <1.14.0` → `>=1.14.1+kotlin.2.4.20 <2.0.0`
+- `gradle.properties`：`flk_version` → `1.14.1+kotlin.2.4.20`
+- `build.gradle.kts`：Kotlin 插件 `2.4.10` → **`2.4.20`**（与 FLK 1.14.1 内置的 Kotlin 对齐，
+  否则我们的类会按 2.4.10 的 stdlib ABI 编译，却在 2.4.20 的 stdlib 上运行）
+- README / COMPATIBILITY / CHANGELOG 的依赖表同步
+
+**为什么四条 CI 全绿却没拦住**：编译、mixin 静态审计、打包**都不读 `depends` 区间** ——
+这个区间只有 Fabric loader 在**运行时**才会执行。这正是「编译通过 ≠ 能玩」的教科书案例。
+
+**补的门禁**（见 §6 第 6 步）：新增 `scripts/check_dependency_availability.py`，
+直接问 Modrinth「你给 26.3 发了哪些版本」，再判断我们声明的区间能不能命中其中之一。
+已用真实 API 数据验证：**对当前仓库通过，对当初那个区间报错退出 1**。
 
 ---
 
@@ -263,10 +305,24 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
    上找 Loom 准备好的 Minecraft jar，喂给 `audit_port.py --strict`。
    已确认它真的跑到了（日志打印 `using minecraft-merged-a1f5b1e0f5-26.3.jar`），**0 error**。
    详见 §4 顶部的说明。
-6. 进游戏实测。**参考 TaCZ 的教训**（移植指南 §0）：26.3 这一轮他们 17 个实质提交里有 9 个是
+6. **把依赖可用性检查接进 CI**（新增，优先级高于实机测试）：
+   `python3 scripts/check_dependency_availability.py` 会直接查 Modrinth，确认我们声明的
+   依赖区间在当前 `minecraft_version` 上**真的有版本能命中**。§2.6 那次崩溃就是它能拦下的。
+   建议加进 `consistency.yml`（该流程本来就联网、也不依赖 libs/）：
+
+   ```yaml
+   - name: Dependency availability against upstream
+     run: python3 scripts/check_dependency_availability.py
+   ```
+
+   ⚠️ 机器人改不了 workflow，**这一步需要你手动加**。没加也不影响其它流程，
+   只是少一道网兜；本地随时可以手动跑。
+
+7. 进游戏实测。**参考 TaCZ 的教训**（移植指南 §0）：26.3 这一轮他们 17 个实质提交里有 9 个是
    「CI 绿、进游戏就错」。本仓渲染面小，风险低于他们，但 `AvatarRendererMixin` 的匍匐视觉、
    准星/命中标记、单声道音频转换这三处必须肉眼确认。
-7. 全绿后再改 README 的「状态」段落，并按 §3 的结论决定哪些 🔧 可以升级成 ✅。
+   **§2.6 已经证明这一步不可跳过**：四条 CI 全绿的版本，游戏连启动都做不到。
+8. 全绿后再改 README 的「状态」段落，并按 §3 的结论决定哪些 🔧 可以升级成 ✅。
 
 ---
 

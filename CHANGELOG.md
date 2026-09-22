@@ -92,7 +92,7 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 - Java: `>=25`
 - TaCZ Refabricated Unofficial: `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same
   release family
-- Fabric Language Kotlin: `>=1.13.13 <1.14.0`
+- Fabric Language Kotlin: `>=1.14.1+kotlin.2.4.20 <2.0.0`
 - YetAnotherConfigLib: exactly `3.9.6+26.2-fabric`
 
 ### Known issues
