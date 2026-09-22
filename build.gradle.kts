@@ -383,6 +383,12 @@ tasks.named("check") {
 // the verification off compileJava puts the "NOT PINNED -> sha256 ..." line into that file.
 tasks.named("compileJava") {
     dependsOn(checkVendoredDependencies)
+    // auditAgainstMinecraft is attached here as well, not only to `check`, purely for
+    // observability: `build`'s Gradle output lives in the Actions log, whose blob domain is
+    // unreachable from the porting sandbox, whereas compile-check.yml pushes its output back
+    // into the repo. Running the audit during compileJava is what lets us confirm it actually
+    // inspected a Minecraft jar instead of hitting the "no jar found" skip path.
+    dependsOn(auditAgainstMinecraft)
 }
 
 val examplePackZip by tasks.registering(org.gradle.api.tasks.bundling.Zip::class) {
