@@ -85,6 +85,32 @@ e: .../config/Config.kt:71:36 Unresolved reference 'readCollection'.
 同批次还有 `writeUtf`/`readUtf` 方法引用的重载歧义报错，改成显式 lambda 后一并消失。
 TaCZ 26.3 侧用 `cn.sh1rocu.tacz.util.BufMapCodec` 解决了 map 那一半，做法与此一致。
 
+### ✅ 2.5 `EnderMan` → `Enderman`（类名改了大小写）
+
+`net.minecraft.world.entity.monster.EnderMan` 在 26.3 改名为 `Enderman`（**包没变**，只是
+第二个词的 `M` 变小写）。`EnderManMixin.java` 的 import 和 `@Mixin(...)` 已同步。
+mixin 类自身的文件名保持 `EnderManMixin` 不变，这样 `tacztweaks.mixins.json` 不用动。
+
+证据：CI 编译器报错（run `35703300829`）
+
+```
+EnderManMixin.java:10: error: cannot find symbol
+import net.minecraft.world.entity.monster.EnderMan;
+  symbol:   class EnderMan
+  location: package net.minecraft.world.entity.monster
+```
+
+加上 NeoForged 26.3 移植指南的 `net.minecraft.world.entity.monster` 小节明确写着
+`EnderMan` -> `Enderman`, not one-to-one（<https://docs.neoforged.net/primer/docs/26.3/>）。
+同包的 `Vex` 没报错，可见包路径本身没变。
+
+> ⚠️ **注意 "not one-to-one"**：指南这句话意味着改的不只是名字。本轮只做了「让它能编译」，
+> `hurtServer` 里第一个 `DamageSource#is(TagKey)` 是否仍是 `IS_PROJECTILE` 判断
+> **尚未在 26.3 上验证**，留待 §6 第 5 步的 `--minecraft-jar` 审计与实机确认。
+> 这条注入即使静默失效也只是「末影人不再躲子弹」，不会崩游戏。
+
+---
+
 ---
 
 ## 3. 交叉核对结论：我们碰的 TaCZ 类里，26.3 改了哪些
@@ -203,6 +229,7 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 | `scripts/download_dependencies.py` | 支持 `UNVERIFIED_PENDING_CI`、`--print-sha256`、`--require-pinned` |
 | `src/main/kotlin/.../config/sync/BufCollectionCodec.kt` | **新增**，替代 26.3 删掉的 `FriendlyByteBuf#write/readCollection`，线格式不变 |
 | `src/main/kotlin/.../config/Config.kt` | 改用 `BufCollectionCodec`；删掉多余的 `Lists` import |
+| `src/main/java/.../mixin/tweaks/EnderManMixin.java` | `EnderMan` → `Enderman`（26.3 改名），注入点语义待复验 |
 | `scripts/test_audit_optional_targets.py` | 改成 pytest 兼容（断言进 `test_optional_targets()`），仍可 `python3` 直接跑 |
 | `scripts/test_download_dependencies.py` | **新增**，6 个用例锁住 manifest 哨兵/校验和语义 |
 | `scripts/check_release_consistency.py` | 依赖缺失时可跳过（`--require-deps` 才强制）；禁用词改用 `minecraft_version` |
