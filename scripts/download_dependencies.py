@@ -27,6 +27,16 @@ MANIFEST = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
 PENDING_SHA = "UNVERIFIED_PENDING_CI"
 
 
+def expected_sha(row: dict[str, str]) -> str:
+    """Normalise a manifest sha256 cell.
+
+    Returns PENDING_SHA verbatim for not-yet-pinned rows, otherwise the lowercased digest.
+    Must be the only place that interprets this column.
+    """
+    raw = row["sha256"].strip()
+    return raw if raw == PENDING_SHA else raw.lower()
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -63,7 +73,7 @@ def verify_existing(path: Path, expected: str) -> bool:
 def download(row: dict[str, str]) -> None:
     relative = row["path"]
     target = ROOT / relative
-    expected = row["sha256"].lower()
+    expected = expected_sha(row)
     if verify_existing(target, expected):
         print(f"OK existing {relative} {expected}")
         return
@@ -114,10 +124,8 @@ def main(argv: list[str]) -> int:
     pending: list[str] = []
     for row in rows():
         target = ROOT / row["path"]
-        expected = row["sha256"].strip()
-        if expected != PENDING_SHA:
-            expected = expected.lower()
-        else:
+        expected = expected_sha(row)
+        if expected == PENDING_SHA:
             pending.append(row["path"])
         if args.check_only:
             if not verify_existing(target, expected):
