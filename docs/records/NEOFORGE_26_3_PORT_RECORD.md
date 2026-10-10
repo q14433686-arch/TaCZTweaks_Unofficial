@@ -36,7 +36,9 @@
 | `PoseStack#mulPose(Quaternionf)` → `rotate` | ❌ 本仓 0 处 | 无需处置 |
 | `Player#swing` 三参化 | ❌ 0 处 | — |
 | `Entity.invulnerableTime` 私有化 + `damageCooldownTime`/`lastHurt` 拆分 | ❌ 本仓不触碰（TaCZ 自身 `EntityKineticBullet` 内部改用 `DamageCooldownUtil.clear`，纯方法体变化） | — |
-| `openUri`、`KeyEvent#keycode`、`ItemInHandRenderer` 三分裂、render pass 归属、shader 方言、管线预热、战利品表 schema、配方 codec/同步、`Block#codec()`、`PushReaction.POPPED`、`AbstractPackResources`、`readMap/writeMap` | ❌ 本仓均不使用 | — |
+| `openUri`、`KeyEvent#keycode`、`ItemInHandRenderer` 三分裂、render pass 归属、shader 方言、管线预热、战利品表 schema、配方 codec/同步、`Block#codec()`、`PushReaction.POPPED`、`AbstractPackResources` | ❌ 本仓均不使用 | — |
+| `FriendlyByteBuf#readMap/writeMap/readCollection/writeCollection` 同批移除 | ✅ `Config.reloadDiscardsMagazineExclusions` 的 encoder/decoder | 改为手写 `writeVarInt` + 逐元素 `writeUtf` / `readVarInt` + `List(size) { readUtf() }`，线格式与 26.2 完全一致（做法同 TaCZ_Renovated 26.3 的 `BufMapCodec`） |
+| NeoForge `net.neoforged.neoforge.items.ItemHandlerHelper`（含 `giveItemToPlayer`）移除 | ✅ `ClientMessagePlayerUnload` 退还弹药 | 改用 vanilla `Inventory#placeItemBackInInventory(ItemStack, Prediction.SERVER_ONLY)`（26.3 新增 `Prediction` 形参；TaCZ_Renovated 26.3 同款，语义等价：塞背包、塞不下掉落） |
 | `blaze3d.*` → `renderpearl.*` 包迁移 | ❌ 本仓只引用 `blaze3d.platform.InputConstants`（未迁移）、`blaze3d.platform.Window`（未迁移）、`blaze3d.audio.SoundBuffer`（未迁移）、`blaze3d.vertex.PoseStack`（未迁移） | — |
 | FML 12.0.8 `ModConfig.Type.COMMON/SERVER` 删除 | ❌ 本仓不使用 ModConfig（YACL 自管配置） | 仅体现为 NeoForge 钉选跟随 TaCZ |
 | `EntityRenderDispatcher#getPlayerRenderer` 删除 | ❌ 0 处 | — |
@@ -84,6 +86,8 @@ TaCZ_Renovated 26.2→26.3 全树 diff 后，与本仓 `tacztweaks.mixins.json` 
 - `build.gradle`：`libs/` 匹配 token 26.2→26.3；必需依赖提示与来源更新。
 - `TaczVersionSupport`（+单测）：family `neoforge.26.3`，R1 起；新增「拒绝 26.2 末版」用例。
 - `EntityBulletRendererMixin`、`GunSoundInstanceMixin`、三个按键类（§2）。
+- `Config.kt`、`ClientMessagePlayerUnload.kt`：CI 首跑暴露的两处 26.3 API 移除（§2 表最后两行），
+  错误证据为 CI 回推的 `build-reports/compile-java.log`（commit `2b06116`）。
 - `tacztweaks.mixins.json`/`ModMixinPlugin`/相关 javadoc 的当前目标版本表述。
 - `neoforge.mods.toml` 模板：26.3 文案、YACL 下限 3.9.4。
 - `RESOURCE_IMPORT_MANIFEST.tsv`、`libs/README.txt`：26.3 依赖行（SHA 全部 pending，待取件回填）。

@@ -41,6 +41,18 @@ as tested behaviour.
   `workflows` scope, so the four files ship as ready-to-paste drafts committed under `docs/ci/`
   (deployment steps in `docs/ci/README.md` and each file header).
 
+### Fixed (first CI compile run, 2026-10-10/11)
+
+- `Config.reloadDiscardsMagazineExclusions`: 26.3 removed
+  `FriendlyByteBuf#writeCollection`/`readCollection` (same batch as `readMap`/`writeMap`);
+  the syncable encoder/decoder now writes a varint length plus per-element `writeUtf` /
+  reads them back — wire format unchanged, same approach as TaCZ_Renovated 26.3's
+  `BufMapCodec`.
+- `ClientMessagePlayerUnload`: NeoForge removed `ItemHandlerHelper.giveItemToPlayer`;
+  returned ammo now goes through vanilla `Inventory#placeItemBackInInventory(ItemStack,
+  Prediction.SERVER_ONLY)` (26.3's new `Prediction` parameter), matching TaCZ_Renovated
+  26.3's own usage.
+
 ### Verified statically (26.3 decompiled sources + NeoForge 26.3.x patches, 2026-10-10)
 
 - All 7 TaCZ classes changed between 26.2 and 26.3 that this mod targets were diffed:
