@@ -1,0 +1,142 @@
+# 发布 workflow（26.3 线；布局对齐 TaCZ_Renovated 移植仓的 release）：
+#   校验 tag 名 → checkout 指定 tag → fetch libs/ → gradle build → L0 静态自检（发布门）
+#   → GitHub Release 挂 jar。jar 只在 GitHub 侧构建与上传。
+# 用法：先 push tag（本线命名延续 (NEO)26.3_*，如 (NEO)26.3_BETA_1），再
+#   gh workflow run release.yml -f tag='<tag>' -f title='<标题>'
+# 正文取 docs/publish/RELEASE_NOTES.md（存在时；每次发版更新）。
+# 26.3 是编译级移植线：公开（非草稿）发布前必须完成
+# docs/records/NEOFORGE_26_3_PORT_RECORD.md §7 的实机验收。
+
+name: release
+
+# 上线方式：沙箱 Agent 的 token 无 `workflows` 权限（push 会被 remote 拒收），
+# 与 TaCZ_Renovated 各线一致，请走 GitHub 网页：仓库 → Add file → Create new file →
+# 路径 `.github/workflows/{name}.yml` → 粘贴本文件全文 → commit 到 26.3-neoforge 分支。
+# 上线后 push/PR 会自动触发；本文件在上线前沿 `26.3-neoforge` 的工作树随移植记录保留。
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '已存在的本线 tag（例如 (NEO)26.3_BETA_1），须与发布纪律一致'
+        required: true
+        type: string
+      title:
+        description: 'Release 标题（可留空）'
+        required: false
+        type: string
+      draft:
+        description: '先创建草稿；取消勾选才直接公开发布（需完成本线实机验收）'
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Only accept 26.3 NeoForge release tags
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^\(NEO\)26\.3[A-Za-z0-9_.+-]*$ ]] || {
+            echo '::error::Expected a (NEO)26.3... tag, not a branch/SHA/other Minecraft version'
+            exit 1
+          }
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+
+      - name: Release preflight
+        run: |
+          set -euo pipefail
+          python3 scripts/check_release_consistency.py
+
+      - name: Refuse to overwrite an existing release (including drafts)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # An API failure must abort, not be mistaken for "release does not exist".
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[].tag_name' > "$RUNNER_TEMP/release-tags.txt"
+          if grep -Fxq "$TAG" "$RUNNER_TEMP/release-tags.txt"; then
+            echo '::error::Release already exists; use a new build-metadata version and tag for a hotfix'
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Fetch binary dependencies into libs/
+        run: python3 scripts/fetch_ci_dependencies.py
+
+      - name: build
+        run: ./gradlew build --console=plain --stacktrace --no-daemon
+
+      - name: L0 static checks (release gate)
+        run: |
+          set -euo pipefail
+          JAR=$(ls build/libs/*.jar | grep -v '\-sources' | head -1)
+          echo "jar: $JAR"
+          V="$(grep -E '^mod_version=' gradle.properties | head -1 | cut -d= -f2-)"
+          echo "mod_version: $V"
+          case "$JAR" in *"$V"*) ;; *) echo "::error::jar 文件名不含当前版本串 $V"; exit 1;; esac
+          # jarJar 内嵌 Kotlin stdlib（真实启动器 NoClassDefFoundError 防线）
+          unzip -l "$JAR" | grep -q 'META-INF/jarjar/.*kotlin-stdlib.*\.jar'
+          # mods.toml 版本串与 gradle.properties 一致
+          unzip -p "$JAR" META-INF/neoforge.mods.toml | grep -Fq "version=\"${V}\""
+          # mixin json 与磁盘清单一一对应（0 缺失）
+          for f in src/main/resources/*mixins*.json; do
+            b="$(basename "$f")"
+            unzip -l "$JAR" | grep -q "$b" || { echo "::error::jar 缺 mixin 配置 $b"; exit 1; }
+          done
+          # 示例包也在
+          ls build/example-pack/tacz-tweaks-example-pack-"$V".zip
+          # 版本一致性门禁（AGENTS §3）
+          python3 scripts/check_release_consistency.py
+          echo "L0 全部通过"
+
+      - name: create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ inputs.title }}
+          DRAFT: ${{ inputs.draft }}
+        run: |
+          set -euo pipefail
+          COMMIT=$(git rev-parse HEAD)
+          REMOTE_COMMIT=$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$TAG" --jq .sha)
+          [[ "$COMMIT" == "$REMOTE_COMMIT" ]] || { echo '::error::Tag moved during the build'; exit 1; }
+          JAR=$(ls build/libs/*.jar | grep -v '\-sources' | head -1)
+          PACK=$(ls build/example-pack/*.zip | head -1)
+          SHA256=$(sha256sum "$JAR" | cut -d' ' -f1)
+          BODY="$RUNNER_TEMP/release-notes.md"
+          if [ -f docs/publish/RELEASE_NOTES.md ]; then
+            cp docs/publish/RELEASE_NOTES.md "$BODY"
+          else
+            printf '# %s\n\nSee CHANGELOG.md for this build metadata line.\n' "${TITLE:-$TAG}" > "$BODY"
+          fi
+          printf '\n## 资产世代记录\n\n| UTC 时间 | 构建 commit | 文件 | sha256 |\n|---|---|---|---|\n' >> "$BODY"
+          printf '| %s | %s | `%s` | `%s` |\n' "$(date -u +%FT%TZ)" "$COMMIT" "$(basename "$JAR")" "$SHA256" >> "$BODY"
+          # TAG 是位置参数；gh release create 没有 --tag-name 选项。
+          ARGS=("$TAG" "$JAR" "$PACK" --repo "$GITHUB_REPOSITORY" --verify-tag --notes-file "$BODY"
+                --title "${TITLE:-TaCZ Tweaks (Renovated) — $TAG}")
+          if [ "$DRAFT" = 'true' ]; then ARGS+=(--draft); fi
+          gh release create "${ARGS[@]}"

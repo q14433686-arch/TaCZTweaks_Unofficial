@@ -1,0 +1,52 @@
+name: consistency
+
+# 上线方式：沙箱 Agent 的 token 无 `workflows` 权限（push 会被 remote 拒收），
+# 与 TaCZ_Renovated 各线一致，请走 GitHub 网页：仓库 → Add file → Create new file →
+# 路径 `.github/workflows/{name}.yml` → 粘贴本文件全文 → commit 到 26.3-neoforge 分支。
+# 上线后 push/PR 会自动触发；本文件在上线前沿 `26.3-neoforge` 的工作树随移植记录保留。
+
+# 轻量文档/版本门禁（布局对齐 TaCZ_Renovated 移植仓的 consistency）：
+# 不需要 JDK 与 libs/，任何分支的每次 push 都跑，守住版本号跨文件一致与文档内链。
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  release-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 版本号一致性门禁（AGENTS.md §3）
+        run: python3 scripts/check_release_consistency.py
+
+      - name: Mod 图标门禁
+        run: python3 scripts/check_mod_icon.py
+
+      - name: 文档链接核验
+        run: |
+          python3 - <<'EOF'
+          import re, os, sys
+          broken = 0
+          for root, dirs, files in os.walk('.'):
+              dirs[:] = [d for d in dirs if d not in ('.git', 'build', 'run', '.gradle', 'src', 'tacz-tweaks-example-pack')]
+              for fn in files:
+                  if not fn.endswith('.md'):
+                      continue
+                  f = os.path.join(root, fn)
+                  for m in re.findall(r'\]\(([^)#\s]+)(#[^)]*)?\)', open(f, encoding='utf-8').read()):
+                      t = m[0]
+                      if t.startswith(('http', 'mailto:')):
+                          continue
+                      # 正则/代码片段里的 ](...) 不是链接（历史记录中的版本正则会被误报）
+                      if re.search(r'[\\\[\]|]', t):
+                          continue
+                      p = os.path.normpath(os.path.join(os.path.dirname(f), t))
+                      if not os.path.exists(p):
+                          print(f"BROKEN {f} -> {t}")
+                          broken += 1
+          sys.exit(1 if broken else 0)
+          EOF
