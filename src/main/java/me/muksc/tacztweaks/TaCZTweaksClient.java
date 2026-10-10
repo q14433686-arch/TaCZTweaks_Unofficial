@@ -27,7 +27,7 @@ import net.neoforged.neoforge.common.NeoForge;
 /**
  * Physical-client entry point. Keeping this in a dist-scoped {@link Mod} entry prevents the
  * common entry point from resolving client-only classes on a dedicated server. TaCZ: Renovated
- * 26.2 uses the same split between {@code GunMod} and its client-only mod entry.
+ * 26.3 uses the same split between {@code GunMod} and its client-only mod entry.
  */
 @Mod(value = TaCZTweaks.MOD_ID, dist = Dist.CLIENT)
 public final class TaCZTweaksClient {

@@ -11,17 +11,17 @@ logoFile="icon.png"
 logoBlur=false
 displayURL="https://github.com/q14433686-arch/TaCZTweaks_Unofficial"
 credits="TaCZ Tweaks by MUKSC (Forge 1.20.1). Unofficial ports: q14433686-arch."
-authors="MUKSC (original); q14433686-arch (unofficial NeoForge 26.2 port)"
+authors="MUKSC (original); q14433686-arch (unofficial NeoForge 26.3 port)"
 description='''
-TaCZ Tweaks (unofficial NeoForge 26.2 port) — configurable gunplay, movement, balance,
+TaCZ Tweaks (unofficial NeoForge 26.3 port) — configurable gunplay, movement, balance,
 sound, bullet interactions and data-driven systems for TaCZ.
 
 THIS IS UNOFFICIAL. Do not report bugs here to MUKSC, the TACZ Dev Team, or the authors of
 any optional compatibility mod.
 
-Requires TaCZ: Renovated (modId "tacz") 1.1.8+neoforge.26.2.R1 or a later R<n> build of the
-same release family, on Minecraft 26.2 + NeoForge 26.2.x. Also requires YetAnotherConfigLib
-3.9.5+26.2-neoforge or a later compatible 3.9.x build on both physical sides.
+Requires TaCZ: Renovated (modId "tacz") 1.1.8+neoforge.26.3.R1 or a later R<n> build of the
+same release family, on Minecraft 26.3 + NeoForge 26.3.x (beta channel). Also requires
+YetAnotherConfigLib 3.9.x for 26.3 (3.9.4 or later) on both physical sides.
 Optional: Sound Physics Remastered, First Aid New, Pillager's Gun (Unofficial Port).
 '''
 
@@ -53,9 +53,10 @@ config="tacztweaks.mixins.json"
 [[dependencies.${mod_id}]]
     modId="yet_another_config_lib_v3"
     type="required"
-    versionRange="[3.9.5,3.10.0)"
+    versionRange="[3.9.4,3.10.0)"
     ordering="NONE"
     # Config persistence/sync classes extend YACL config types on both physical sides.
+    # 26.3: upstream's port/26.3 line declares modVersion=3.9.4, so the floor drops from 3.9.5.
     side="BOTH"
 
 [[dependencies.${mod_id}]]

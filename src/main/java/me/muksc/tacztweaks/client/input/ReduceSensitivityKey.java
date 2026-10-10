@@ -8,7 +8,7 @@ import net.minecraft.client.KeyMapping;
 public class ReduceSensitivityKey {
     public static final KeyMapping KEY = new KeyMapping(
         TaCZTweaks.translatable("key.reduceSensitivity").getString(),
-        InputConstants.Type.KEYSYM,
+        InputConstants.Type.KEYBOARD,
         InputConstants.UNKNOWN.getValue(),
         TaCZTweaksClient.CATEGORY
     );

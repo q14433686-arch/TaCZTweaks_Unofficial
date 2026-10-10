@@ -13,3 +13,12 @@ __pycache__/
 
 # Manually downloaded compile/runtime dependencies.
 libs/*.jar
+
+# CI workflow drafts live here for local convenience, but the sandbox token lacks the
+# `workflows` scope so these cannot be pushed. The committable source of truth is
+# docs/ci/*.yml (deploy via the GitHub web UI; see docs/ci/README.md). Remove this
+# ignore rule if you commit the real workflows with a token that has `workflows` access.
+.github/workflows/
+
+# CI compile-log push-back target (only written by the compile-check workflow).
+build-reports/

@@ -16,7 +16,7 @@ import net.minecraft.client.player.LocalPlayer;
 public class TiltGunKey {
     public static final KeyMapping KEY = new KeyMapping(
         TaCZTweaks.translatable("key.tiltGun").getString(),
-        InputConstants.Type.KEYSYM,
+        InputConstants.Type.KEYBOARD,
         InputConstants.UNKNOWN.getValue(),
         TaCZTweaksClient.CATEGORY
     );

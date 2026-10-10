@@ -5,7 +5,7 @@ package me.muksc.tacztweaks.network;
  *
  * <p>The class name is a string so neither this bridge nor common payload handlers place
  * {@code net.minecraft.client.*} types in their constant pools. This mirrors TaCZ: Renovated
- * 26.2's {@code com.tacz.guns.network.ClientPacketBridge}.</p>
+ * 26.3's {@code com.tacz.guns.network.ClientPacketBridge}.</p>
  */
 public final class ClientPacketBridge {
     private static final String HANDLERS =

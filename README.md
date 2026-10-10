@@ -3,21 +3,21 @@
 [![CurseForge Versions](https://cf.way2muchnoise.eu/versions/1659175.svg)](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated/files)
 [![GitHub Downloads](https://img.shields.io/github/downloads/q14433686-arch/TaCZTweaks_Unofficial/total?logo=github&label=GitHub%20Downloads)](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases)
 
-TaCZ Tweaks v2.14.2 的**非官方 NeoForge 26.2 社区移植**，目标依赖为
+TaCZ Tweaks v2.14.2 的**非官方 NeoForge 26.3 社区移植**，目标依赖为
 [`q14433686-arch/TaCZ_Renovated`](https://github.com/q14433686-arch/TaCZ_Renovated)
-26.2 分支（modId 仍为 `tacz`）。原项目：
+26.3 分支（modId 仍为 `tacz`）。原项目：
 [`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks)（Forge 1.20.1）。
 本项目与 MUKSC、TACZ Dev Team 及可选兼容模组作者无从属或背书关系。
 
-当前产物版本：**`2.14.2+neoforge.26.2.Beta-1`**。
-游戏语义来自本仓库 Fabric `26.2(main)` 分支；加载器实现继承已经通过 26.1.2 客户端加载验证的
-NeoForge 骨架，再针对 26.2 API、依赖和 mixin 目标更新。
+当前产物版本：**`2.14.2+neoforge.26.3.Beta-1`**。
+游戏语义来自本仓库 Fabric `26.3` 姊妹线；加载器实现继承已通过 26.2 实机验证的
+NeoForge 骨架，再针对 26.3 API、依赖和 mixin 目标更新。
 
-> **26.2 验证状态：Windows / JDK 25 的 `gradlew build` 已 PASS（包含单测与发布门禁）；
-> 维护者已进入游戏并报告大多数核心功能通过实际测试。** 这是 Beta 阶段的冒烟/回归证据，
-> 不是对每个配置组合、数据包、可选兼容模组或边界条件的保证。专服 `Done (...)!` 尚未报告，
-> 各游戏内场景也没有逐项测试记录。详细证据与边界见
-> [`docs/records/NEOFORGE_26_2_PORT_RECORD.md`](docs/records/NEOFORGE_26_2_PORT_RECORD.md)。
+> **26.3 验证状态：编译级移植（未实测）。** 本轮按姊妹线《26.3 移植指南》与
+> TaCZ_Renovated 26.2→26.3 实际 diff 逐项适配，mixin 目标经 26.3 反编译源码与
+> NeoForge 26.3.x patches 静态核对；移植沙箱无 JDK、无出网构建，`gradlew build`
+> 与游戏内验证由 CI 与维护者补做。26.2 线的构建/实机证据不适用于 26.3。
+> 执行记录见 [`docs/records/NEOFORGE_26_3_PORT_RECORD.md`](docs/records/NEOFORGE_26_3_PORT_RECORD.md)。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) ·
 [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) ·
@@ -41,9 +41,9 @@ NeoForge 骨架，再针对 26.2 API、依赖和 mixin 目标更新。
 - `melee_interactions`：枪械近战与 LRTactical 近战方块破坏；
 - 可重载示例包：`tacz-tweaks-example-pack/`。
 
-## 与 Fabric 26.2 的明确差异
+## 与 Fabric 26.3 的明确差异
 
-| 项目 | NeoForge 26.2 实现/边界 |
+| 项目 | NeoForge 26.3 实现/边界 |
 |---|---|
 | 方块破坏保护链 | 只能使用 `Level#mayInteract` + 可取消的 `net.neoforged.neoforge.event.level.block.BreakBlockEvent`；没有 Fabric `BEFORE / CANCELED / AFTER` 三段链。依赖 canceled/after 通知的保护模组可能收不到等价回调，属于已知语义降级，未实测。 |
 | 配置入口 | 没有 Mod Menu；通过 NeoForge 模组列表的 `IConfigScreenFactory` 打开 YACL。 |
@@ -55,27 +55,27 @@ NeoForge 骨架，再针对 26.2 API、依赖和 mixin 目标更新。
 
 | 类型 | 依赖 | 目标版本 |
 |---|---|---|
-| 必需 | Minecraft | `26.2` |
-| 必需 | NeoForge | `26.2.0.64` 或同 Minecraft 线的后续版本 |
-| 必需 | TaCZ: Renovated | `1.1.8+neoforge.26.2.R<n>`，`n >= 1` |
-| 必需（双端） | YetAnotherConfigLib | `3.9.5+26.2-neoforge` 起，低于 3.10 |
-| 可选 | Sound Physics Remastered | `1.5.1+26.2` NeoForge |
-| 可选 | First Aid New | `>=1.3.0、<1.4.0` 的 NeoForge 26.2 构建 |
-| 可选 | Pillager’s Gun (Unofficial Port) | `>=3.3.5、<3.4.0` 的 NeoForge 26.2 构建 |
+| 必需 | Minecraft | `26.3` |
+| 必需 | NeoForge | `26.3.0.51-beta`（26.3 仅 beta 通道；与 TaCZ_Renovated 26.3 钉选一致，转 release 后重钉） |
+| 必需 | TaCZ: Renovated | `1.1.8+neoforge.26.3.R<n>`，`n >= 1` |
+| 必需（双端） | YetAnotherConfigLib | 26.3 的 3.9.x（上游 port/26.3 线 modVersion=3.9.4），低于 3.10 |
+| 可选 | Sound Physics Remastered | `1.5.1+26.3` NeoForge |
+| 可选 | First Aid New | `>=1.3.0、<1.4.0` 的 NeoForge 26.3 构建（26.3 发行物未核实） |
+| 可选 | Pillager’s Gun (Unofficial Port) | `>=3.3.5、<3.4.0` 的 NeoForge 26.3 构建（26.3 发行物未核实） |
 | 运行环境 | Java | 25 |
 
-TaCZ 版本门由 `TaczVersionSupport` 严格检查：仅接受 `1.1.8+neoforge.26.2.R<n>`
-（R1 起，revision 数值比较，可带规范后缀），拒绝 Fabric、26.1.2、1.21.11、r0、错误核心版本和
-畸形字符串。不要照抄 Fabric 26.2 的 R2 门槛；Renovated 26.2 首发就是 R1。
+TaCZ 版本门由 `TaczVersionSupport` 严格检查：仅接受 `1.1.8+neoforge.26.3.R<n>`
+（R1 起，revision 数值比较，可带规范后缀），拒绝 Fabric、26.2、26.1.2、1.21.11、r0、错误核心版本和
+畸形字符串。Renovated 26.3 首发是 `26.3的mod文件_R1`（产物 `tacz-1.1.8+neoforge.26.3.R1.jar`）。
 
 ## 可选兼容状态
 
-| 模组 | 26.2 发行物 | 当前证据 |
+| 模组 | 26.3 发行物 | 当前证据 |
 |---|---|---|
-| Sound Physics Remastered | 有：1.5.1+26.2 NeoForge | 26.2 源码中的 `SoundPhysics#evaluateEnvironment(...)` 调用点已静态核对；未对发布 jar/实机验证。 |
-| First Aid New | 有：1.2.8 与 1.3.0-patched NeoForge 26.2（本移植仅声明 1.3.x） | 26.2 源码中的 `EventHandler#handleCustomPlayerDamage(...)`、`#recordProjectileHit(Player, Entity, Vec3)` 已核对；未实测。 |
-| Pillager’s Gun (Unofficial Port) | 有：3.3.5 NeoForge 26.2 | 源码中的 `PillagersGunConfig#values()` / `Values#friendlyFire()` 已核对；发布 jar 与实机未验证。 |
-| LRTactical | 由 TaCZ: Renovated 内置 | 目标类在 Renovated 26.2 源码中存在；未实测。 |
+| Sound Physics Remastered | 上游 master 已钉 26.3（`mod_version=1.5.1+26.3`，2026-10-10 实查）；发布渠道文件名待取件确认 | 26.2 源码中的 `SoundPhysics#evaluateEnvironment(...)` 调用点已静态核对；26.3 侧目标签名未变（类未改动者按 26.2 结论承继），未对发布 jar/实机验证。 |
+| First Aid New | 未核实 | 26.2 源码中的 `EventHandler#handleCustomPlayerDamage(...)` 已核对；26.3 发行物与实机均未验证。 |
+| Pillager’s Gun (Unofficial Port) | 未核实 | 源码中的 `PillagersGunConfig#values()` / `Values#friendlyFire()` 已按 26.2 核对；26.3 发行物与实机均未验证。 |
+| LRTactical | 由 TaCZ: Renovated 内置 | 目标类在 Renovated 26.3 源码中存在（`IMeleeWeapon#performAttack` 未变）；未实测。 |
 | Legendary Survival Overhaul / Valkyrien Skies / MTS | 本轮未确认可用目标 | 暂不支持，不提供空开关。 |
 
 “已静态核对”只表示类/方法和调用点存在，不等于兼容性 PASS。
@@ -91,9 +91,10 @@ python3 scripts/audit_port.py --strict
 ./gradlew build
 ```
 
-已报告 `build` PASS 和客户端核心功能冒烟；尚未报告专服 `Done (...)!`，也没有对拿枪、开镜、
-换弹、卸弹、配置屏、数据包重载及可选兼容项逐项留证。Beta 只代表当前测试覆盖，不构成全面保证。
-详细步骤与产物位置见 [`BUILD.md`](BUILD.md)。
+26.3 线当前只到「静态适配完成」一级：CI 四条流程稿（`.github/workflows/`，与 TaCZ 移植仓同款
+compile-check / build / consistency / release）已就绪并提交在 `docs/ci/`，待经网页上线（沙箱无 `workflows` 权限），
+上线后负责编译与发布门禁；游戏内验证由维护者按
+`docs/records/NEOFORGE_26_3_PORT_RECORD.md` §7 清单补做。详细步骤与产物位置见 [`BUILD.md`](BUILD.md)。
 
 ## 许可与反馈
 

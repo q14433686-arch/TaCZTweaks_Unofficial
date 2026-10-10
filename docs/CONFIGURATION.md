@@ -57,7 +57,7 @@ Empty modifiers leave the TaCZ baseline unchanged. Available modifier keys are:
 | `crawl.pitchUpperLimit` | `25.0` | client/local | Upper pitch bound while crawling. |
 | `crawl.pitchLowerLimit` | `-10.0` | client/local | Lower pitch bound while crawling. |
 | `crawl.dynamicPitchLimit` | `false` | client/local | Dynamically adjusts crawl pitch limits. |
-| `crawl.visualTweak` | `true` | client/local | Smooths 26.2 avatar crawl transition rendering. |
+| `crawl.visualTweak` | `true` | client/local | Smooths 26.3 avatar crawl transition rendering. |
 | `crawl.tiltGun` | `DEFAULT` | client/local | Gun tilt policy: `DEFAULT`, `ALWAYS`, or `NEVER`. |
 
 ## Compatibility

@@ -10,7 +10,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 
-/** Client-side bridge to Sound Physics Remastered 1.5.1+26.2. */
+/** Client-side bridge to Sound Physics Remastered 1.5.1+26.3. */
 object SoundPhysicsCompat {
     private val enabled = ModList.get().isLoaded("sound_physics_remastered")
     private val triggerId = Identifier.fromNamespaceAndPath(TaCZTweaks.MOD_ID, "sound_physics_trigger")

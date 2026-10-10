@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Optional, string-targeted hooks for Sound Physics Remastered 1.5.1+26.2.
+ * Optional, string-targeted hooks for Sound Physics Remastered 1.5.1+26.3.
  * The mixin plugin suppresses this class when SPR is absent.
  */
 @Mixin(targets = "com.sonicether.soundphysics.SoundPhysics", remap = false)
