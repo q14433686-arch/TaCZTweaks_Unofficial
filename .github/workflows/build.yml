@@ -1,0 +1,144 @@
+name: build
+
+# 上线方式：沙箱 Agent 的 token 无 `workflows` 权限（push 会被 remote 拒收），
+# 与 TaCZ_Renovated 各线一致，请走 GitHub 网页：仓库 → Add file → Create new file →
+# 路径 `.github/workflows/{name}.yml` → 粘贴本文件全文 → commit 到 26.3-neoforge 分支。
+# 上线后 push/PR 会自动触发；本文件在上线前沿 `26.3-neoforge` 的工作树随移植记录保留。
+
+# ---------------------------------------------------------------------------
+# 26.3 线完整构建门禁（布局对齐 TaCZ_Renovated 移植仓的 build）：
+#   静态自检 → 拉取 libs/ → ./gradlew build（含单测与 Gradle 发布门禁）→ 上传产物。
+# 静态自检逐条按本仓实际树核对过：
+#   * mixin 完整性：tacztweaks.mixins.json 列出的类必须真实存在；
+#   * 注册性：模板 src/main/templates/META-INF/neoforge.mods.toml 声明的 mixin 配置
+#     与 src/main/resources/*mixins*.json 一一对应（正式件由 generateModMetadata 生成，
+#     checkout 时不存在，所以读模板）；
+#   * 语言键齐平：assets/tacztweaks/lang 的 en_us / zh_cn / ja_jp 键集合一致；
+#   * 版本一致性：与 consistency.yml 同一脚本（scripts/check_release_consistency.py）；
+#   * mod 图标：scripts/check_mod_icon.py。
+# 依赖获取：scripts/fetch_ci_dependencies.py（GitHub release / Modrinth / Maven Central）。
+# 26.3 为编译级移植线：本流程全绿 = 第一个编译证据，实机验证另行记录
+# （docs/records/NEOFORGE_26_3_PORT_RECORD.md §7）。
+# ---------------------------------------------------------------------------
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.3*'
+    paths-ignore:
+      - 'build-reports/**'
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - 'build-reports/**'
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mixin config integrity (json 里列的类必须真实存在)
+        run: |
+          python3 - <<'EOF'
+          import json, glob, os, sys
+          bad = []
+          for cfg in glob.glob('src/main/resources/*mixins*.json'):
+              d = json.load(open(cfg))
+              pkg = d.get('package', '').replace('.', '/')
+              for section in ('mixins', 'client', 'server'):
+                  for m in d.get(section, []):
+                      p = 'src/main/java/' + pkg + '/' + m.replace('.', '/') + '.java'
+                      if not os.path.exists(p):
+                          bad.append(f'{cfg}: {m} -> {p} 不存在')
+          for b in bad:
+              print('::error::' + b)
+          sys.exit(1 if bad else 0)
+          EOF
+
+      - name: Mixin configs registered (templates/neoforge.mods.toml 里列的与磁盘一一对应)
+        run: |
+          python3 - <<'EOF'
+          import glob, os, re, sys
+          tpl = 'src/main/templates/META-INF/neoforge.mods.toml'
+          if not os.path.exists(tpl):
+              print('::error::' + tpl + ' 不存在（本检查失去意义，请改用实际的 mod 元数据来源）')
+              sys.exit(1)
+          declared = set(re.findall(r'config\s*=\s*"([^"]+)"', open(tpl, encoding='utf-8').read()))
+          ondisk = {os.path.basename(f) for f in glob.glob('src/main/resources/*mixins*.json')}
+          bad = []
+          for name in sorted(declared - ondisk):
+              bad.append(f'{tpl} 声明了 {name}，但 src/main/resources/ 下没有这个文件')
+          for name in sorted(ondisk - declared):
+              bad.append(f'{name}: 存在但 {tpl} 没声明它（孤儿配置，永不生效）')
+          for b in bad:
+              print('::error::' + b)
+          sys.exit(1 if bad else 0)
+          EOF
+
+      - name: Lang key parity (en_us 与 zh_cn / ja_jp 键集合必须一致)
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          base = 'src/main/resources/assets/tacztweaks/lang/'
+          bad = []
+          if not os.path.exists(base + 'en_us.json'):
+              print('::error::' + base + 'en_us.json 缺失')
+              sys.exit(1)
+          en = set(json.load(open(base + 'en_us.json')))
+          for lang in ('zh_cn', 'ja_jp'):
+              if not os.path.exists(base + lang + '.json'):
+                  bad.append(f'{lang}.json 缺失')
+                  continue
+              other = set(json.load(open(base + lang + '.json')))
+              for k in sorted(en - other):
+                  bad.append(f'{lang}: {k} 只在 en_us')
+              for k in sorted(other - en):
+                  bad.append(f'{lang}: {k} 只在 {lang}')
+          for b in bad:
+              print('::error::' + b)
+          sys.exit(1 if bad else 0)
+          EOF
+
+      - name: Version consistency (与 consistency.yml 同一脚本)
+        run: python3 scripts/check_release_consistency.py
+
+      - name: Mod icon gate
+        run: python3 scripts/check_mod_icon.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Fetch binary dependencies into libs/
+        run: python3 scripts/fetch_ci_dependencies.py
+
+      - name: Full build
+        run: ./gradlew build --console=plain --stacktrace --no-daemon
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v4
+        with:
+          # artifact 名不能含 '/'（arena 分支名带斜杠），所以只放 MC 版本 + sha
+          name: TaCZTweaks-26.3-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            build/example-pack/*.zip
+          retention-days: 14
+          if-no-files-found: error
