@@ -52,6 +52,11 @@ as tested behaviour.
   returned ammo now goes through vanilla `Inventory#placeItemBackInInventory(ItemStack,
   Prediction.SERVER_ONLY)` (26.3's new `Prediction` parameter), matching TaCZ_Renovated
   26.3's own usage.
+- `EnderManMixin`: vanilla renamed `EnderMan` → `Enderman` in 26.3 (package unchanged);
+  import and `@Mixin` target updated. `hurtServer` and its first `IS_PROJECTILE` check
+  re-verified in place; `EntityTypes.ENDERMAN` still exists for the bullet-side mixin.
+- CI fetch script: retry/backoff for transient Modrinth/GitHub failures plus a CI
+  transcript so a fetch failure no longer re-uploads a stale compile log.
 
 ### Verified statically (26.3 decompiled sources + NeoForge 26.3.x patches, 2026-10-10)
 

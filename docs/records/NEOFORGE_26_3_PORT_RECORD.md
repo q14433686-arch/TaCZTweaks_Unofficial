@@ -39,6 +39,7 @@
 | `openUri`、`KeyEvent#keycode`、`ItemInHandRenderer` 三分裂、render pass 归属、shader 方言、管线预热、战利品表 schema、配方 codec/同步、`Block#codec()`、`PushReaction.POPPED`、`AbstractPackResources` | ❌ 本仓均不使用 | — |
 | `FriendlyByteBuf#readMap/writeMap/readCollection/writeCollection` 同批移除 | ✅ `Config.reloadDiscardsMagazineExclusions` 的 encoder/decoder | 改为手写 `writeVarInt` + 逐元素 `writeUtf` / `readVarInt` + `List(size) { readUtf() }`，线格式与 26.2 完全一致（做法同 TaCZ_Renovated 26.3 的 `BufMapCodec`） |
 | NeoForge `net.neoforged.neoforge.items.ItemHandlerHelper`（含 `giveItemToPlayer`）移除 | ✅ `ClientMessagePlayerUnload` 退还弹药 | 改用 vanilla `Inventory#placeItemBackInInventory(ItemStack, Prediction.SERVER_ONLY)`（26.3 新增 `Prediction` 形参；TaCZ_Renovated 26.3 同款，语义等价：塞背包、塞不下掉落） |
+| `EnderMan` → `Enderman` 改名（包路径不变） | ✅ `EnderManMixin`（javac: cannot find symbol） | import 与 `@Mixin` 目标改 `Enderman`；mixin 类名保持注册名不变。26.3 源码确认 `hurtServer(ServerLevel,DamageSource,float)` 与首个 `IS_PROJECTILE` 检查仍在原位；`EntityTypes.ENDERMAN` 仍存在（`EntityKineticBulletMixin` 不受影响） |
 | `blaze3d.*` → `renderpearl.*` 包迁移 | ❌ 本仓只引用 `blaze3d.platform.InputConstants`（未迁移）、`blaze3d.platform.Window`（未迁移）、`blaze3d.audio.SoundBuffer`（未迁移）、`blaze3d.vertex.PoseStack`（未迁移） | — |
 | FML 12.0.8 `ModConfig.Type.COMMON/SERVER` 删除 | ❌ 本仓不使用 ModConfig（YACL 自管配置） | 仅体现为 NeoForge 钉选跟随 TaCZ |
 | `EntityRenderDispatcher#getPlayerRenderer` 删除 | ❌ 0 处 | — |
