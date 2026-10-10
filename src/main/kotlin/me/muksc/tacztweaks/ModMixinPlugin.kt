@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo
 class ModMixinPlugin : IMixinConfigPlugin {
     override fun onLoad(mixinPackage: String) = Unit
 
-    /** NeoForge has no refmap mechanism (26.2.x is unobfuscated). */
+    /** NeoForge has no refmap mechanism (26.3.x is unobfuscated). */
     override fun getRefMapperConfig(): String? = null
 
     override fun shouldApplyMixin(targetClassName: String, mixinClassName: String): Boolean = when {

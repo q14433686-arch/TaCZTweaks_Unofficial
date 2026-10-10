@@ -28,8 +28,8 @@ changes that behavior.
 | `damage` | `values: [range...]` | Matches bullet damage. |
 | `speed` | `values: [range...]` | Matches projectile speed as used by the port (`delta.length * 10`). |
 | `silenced` | none | Matches a shooter/gun with TaCZ silence modifier cache. |
-| `burst_index` | `index: int bounds` | Matches burst cycle index attached by the 26.2 shooting hook. |
-| `pellet_index` | `index: int bounds` | Matches pellet index attached by the 26.2 projectile hook. |
+| `burst_index` | `index: int bounds` | Matches burst cycle index attached by the 26.3 shooting hook. |
+| `pellet_index` | `index: int bounds` | Matches pellet index attached by the 26.3 projectile hook. |
 | `random_chance` | `chance: double` | Random match probability. |
 
 Ranges use Minecraft-style bounds, for example `{"min": 0.0, "max": 10.0}`. Keep regexes simple;

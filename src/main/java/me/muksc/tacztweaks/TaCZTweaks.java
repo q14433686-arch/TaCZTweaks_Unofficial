@@ -46,9 +46,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TaCZ Tweaks — unofficial NeoForge 26.2 port.
+ * TaCZ Tweaks — unofficial NeoForge 26.3 port.
  *
- * <p>Gameplay semantics come from the sibling Fabric {@code 26.2} branch of this repository;
+ * <p>Gameplay semantics come from the sibling Fabric {@code 26.3} branch of this repository;
  * only the loader surface (entrypoint, events, networking, registries, reload listeners) is
  * rewritten here. The dependency is
  * <a href="https://github.com/q14433686-arch/TaCZ_Renovated">TaCZ: Renovated</a>, modId {@code tacz}.
@@ -79,7 +79,7 @@ public class TaCZTweaks {
         ModContainer tacz = ModList.get().getModContainerById("tacz")
                 .orElseThrow(() -> new IllegalStateException("TaCZ is required"));
         String taczVersion = tacz.getModInfo().getVersion().toString();
-        // Accept R1 and any later R<n> build of the NeoForge 26.2 release family; reject
+        // Accept R1 and any later R<n> build of the NeoForge 26.3 release family; reject
         // Fabric strings, the 1.21.11 / 26.1.2 lines, wrong core versions and malformed revisions.
         if (!TaczVersionSupport.isSupportedTaczVersion(taczVersion)) {
             throw new IllegalStateException(

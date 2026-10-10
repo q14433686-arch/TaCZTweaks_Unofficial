@@ -1,6 +1,5 @@
 package me.muksc.tacztweaks.config
 
-import com.google.common.collect.Lists
 import com.mojang.serialization.Codec
 import com.tacz.guns.resource.modifier.AttachmentPropertyManager
 import com.tacz.guns.resource.pojo.data.attachment.Modifier
@@ -55,8 +54,17 @@ object Config : SyncableJsonFileCodecConfig<Config>(
         val reloadDiscardsMagazineExclusions by registerSyncable(
             default = listOf("tacz:m870", "tacz:db_short", "tacz:db_long"),
             codec = Codec.list(STRING),
-            encoder = { buf, value -> buf.writeCollection(value, FriendlyByteBuf::writeUtf) },
-            decoder = { buf -> buf.readCollection(Lists::newArrayListWithCapacity, FriendlyByteBuf::readUtf) }
+            // 26.3: FriendlyByteBuf#writeCollection/readCollection 已随 readMap/writeMap 同批移除
+            // （TaCZ_Renovated 26.3 的 BufMapCodec 注释可证）。线格式保持不变：
+            // varint 长度 + 逐元素 writeUtf，与 26.2 的 writeCollection/readCollection 完全一致。
+            encoder = { buf, value ->
+                buf.writeVarInt(value.size)
+                value.forEach { buf.writeUtf(it) }
+            },
+            decoder = { buf ->
+                val size = buf.readVarInt()
+                List(size) { buf.readUtf() }
+            }
         )
         val fireSelectWhileShooting by registerSyncable(
             default = false,

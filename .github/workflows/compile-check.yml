@@ -1,0 +1,87 @@
+name: compile-check
+
+# 上线方式：沙箱 Agent 的 token 无 `workflows` 权限（push 会被 remote 拒收），
+# 与 TaCZ_Renovated 各线一致，请走 GitHub 网页：仓库 → Add file → Create new file →
+# 路径 `.github/workflows/{name}.yml` → 粘贴本文件全文 → commit 到 26.3-neoforge 分支。
+# 上线后 push/PR 会自动触发；本文件在上线前沿 `26.3-neoforge` 的工作树随移植记录保留。
+
+# ---------------------------------------------------------------------------
+# 26.3 线快速编译门禁（布局对齐 TaCZ_Renovated 移植仓的 compile-check）：
+#   1) scripts/fetch_ci_dependencies.py 重建 libs/（TaCZ R1 走 GitHub release，
+#      commons-math3 走 Maven Central，YACL / Sound Physics 走 Modrinth API）；
+#   2) 只跑 compileJava，日志回推仅在 arena/** 分支（长期分支不被 ci-log 污染）；
+#   3) concurrency 取消同分支过期 run。
+# 与 build.yml 的分工：这里 2~3 分钟给出「编译是否红」，build 才做完整门禁与产物。
+# 本线为编译级移植（见 docs/records/NEOFORGE_26_3_PORT_RECORD.md），首跑结果
+# 就是 26.3 适配的第一个硬证据。
+# ---------------------------------------------------------------------------
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.3*'
+    # 防止“日志回推 commit”再次触发本流程造成死循环；文档改动由 consistency 流程守着
+    paths-ignore:
+      - 'build-reports/**'
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - 'build-reports/**'
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Fetch binary dependencies into libs/
+        run: python3 scripts/fetch_ci_dependencies.py
+
+      - name: compileJava
+        run: |
+          mkdir -p build-reports
+          echo "commit: ${{ github.sha }}" > build-reports/compile-java.log
+          ./gradlew compileJava --console=plain --stacktrace --no-daemon >> build-reports/compile-java.log 2>&1
+
+      - name: Push compile log back via contents API
+        # 只在 arena/** 的 push 上回推 —— 长期分支与 PR 不产生 ci-log commit
+        if: always() && github.event_name == 'push' && startsWith(github.ref_name, 'arena/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LOG=build-reports/compile-java.log
+          LINES=$(wc -l < "$LOG")
+          if [ "$LINES" -gt 1000 ]; then
+            { head -n 200 "$LOG"; echo "...[truncated ${LINES} lines total]..."; tail -n 800 "$LOG"; } > /tmp/log-trimmed
+            mv /tmp/log-trimmed "$LOG"
+          fi
+          echo "" >> "$LOG"
+          echo "== job status: ${{ job.status }} ==" >> "$LOG"
+          BRANCH="${{ github.ref_name }}"
+          SHA=$(gh api "repos/${{ github.repository }}/contents/$LOG?ref=$BRANCH" --jq .sha 2>/dev/null || true)
+          ARGS=(-X PUT "repos/${{ github.repository }}/contents/$LOG"
+                -f message="ci-log: compile result (${{ job.status }}) for ${{ github.sha }}"
+                -f branch="$BRANCH"
+                -f content="$(base64 -w0 "$LOG")")
+          if [ -n "$SHA" ]; then ARGS+=(-f sha="$SHA"); fi
+          gh api "${ARGS[@]}" --jq .commit.sha

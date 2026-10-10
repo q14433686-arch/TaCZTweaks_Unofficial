@@ -24,22 +24,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import kotlin.jvm.functions.Function1;
 
 /**
- * Applies data-driven shield rules through 26.2's {@link BlocksAttacks} component.
+ * Applies data-driven shield rules through 26.3's {@link BlocksAttacks} component.
  *
  * <p>Older Minecraft versions implemented shields in {@code Player#hurtCurrentlyUsedShield}
  * and {@code disableShield}. Both methods disappeared in 26.2. The exact replacement path is
  * {@code LivingEntity.applyItemBlocking}: resolve blocked damage, damage the blocking item,
  * then return the blocked amount to {@code hurtServer}. Hooking those two component calls
  * preserves vanilla angle/bypass checks while allowing the datapack to replace damage,
- * durability and cooldown values.</p>
+ * durability and cooldown values. 26.3 keeps {@code applyItemBlocking(ServerLevel,
+ * DamageSource, float)} unchanged (re-verified against 26.3 decompiled sources and the
+ * NeoForge 26.3.x patch).</p>
  *
- * <h2>NeoForge 26.2.x call-site difference</h2>
+ * <h2>NeoForge 26.3.x call-site difference</h2>
  * NeoForge patches {@code BlocksAttacks} with an extra overload
  * {@code hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, float, int fixedDamage)}
  * and rewrites {@code LivingEntity#applyItemBlocking} to call <em>that</em> one, passing
  * {@code ShieldBlockEvent#shieldDamage()} (evidence: {@code patches/net/minecraft/world/entity/
  * LivingEntity.java.patch} and {@code patches/net/minecraft/world/item/component/BlocksAttacks.java.patch}
- * on branch {@code 26.2.x}). A wrap that only knows the vanilla 5-argument descriptor therefore
+ * on branches {@code 26.2.x} and {@code 26.3.x}; the blocking hunks are identical between the
+ * two). A wrap that only knows the vanilla 5-argument descriptor therefore
  * matches nothing and Mixin aborts with "Critical injection failure ... Scanned 0 target(s)".
  *
  * <p>Both descriptors are wrapped with {@code require = 0} so this mod keeps loading whichever
@@ -104,7 +107,7 @@ public abstract class LivingEntityMixin {
     }
 
     /**
-     * NeoForge 26.2.x call site: the extra {@code fixedDamage} argument already lets us hand the
+     * NeoForge 26.3.x call site: the extra {@code fixedDamage} argument already lets us hand the
      * custom durability cost back to vanilla/NeoForge code, so the item damage, break callback
      * and {@code onPlayerDestroyItem} event all keep running in their normal place.
      */

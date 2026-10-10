@@ -1,12 +1,13 @@
 # 构建指南
 
-目标：Minecraft 26.2、NeoForge 26.2.0.64、Java 25、
-TaCZ: Renovated `1.1.8+neoforge.26.2.R1`。当前产物版本：
-`2.14.2+neoforge.26.2.Beta-1`。
+目标：Minecraft 26.3、NeoForge 26.3.0.51-beta（26.3 仅 beta 通道）、Java 25、
+TaCZ: Renovated `1.1.8+neoforge.26.3.R1`。当前产物版本：
+`2.14.2+neoforge.26.3.Beta-1`。
 
-> 当前沙箱没有 JDK 25，无法本地复跑；维护者已在 Windows / JDK 25 上报告
-> `gradlew build` PASS，并进入游戏完成大多数核心功能的非穷尽 Beta 测试。以下流程仍是复现构建、
-> 专服与逐项验证的标准步骤；现有游戏报告不构成全面兼容保证。
+> 26.3 线是编译级移植：移植沙箱没有 JDK 25 与出网构建，`gradlew build` 尚未在本地复跑；
+> 构建与发布门禁由 `.github/workflows/` 的 CI 承担，游戏内验证由维护者按
+> `docs/records/NEOFORGE_26_3_PORT_RECORD.md` §7 清单补做。26.2 线的构建/实机结论不自动
+> 适用于 26.3。
 
 ## 1. 环境
 
@@ -17,14 +18,14 @@ TaCZ: Renovated `1.1.8+neoforge.26.2.R1`。当前产物版本：
 | 磁盘 | 建议至少 2 GB 空闲 |
 | 内存 | 建议至少 4 GB；低内存环境可下调 `org.gradle.jvmargs` |
 
-ModDevGradle 版本固定为 `2.0.144`。Minecraft 26.2 未混淆，不配置 mappings。
+ModDevGradle 版本固定为 `2.0.144`。Minecraft 26.3 未混淆，不配置 mappings。
 
 ## 2. 获取源码
 
 ```bash
 git clone https://github.com/q14433686-arch/TaCZTweaks_Unofficial.git
 cd TaCZTweaks_Unofficial
-git checkout 26.2-neoforge
+git checkout 26.3-neoforge
 ```
 
 ## 3. 准备 `libs/`
@@ -35,38 +36,39 @@ jar 不提交到 Git。来源、用途、许可证和 SHA-256 见
 ### 编译必需
 
 ```text
-libs/tacz-1.1.8+neoforge.26.2.R1.jar
-libs/yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar
-libs/sound-physics-remastered-neoforge-1.5.1+26.2.jar
+libs/tacz-1.1.8+neoforge.26.3.R1.jar
+libs/yet_another_config_lib_v3-3.9.4+26.3-neoforge.jar
+libs/sound-physics-remastered-neoforge-1.5.1+26.3.jar
 libs/commons-math3-3.6.1.jar
 ```
 
 来源：
 
-- TaCZ: Renovated：<https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.2_R1>
-- YACL：Modrinth/CurseForge 的 NeoForge 26.2 构建（3.9.5 起；维护者首轮构建使用 3.9.6；双端必需）
-- Sound Physics Remastered：**[NEOFORGE][26.2] 1.5.1+26.2**
+- TaCZ: Renovated：<https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.3的mod文件_R1>
+- YACL：Modrinth/CurseForge 的 NeoForge 26.3 构建（上游 port/26.3 线 modVersion=3.9.4；双端必需；
+  实际发布文件名以取件为准）
+- Sound Physics Remastered：NeoForge **1.5.1+26.3**（上游 master 已钉 26.3）
 - Commons Math 3.6.1：Maven Central
 
 ### 可选兼容核对件
 
 ```text
-libs/firstaid-1.3.0-patched+neoforge26.2.jar  # 1.2.8 存在，但当前 shader override 未核验，故不声明支持
-libs/pillagers_gun-3.3.5-neoforge-26.2.jar
+libs/firstaid-1.3.0-patched+neoforge26.3.jar  # 26.3 发行物未核实；拿到后需重新核验 1.3.x shader override
+libs/pillagers_gun-3.3.5-neoforge-26.3.jar    # 26.3 发行物未核实
 ```
 
 First Aid 与 Pillager's Gun 通过反射/字符串目标接入，不是编译硬依赖；放入后可让人工/jar 审计更接近
 实际运行组合。
 
-构建脚本会忽略 `- _ . +` 与空格后按关键词匹配，并要求目标 jar 名同时包含 `26.2`；任何名字含
-`fabric` 的 jar 都会被故意排除。这样旧 26.1.2 或错误加载器文件不会被静默拿来编译。
+构建脚本会忽略 `- _ . +` 与空格后按关键词匹配，并要求目标 jar 名同时包含 `26.3`；任何名字含
+`fabric` 的 jar 都会被故意排除。这样旧 26.2/26.1.2 或错误加载器文件不会被静默拿来编译。
 
 ```bash
 python3 scripts/download_dependencies.py --check-only
 ```
 
 `pending` 摘要只允许用于移植阶段；发布前必须下载真实文件、计算 SHA-256 并写回 manifest。
-TaCZ 行已记录 GitHub release API 公布的摘要，但仍建议发布机本地复算。
+26.3 线所有行当前都是 `pending`（移植沙箱无法下载二进制），首台取件机器负责回填。
 
 ## 4. 一致性与静态审计
 
@@ -77,7 +79,7 @@ python3 scripts/audit_port.py --strict
 ```
 
 如果依赖 jar 尚未放入，`audit_port.py` 会报告无法检查目标类；这不算 mixin 验证通过。
-可以用 `--minecraft-jar <path>` 让脚本检查 MDG 生成的 Minecraft 26.2 jar。
+可以用 `--minecraft-jar <path>` 让脚本检查 MDG 生成的 Minecraft 26.3 jar。
 
 ## 5. 单元测试与构建
 
@@ -92,15 +94,15 @@ python3 scripts/audit_port.py --strict
 预期产物：
 
 ```text
-build/libs/tacztweaks-2.14.2+neoforge.26.2.Beta-1.jar
-build/example-pack/tacz-tweaks-example-pack-2.14.2+neoforge.26.2.Beta-1.zip
+build/libs/tacztweaks-2.14.2+neoforge.26.3.Beta-1.jar
+build/example-pack/tacz-tweaks-example-pack-2.14.2+neoforge.26.3.Beta-1.zip
 ```
 
 Kotlin stdlib 2.4.10 通过 `jarJar` 内嵌；依赖模组和本地 `libs/*.jar` 不进入发布 jar。
 
 ## 6. 客户端验收
 
-把发布 jar 与匹配的 TaCZ: Renovated、YACL 放进一个干净 NeoForge 26.2.0.64 客户端。
+把发布 jar 与匹配的 TaCZ: Renovated、YACL 放进一个干净 NeoForge 26.3.0.51-beta 客户端。
 启动日志不得出现：
 
 - `MixinApplyError`
@@ -133,9 +135,9 @@ python3 scripts/check_server_log.py run/logs/latest.log
 
 | 现象 | 处理 |
 |---|---|
-| `Missing required compile dependencies` | 按第 3 节补齐 26.2 NeoForge jar；检查文件名是否含 `26.2`，且不含 `fabric` |
+| `Missing required compile dependencies` | 按第 3 节补齐 26.3 NeoForge jar；检查文件名是否含 `26.3`，且不含 `fabric` |
 | `Unresolved reference: tacz / dev / com.sonicether` | 本地依赖未识别；先看 `checkRequiredDependencies` 列出的文件名 |
 | `invalid source release 25` / `UnsupportedClassVersionError` | Gradle daemon 使用了旧 JDK；`./gradlew --stop` 后修正 `JAVA_HOME` |
-| 启动拒绝 TaCZ 版本 | 只接受 `1.1.8+neoforge.26.2.R1` 及同家族后续 R<n> |
+| 启动拒绝 TaCZ 版本 | 只接受 `1.1.8+neoforge.26.3.R1` 及同家族后续 R<n> |
 | Vineflower OOM | 默认已 `disableRecompilation = true`；IDE 反编译只应在大内存机器启用 |
-| `BlocksAttacks#hurtBlockingItem` 注入为 0 | 核对 NeoForge 26.2.x patches；当前主路径必须是 6 参 `(Level, ItemStack, LivingEntity, InteractionHand, float, int)` |
+| `BlocksAttacks#hurtBlockingItem` 注入为 0 | 核对 NeoForge 26.3.x patches（与 26.2.x 该 hunk 相同）；当前主路径必须是 6 参 `(Level, ItemStack, LivingEntity, InteractionHand, float, int)` |

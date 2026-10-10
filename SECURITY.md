@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the currently maintained NeoForge 26.2 beta line declared by `gradle.properties` and
+Only the currently maintained NeoForge 26.3 beta line declared by `gradle.properties` and
 `src/main/templates/META-INF/neoforge.mods.toml` is in scope. Older experimental builds may be used
 for diagnosis but are not guaranteed fixes. Until the build/client/server gates documented in
 `docs/KNOWN_ISSUES.md` pass, this line remains pre-release rather than production-validated.

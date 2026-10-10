@@ -36,7 +36,8 @@
 
 ## 移植与审计
 
-- [NeoForge 当前移植记录](records/NEOFORGE_26_2_PORT_RECORD.md)
+- [NeoForge 当前移植记录（26.3）](records/NEOFORGE_26_3_PORT_RECORD.md)
+- [上一轮移植记录（26.2）](records/NEOFORGE_26_2_PORT_RECORD.md)
 - [当前业务语义审计结论](../AUDIT.md)
 - [移植笔记](../PORTING_NOTES.md)
 - [历史交接记录](../AGENT_HANDOFF_26_1_2.md)

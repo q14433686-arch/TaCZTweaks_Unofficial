@@ -1,20 +1,24 @@
-# AGENTS.md — TaCZ Tweaks NeoForge 26.2 维护规则
+# AGENTS.md — TaCZ Tweaks NeoForge 26.3 维护规则
 
-供 AI 编码助手和人类协作者使用。当前目标是 Minecraft 26.2 / NeoForge 26.2.0.64 / Java 25 /
-未混淆 / 依赖 `q14433686-arch/TaCZ_Renovated` 的 `1.1.8+neoforge.26.2.R1`（modId 仍是 `tacz`）。
+供 AI 编码助手和人类协作者使用。当前目标是 Minecraft 26.3 / NeoForge 26.3.0.51-beta（26.3 仅
+beta 通道，与 TaCZ_Renovated 26.3 钉选一致）/ Java 25 / 未混淆 / 依赖
+`q14433686-arch/TaCZ_Renovated` 的 `1.1.8+neoforge.26.3.R1`（modId 仍是 `tacz`）。
 
-当前执行记录：`docs/records/NEOFORGE_26_2_PORT_RECORD.md`。历史加载器翻译依据：
+当前执行记录：`docs/records/NEOFORGE_26_3_PORT_RECORD.md`（本轮为编译级移植，未实测）。
+历史依据：`docs/records/NEOFORGE_26_2_PORT_RECORD.md`、
 `docs/records/NEOFORGE_26_1_2_PORT_PLAN.md`、`docs/records/NEOFORGE_26_1_2_PORT_RECORD.md`。
-姊妹分支：`26.2(main)`（Fabric，游戏语义权威）、
+姊妹分支：`26.3`（Fabric，游戏语义权威）、
 `1.21.11-neoforge`（同一套代码的另一条 NeoForge 线，可作范式参考）。
 
 ## 1. 事实来源顺序
 
-1. 当前源码调用链与 26.2 class descriptor；
-2. `libs/tacz-1.1.8+neoforge.26.2.R1.jar`（以及 NeoForge/Minecraft 26.2 jar）；
-3. 目标仓库 `q14433686-arch/TaCZ_Renovated` 的 `26.2` 当前源码/文档；
-4. 本仓库 `26.2(main)` Fabric 分支（游戏语义），只抄语义不抄加载器表面；
+1. 当前源码调用链与 26.3 class descriptor；
+2. `libs/tacz-1.1.8+neoforge.26.3.R1.jar`（以及 NeoForge/Minecraft 26.3 jar）；
+3. 目标仓库 `q14433686-arch/TaCZ_Renovated` 的 `26.3` 当前源码/文档；
+4. 本仓库 `26.3` Fabric 姊妹分支（游戏语义），只抄语义不抄加载器表面；
 5. 原版 MUKSC/TaCZTweaks v2.14.2；
+   姊妹线《26.3 移植指南》（TaCZ_Refabricated_Unofficial `26.3` 分支
+   `docs/lineage/PORT_GUIDE_26_3_FOR_RENOVATED_NEOFORGE_20260921.md`）是 26.3 破坏性变更的权威清单；
 6. 注释和历史移植笔记只作线索，不能单独作为结论——很多注释描述的是 Fabric 目标端
    （Refabricated）的方法/lambda 命名，对 Renovated 不自动成立。
 
@@ -32,10 +36,15 @@ python3 scripts/check_release_consistency.py
 ./gradlew clean build
 ```
 
+`.github/workflows/` 的四条流程稿（`compile-check` / `build` / `consistency` / `release`，
+布局对齐 TaCZ_Renovated 移植仓）已在本分支工作树就绪，但沙箱 token 无 `workflows` 权限，
+需按 `docs/ci/README.md` 的步骤经 GitHub 网页上线（正式件已同步保存在 `docs/ci/`）；上线后在 `arena/**`、`26.3*` 分支与 PR 上自动执行
+同套门禁的可 CI 化子集；`scripts/fetch_ci_dependencies.py` 负责在 runner 上重建 `libs/`。
+
 有 ModDevGradle 生成的 Minecraft jar 时再执行：
 
 ```bash
-python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-26.2.jar
+python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-26.3.jar
 ```
 
 注意：`libs/*.jar` 不进 Git；没有这些 jar 时 audit 会把目标类检查全部降级为 WARN，
@@ -54,13 +63,13 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-26.2.j
 修改 `gradle.properties` 的 `mod_version`、Minecraft/NeoForge/Kotlin 版本时，必须在同一
 工作分支同步 README、BUILD、CHANGELOG 和依赖表。`scripts/audit_port.py` 与
 `scripts/check_release_consistency.py` 会校验当前版本标识唯一一致。
-TaCZ 版本门禁常量在 `TaczVersionSupport`（family `neoforge.26.2`，最低 revision R1）。
+TaCZ 版本门禁常量在 `TaczVersionSupport`（family `neoforge.26.3`，最低 revision R1）。
 
 ## 4. 不得夸大
 
 - “实现”“静态验证”“编译通过”“游戏内实测”必须分开表述；
 - 跳过、禁用、默认关闭不能写成修复；
-- 可选模组兼容必须核对真实 NeoForge 26.2 发行物与源码/API，不能凭旧文档说不存在，
+- 可选模组兼容必须核对真实 NeoForge 26.3 发行物与源码/API，不能凭旧文档说不存在，
   也不能把 Fabric 侧的结论直接搬过来；
 - 尚未完成客户端、集成服、独立服矩阵时，PR 保持 Draft。
 
@@ -73,7 +82,7 @@ TaCZ 版本门禁常量在 `TaczVersionSupport`（family `neoforge.26.2`，最�
 - 客户端断线、服务器停止、资源重载都要检查缓存是否需要清理；
 - 不假设客户端与服务端在跨维度/重生时以相同方式替换玩家实例。
 
-## 6. NeoForge 26.2 常用写法
+## 6. NeoForge 26.3 常用写法
 
 - 入口：`@Mod` 构造器 `(IEventBus modEventBus, ModContainer container)`；客户端使用独立 `@Mod(value = MOD_ID, dist = Dist.CLIENT)` 入口，公共入口不得引用客户端类；
 - 网络：一次 `RegisterPayloadHandlersEvent`；发送 `PacketDistributor` / `ClientPacketDistributor`；
@@ -84,7 +93,7 @@ TaCZ 版本门禁常量在 `TaczVersionSupport`（family `neoforge.26.2`，最�
   `FMLLoader.getCurrent().loadingModList.getModFileById(id)`；
 - mixin JSON 不写 refmap。
 
-## 7. 26.2 原版常用替代写法
+## 7. 26.3 原版常用替代写法
 
 - 实体/物品标签：`BuiltInRegistries.<REGISTRY>.wrapAsHolder(value).is(tag)`；
 - 数据 reload：`ResourceLoader` v1，不新增 deprecated `ResourceManagerHelper`；

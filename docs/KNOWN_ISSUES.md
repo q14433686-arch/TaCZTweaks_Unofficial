@@ -1,21 +1,23 @@
 # Known issues and validation gaps
 
-## Build passed; runtime coverage is intentionally non-exhaustive
+## Compile-level port; nothing has run on 26.3 yet
 
-A maintainer completed a Windows / JDK 25 `gradlew build` successfully and reports that the built
-client entered the game with most core functions passing practical tests. That is meaningful Beta
-smoke coverage, but it is not a guarantee for every feature, config combination, datapack, hardware
-setup, or optional-mod combination.
+The 26.3 line is a compile-level port produced in a sandbox without JDK or outbound build network.
+No `gradlew build`, no client launch, no dedicated-server start and no gameplay scenario has been
+executed for this line. The 26.2 line's build/smoke results do not carry over. Everything below is
+a gap to close, not a regression that was observed.
 
-Still outstanding or not individually evidenced:
+Outstanding (in dependency order):
 
+- first green CI `build` (`.github/workflows/build.yml`) including unit tests and release gates;
+- `scripts/audit_port.py --strict` against the real 26.3 jars (currently WARN-downgraded without jars);
 - dedicated-server startup and `scripts/check_server_log.py` showing `Done (...)!`;
 - a per-scenario record for gun / ADS / reload / unload / config screen / datapack reload;
 - runtime matrices for Sound Physics, First Aid, Pillager's Gun and protection mods.
 
 ## Block-break protection is weaker than on Fabric
 
-Fabric exposes `PlayerBlockBreakEvents.BEFORE / CANCELED / AFTER`. NeoForge 26.2.x exposes the
+Fabric exposes `PlayerBlockBreakEvents.BEFORE / CANCELED / AFTER`. NeoForge 26.3.x exposes the
 cancellable `net.neoforged.neoforge.event.level.block.BreakBlockEvent`, fired for the break attempt,
 but no equivalent three-phase chain.
 
@@ -27,7 +29,7 @@ untested. This is a documented semantic downgrade, not a completed compatibility
 
 ## Shield durability depends on a NeoForge-patched call site
 
-NeoForge 26.2.x patches `LivingEntity#applyItemBlocking` to invoke the six-argument overload:
+NeoForge 26.3.x patches `LivingEntity#applyItemBlocking` to invoke the six-argument overload:
 
 ```text
 BlocksAttacks#hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, float, int)
@@ -35,20 +37,22 @@ BlocksAttacks#hurtBlockingItem(Level, ItemStack, LivingEntity, InteractionHand, 
 
 The six-argument wrap is the primary path. A five-argument wrap remains with `require = 0` as a
 vanilla/unpatched fallback. If neither target matches, the mod logs a one-time warning when a shield
-rule resolves. Build and general client startup no longer report an injection failure, but the
-maintainer did not provide a targeted shield-rule transcript.
+rule resolves. The 26.3.x blocking patch hunk is byte-identical to 26.2.x, but no 26.3 run has
+confirmed injection yet, and there is no targeted shield-rule transcript on any line.
 
 ## Optional integrations are source-checked, not runtime-verified
 
 Sound Physics Remastered, First Aid New, Pillager's Gun and bundled LRTactical have gated code paths.
-Their 26.2 source/API surfaces were located, but the published jars and behavior have not been tested
-with this port. Stay inside `docs/COMPATIBILITY.md` ranges and attach full logs to reports.
+Their 26.2 source/API surfaces were located previously and the unchanged ones were re-checked against
+the Renovated 26.3 sources, but no 26.3 published jar or behavior has been tested. First Aid and
+Pillager's Gun have no confirmed 26.3 artifacts at all. Stay inside `docs/COMPATIBILITY.md` ranges
+and attach full logs to reports.
 
 ## Pending dependency digests block release
 
-`RESOURCE_IMPORT_MANIFEST.tsv` still uses `pending` for binaries not covered by the available build
-log. TaCZ and Sound Physics hashes were taken from the maintainer's actual build inputs; YACL and
-optional jars still need exact SHA-256 values before release-quality provenance is complete.
+`RESOURCE_IMPORT_MANIFEST.tsv` uses `pending` for every 26.3 binary: the porting sandbox could not
+download release assets or Modrinth files, so no digest has been computed for this line. The first
+machine that fetches each jar must record its SHA-256 before release-quality provenance is complete.
 
 ## YACL is required on dedicated servers too
 
@@ -59,8 +63,8 @@ from a dedicated server is unsupported.
 ## Kotlin runtime is embedded
 
 NeoForge has no Fabric Language Kotlin equivalent here. The release jar uses `jarJar` for
-`kotlin-stdlib 2.4.10`; Gradle jar-content checks and general client startup passed. Coexistence with
-arbitrary other mods embedding different Kotlin versions remains outside the Beta smoke coverage.
+`kotlin-stdlib 2.4.10`; the Gradle jar-content gate will run on the first CI build. Coexistence with
+arbitrary other mods embedding different Kotlin versions is untested on this line.
 
 ## Removed legacy switches
 
@@ -72,6 +76,6 @@ The following options are not shipped:
 - `vsCollisionCompat`
 - `vsExplosionCompat`
 
-LSO, MTS and Valkyrien Skies targets were not re-verified for this NeoForge 26.2 port, so they are
+LSO, MTS and Valkyrien Skies targets were not re-verified for this NeoForge 26.3 port, so they are
 listed as unsupported rather than represented by empty/no-op switches. Remove stale keys from old
 JSON configuration files.

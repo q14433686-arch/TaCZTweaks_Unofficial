@@ -1,4 +1,4 @@
-本目录存放 NeoForge 26.2 构建所需的二进制依赖（build.gradle 按文件名关键词匹配）。
+本目录存放 NeoForge 26.3 构建所需的二进制依赖（build.gradle 按文件名关键词匹配）。
 完整来源、许可证、用途、是否进入发布 jar 以仓库根目录的 RESOURCE_IMPORT_MANIFEST.tsv 和
 LICENSES.md 为准。jar 本身不进入 Git（见 .gitignore 的 libs/*.jar）。
 
@@ -7,22 +7,27 @@ LICENSES.md 为准。jar 本身不进入 Git（见 .gitignore 的 libs/*.jar）�
   python3 scripts/download_dependencies.py --check-only
   python3 scripts/download_dependencies.py
 
-文件名匹配前会忽略 - _ . + 和空格；26.2 依赖还必须同时含 26.2（规范化后为 262）。
+文件名匹配前会忽略 - _ . + 和空格；26.3 依赖还必须同时含 26.3（规范化后为 263）。
 名字里含 "fabric" 的文件会被故意忽略，防止误用 Fabric 版。
 
-NeoForge 26.2 线需要：
+NeoForge 26.3 线需要：
 
-1) tacz-1.1.8+neoforge.26.2.R1.jar                       （必需）
-   来源：https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.2_R1
+1) tacz-1.1.8+neoforge.26.3.R1.jar                       （必需）
+   来源：https://github.com/q14433686-arch/TaCZ_Renovated/releases/tag/26.3的mod文件_R1
    作用：com.tacz.guns.* / me.xjqsh.lrtactical.* API 与全部 TaCZ mixin 目标。
    不进入本项目发布 jar；玩家必须单独安装。
+   注意：TaCZ 26.3 线钉选 NeoForge 26.3.0.51-beta（FML 12.0.8 起；旧 26.3 beta 的
+   ModConfig.Type.COMMON/SERVER 已被移除，二进制不兼容），本仓 gradle.properties 与其一致。
 
-2) yet_another_config_lib_v3-3.9.6+26.2-neoforge.jar     （必需）
-   来源：Modrinth/CurseForge YACL NeoForge 26.2（元数据接受 3.9.5 起；维护者首轮构建使用 3.9.6）。
+2) YetAnotherConfigLib NeoForge 26.3                     （必需）
+   来源：Modrinth/CurseForge YACL NeoForge 26.3（isXander `port/26.3` 线，3.9.x；
+   该行 gradle.properties 的 modVersion=3.9.4，发布文件名以 Modrinth/CurseForge 实际为准）。
    作用：配置持久化/同步基类与 NeoForge 模组列表配置屏；服务端也必须安装。
 
-3) sound-physics-remastered-neoforge-1.5.1+26.2.jar      （当前编译必需，运行可选）
-   来源：Modrinth/CurseForge “[NEOFORGE][26.2] 1.5.1+26.2”。
+3) sound-physics-remastered-neoforge-1.5.1+26.3.jar      （当前编译必需，运行可选）
+   来源：Modrinth/CurseForge Sound Physics Remastered NeoForge 26.3。
+   上游 master 已钉 minecraft_version=26.3、mod_version=1.5.1+26.3（2026-10-10 实查
+   henkelmax/sound-physics-remastered）；NeoForge 发行物以 Modrinth/CurseForge 为准。
    作用：可选 Sound Physics mixin 目标验证；运行时由 ModList/mixin plugin 门控。
 
 4) commons-math3-3.6.1.jar                               （编译必需）
@@ -30,12 +35,14 @@ NeoForge 26.2 线需要：
 
 可选核对件（反射 + 字符串目标，构建不强制）：
 
-5) firstaid-1.3.0-patched+neoforge26.2.jar
-   1.2.8+neoforge26.2 也有发行物，但当前 1.3.x shader override 未对它核验，因此本移植只声明 >=1.3.0、<1.4.0。
+5) firstaid *+neoforge26.3*（如存在）
+   26.3 发行物尚未在本沙箱核实（维护者称其它两个硬性前置已有 26.3 构建；First Aid
+   属可选件）。元数据仍声明 >=1.3.0、<1.4.0；拿到 26.3 jar 后需重新核验 1.3.x
+   shader override。
 
-6) pillagers_gun-3.3.5-neoforge-26.2.jar
-   26.2 NeoForge 发行物存在；当前元数据限制 >=3.3.5、<3.4.0。
+6) pillagers_gun *neoforge 26.3*（如存在）
+   26.3 发行物尚未在本沙箱核实；元数据仍限制 >=3.3.5、<3.4.0。
 
-manifest 中标记 pending 的 SHA-256 必须在发布前用实际下载文件补齐。TaCZ 行的摘要来自
-GitHub release asset API；本沙箱无法访问 release-assets/Modrinth/Maven 二进制下载端点，
-因此没有把这些 jar 留在工作树中，也没有声称本地复算过摘要。
+manifest 中标记 pending 的 SHA-256 必须在发布前用实际下载文件补齐。本沙箱无法访问
+release-assets/Modrinth/Maven 二进制下载端点，因此没有把这些 jar 留在工作树中，
+也没有声称本地复算过摘要。

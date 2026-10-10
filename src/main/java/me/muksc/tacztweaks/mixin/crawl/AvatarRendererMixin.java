@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
- * Ports upstream's crawl transition smoothing to 26.2's render-state renderer.
+ * Ports upstream's crawl transition smoothing to 26.3's render-state renderer.
  *
- * <p>26.2 reads {@link AvatarRenderState#isVisuallySwimming} directly. The interpolation
+ * <p>26.3 reads {@link AvatarRenderState#isVisuallySwimming} directly. The interpolation
  * amount is the first float local declared by the method, after its two float arguments;
  * therefore it is float ordinal 2. {@link ModifyArgs} changes Y and Z in one injector and
  * avoids the invalid "modified argument + target method arguments" signature that

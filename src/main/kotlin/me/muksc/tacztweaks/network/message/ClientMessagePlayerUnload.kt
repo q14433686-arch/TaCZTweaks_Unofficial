@@ -1,6 +1,5 @@
 package me.muksc.tacztweaks.network.message
 
-import net.neoforged.neoforge.items.ItemHandlerHelper
 import com.tacz.guns.api.TimelessAPI
 import com.tacz.guns.api.item.IGun
 import com.tacz.guns.api.item.builder.AmmoItemBuilder
@@ -15,6 +14,7 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.util.Prediction
 import net.neoforged.neoforge.network.handling.IPayloadContext
 
 /** Empty C2S action payload; StreamCodec.unit avoids a fake no-op writer/temporary buffer. */
@@ -80,7 +80,9 @@ object ClientMessagePlayerUnload : CustomPacketPayload {
             val returnedStacks = chunks.map { count ->
                 AmmoItemBuilder.create().setId(ammoId).setCount(count).build()
             }
-            returnedStacks.forEach { ItemHandlerHelper.giveItemToPlayer(player, it) }
+            // 26.3: NeoForge 移除了 ItemHandlerHelper#giveItemToPlayer；改用 vanilla 的
+            // Inventory#placeItemBackInInventory(ItemStack, Prediction)（TaCZ_Renovated 26.3 同款）。
+            returnedStacks.forEach { player.getInventory().placeItemBackInInventory(it, Prediction.SERVER_ONLY) }
             if (!inventoryFeed && ammoCount > 0) gun.setCurrentAmmoCount(gunStack, 0)
             if (unloadChamber) gun.setBulletInBarrel(gunStack, false)
         }

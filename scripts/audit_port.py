@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static audit for the NeoForge 26.2 TaCZ Tweaks port.
+"""Static audit for the NeoForge 26.3 TaCZ Tweaks port.
 
 The script deliberately uses only the Python standard library so it can run before
 Gradle in CI.  It catches the easy-to-miss failures that compilation alone does not:
@@ -39,7 +39,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src/main"
 MIXIN_ROOT = SOURCE_ROOT / "java/me/muksc/tacztweaks/mixin"
 MIXIN_JSON = SOURCE_ROOT / "resources/tacztweaks.mixins.json"
-TA_CZ_JAR = ROOT / "libs/tacz-1.1.8+neoforge.26.2.R1.jar"
+TA_CZ_JAR = ROOT / "libs/tacz-1.1.8+neoforge.26.3.R1.jar"
 MOD_METADATA = ROOT / "src/main/templates/META-INF/neoforge.mods.toml"
 CONFIG = SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/config/Config.kt"
 
@@ -722,10 +722,10 @@ def audit_versions(config: dict) -> list[str]:
         errors.append(f"MixinExtras {bundled} is lower than mixin JSON minimum {required}")
 
     expected_platform = {
-        "minecraft_version": "26.2",
-        "minecraft_version_range": "[26.2]",
-        "neo_version": "26.2.0.64",
-        "neo_version_range": "[26.2.0.64,)",
+        "minecraft_version": "26.3",
+        "minecraft_version_range": "[26.3]",
+        "neo_version": "26.3.0.51-beta",
+        "neo_version_range": "[26.3.0.51-beta,)",
         "kotlin_version": "2.4.10",
     }
     for key, expected in expected_platform.items():
@@ -736,9 +736,9 @@ def audit_versions(config: dict) -> list[str]:
     if not mod_version:
         errors.append("gradle.properties is missing mod_version")
         return errors
-    version_pattern = r"\d+\.\d+\.\d+\+neoforge\.26\.2\.(?:R\d+|Beta-\d+)(?:-[A-Za-z0-9]+)?"
+    version_pattern = r"\d+\.\d+\.\d+\+neoforge\.26\.3\.(?:R\d+|Beta-\d+)(?:-[A-Za-z0-9]+)?"
     if not re.fullmatch(version_pattern, mod_version):
-        errors.append(f"mod_version has an unexpected 26.2 format: {mod_version}")
+        errors.append(f"mod_version has an unexpected 26.3 format: {mod_version}")
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     documented = {
@@ -760,14 +760,14 @@ def audit_release_guards() -> list[str]:
     metadata = MOD_METADATA.read_text(encoding="utf-8")
     if 'modId="tacz"' not in metadata:
         errors.append("neoforge.mods.toml does not declare the required tacz dependency")
-    if 'versionRange="[3.9.5,3.10.0)"' not in metadata:
-        errors.append("YACL is not constrained to the NeoForge 26.2-compatible 3.9.x range")
+    if 'versionRange="[3.9.4,3.10.0)"' not in metadata:
+        errors.append("YACL is not constrained to the NeoForge 26.3-compatible 3.9.x range")
     if 'versionRange="[1.3.0,1.4.0)"' not in metadata:
         errors.append("First Aid compatibility is not constrained to the source-checked 1.3.x range")
     if 'versionRange="[1.5.1,1.6.0)"' not in metadata:
         errors.append("Sound Physics compatibility is not constrained to the source-checked 1.5.1 range")
     if 'versionRange="[3.3.5,3.4.0)"' not in metadata:
-        errors.append("Pillager's Gun compatibility is not constrained to the 26.2 3.3.5 line")
+        errors.append("Pillager's Gun compatibility is not constrained to the 26.3 3.3.5 line")
     yacl_block = re.search(
         r'\[\[dependencies\.\$\{mod_id\}\]\]\s+modId="yet_another_config_lib_v3"(?P<body>.*?)(?=\n\[\[|\Z)',
         metadata,
@@ -798,8 +798,8 @@ def audit_release_guards() -> list[str]:
     # The exact TaCZ release family gate cannot be expressed in the toml range; it lives in
     # TaczVersionSupport and must stay in sync with the shipped dependency.
     gate = (SOURCE_ROOT / "java/me/muksc/tacztweaks/TaczVersionSupport.java").read_text(encoding="utf-8")
-    if 'EXPECTED_FAMILY = "neoforge.26.2"' not in gate or "MIN_REVISION = 1" not in gate:
-        errors.append("TaczVersionSupport no longer pins the NeoForge 26.2 R1+ release family")
+    if 'EXPECTED_FAMILY = "neoforge.26.3"' not in gate or "MIN_REVISION = 1" not in gate:
+        errors.append("TaczVersionSupport no longer pins the NeoForge 26.3 R1+ release family")
 
     wrapper = (ROOT / "gradle/wrapper/gradle-wrapper.properties").read_text(encoding="utf-8")
     expected_gradle_sum = "bafc141b619ad6350fd975fc903156dd5c151998cc8b058e8c1044ab5f7b031f"
@@ -897,7 +897,7 @@ def audit_release_guards() -> list[str]:
         ROOT / "tacz-tweaks-example-pack/data/tacztweaks/tags/block/metal.json"
     ).read_text(encoding="utf-8"))
     if "#minecraft:chains" not in metal_tag.get("values", []) or "minecraft:chain" in metal_tag.get("values", []):
-        errors.append("example metal tag does not use the 26.2 #minecraft:chains tag")
+        errors.append("example metal tag does not use the 26.3 #minecraft:chains tag")
 
     shield_source = (
         SOURCE_ROOT / "kotlin/me/muksc/tacztweaks/data/manager/BulletInteractionManager.kt"
@@ -980,7 +980,7 @@ def find_minecraft_jars(explicit: list[str]) -> list[Path]:
 
 
 TACZ_VERSION_PATTERN = re.compile(
-    r"^1\.1\.8\+neoforge\.26\.2\.[rR][1-9][0-9]*(?:-[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)*$"
+    r"^1\.1\.8\+neoforge\.26\.3\.[rR][1-9][0-9]*(?:-[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)*$"
 )
 
 
@@ -1000,7 +1000,7 @@ def audit_tacz_artifact(path: Path) -> list[str]:
     version_value = version.group(1) if version else None
     if mod_id_value != "tacz" or not (version_value and TACZ_VERSION_PATTERN.match(version_value)):
         errors.append(
-            "TaCZ audit artifact is not a NeoForge 26.2 TaCZ build: "
+            "TaCZ audit artifact is not a NeoForge 26.3 TaCZ build: "
             f"modId={mod_id_value!r}, version={version_value!r}"
         )
     return errors
@@ -1009,7 +1009,7 @@ def audit_tacz_artifact(path: Path) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--strict", action="store_true", help="fail on target-class/method mismatches")
-    parser.add_argument("--tacz-jar", type=Path, default=TA_CZ_JAR, help="exact TaCZ R2 jar to inspect")
+    parser.add_argument("--tacz-jar", type=Path, default=TA_CZ_JAR, help="exact TaCZ R1 jar to inspect")
     parser.add_argument("--minecraft-jar", action="append", default=[], help="Loom Minecraft jar to inspect")
     parser.add_argument("--upstream-root", type=Path, help="optional MUKSC/TaCZTweaks v2.14.2 checkout")
     args = parser.parse_args()

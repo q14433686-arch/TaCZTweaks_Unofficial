@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-/** Restores two upstream gunsmith safety checks on the 26.2 GUI signature. */
+/** Restores two upstream gunsmith safety checks on the 26.3 GUI signature. */
 @Mixin(value = GunSmithTableScreen.class, remap = false)
 public abstract class GunSmithTableScreenMixin extends AbstractContainerScreen<GunSmithTableMenu> {
     @Shadow

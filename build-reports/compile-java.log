@@ -1,0 +1,78 @@
+commit: c7cc448738b3e5c717ed5ef9a85b052315b5296a
+Fetching distribution.
+Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
+.............10%.............20%..............30%.............40%.............50%..............60%.............70%..............80%.............90%.............100%
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/home/runner/.gradle/wrapper/dists/gradle-9.5.1-bin/iq79hdu3mqx29lgffhp8bfmx/gradle-9.5.1/lib/native-platform-0.22-milestone-29.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+Welcome to Gradle 9.5.1!
+
+Here are the highlights of this release:
+ - Task provenance in reports and failure messages
+ - Type-safe accessors for precompiled Kotlin Settings plugins
+
+For more details see https://docs.gradle.org/9.5.1/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Creating Minecraft artifacts without recompilation.
+
+> Task :checkRequiredDependencies
+checkRequiredDependencies: OK
+  tacz-1.1.8+neoforge.26.3.R1.jar
+  yet_another_config_lib_v3-3.9.4+26.3-neoforge.jar
+  sound-physics-remastered-neoforge-1.5.1+26.3.jar
+  commons-math3-3.6.1.jar
+
+> Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
+
+> Task :createMinecraftArtifacts
+Loaded 135 artifacts from /home/runner/work/TaCZTweaks_Unofficial/TaCZTweaks_Unofficial/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
+[1m*** Started working on [4mdownloadManifest[0m[0m
+  ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
+ [1m[92m✓[0m Completed [4mdownloadManifest[0m in 0.34s
+[1m*** Started working on [4mdownloadJson[0m[0m
+  ↓ https://launchermeta.mojang.com/mc/game/version_manifest_v2.json
+  ↓ https://piston-meta.mojang.com/v1/packages/702fe59163c6ee6578607daa85811d9bc9c7cc40/26.3.json
+ [1m[92m✓[0m Completed [4mdownloadJson[0m in 0.09s
+[1m*** Started working on [4mdownloadClient[0m[0m
+[1m*** Started working on [4mdownloadServer[0m[0m
+  ↓ https://piston-data.mojang.com/v1/objects/33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c/server.jar
+  ↓ https://piston-data.mojang.com/v1/objects/e877b6a07acd633fb3bb475002175cec036e7b87/client.jar
+ [1m[92m✓[0m Completed [4mdownloadClient[0m in 0.82s
+ [1m[92m✓[0m Completed [4mdownloadServer[0m in 0.98s
+[1m*** Started working on [4mpreProcessJar[0m[0m
+ ↳ Running external tool net.neoforged.installertools:installertools:4.0.17:fatjar
+ [1m[92m✓[0m Completed [4mpreProcessJar[0m in 3.06s
+[1m*** Started working on [4mbinaryPatch[0m[0m
+  [33mWARNING: [0mnet.neoforged.installertools:binarypatcher:4.0.17:fatjar is not present in the artifact manifest
+  ↓ https://maven.neoforged.net/releases/net/neoforged/installertools/binarypatcher/4.0.17/binarypatcher-4.0.17-fatjar.jar
+ ↳ Running external tool net.neoforged.installertools:binarypatcher:4.0.17:fatjar
+ [1m[92m✓[0m Completed [4mbinaryPatch[0m in 3.60s
+[1m*** Started working on [4mcopyUnpatchedClasses[0m[0m
+ [1m[92m✓[0m Completed [4mcopyUnpatchedClasses[0m in 3.01s
+[1m*** Started working on [4mapplyDevTransforms[0m[0m
+ ↳ Running external tool net.neoforged.installertools:installertools:4.0.12:fatjar
+ [1m[92m✓[0m Completed [4mapplyDevTransforms[0m in 3.36s
+Total runtime: 15.12s
+
+
+> Task :compileKotlin
+
+> Task :compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1791659564831.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/TaCZTweaks_Unofficial/TaCZTweaks_Unofficial/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 1m 40s
+4 actionable tasks: 4 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
+
+== job status: success ==

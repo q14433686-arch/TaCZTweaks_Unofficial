@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-file release consistency checks for TaCZ Tweaks (NeoForge 26.2)."""
+"""Cross-file release consistency checks for TaCZ Tweaks (NeoForge 26.3)."""
 
 from __future__ import annotations
 
@@ -86,12 +86,12 @@ def check_metadata() -> tuple[dict[str, str], str]:
     if "TaCZTweaks_Unofficial" not in meta:
         fail("neoforge.mods.toml is missing the repository URL")
     expected_properties = {
-        "minecraft_version": "26.2",
-        "minecraft_version_range": "[26.2]",
-        "neo_version": "26.2.0.64",
-        "neo_version_range": "[26.2.0.64,)",
+        "minecraft_version": "26.3",
+        "minecraft_version_range": "[26.3]",
+        "neo_version": "26.3.0.51-beta",
+        "neo_version_range": "[26.3.0.51-beta,)",
         "kotlin_version": "2.4.10",
-        "mod_version": "2.14.2+neoforge.26.2.Beta-1",
+        "mod_version": "2.14.2+neoforge.26.3.Beta-1",
     }
     for key, expected in expected_properties.items():
         if props.get(key) != expected:
@@ -103,7 +103,7 @@ def check_metadata() -> tuple[dict[str, str], str]:
         'versionRange="${minecraft_version_range}"',
         'modId="tacz"',
         'modId="yet_another_config_lib_v3"',
-        'versionRange="[3.9.5,3.10.0)"',
+        'versionRange="[3.9.4,3.10.0)"',
         'versionRange="[1.5.1,1.6.0)"',
         'versionRange="[1.3.0,1.4.0)"',
         'versionRange="[3.3.5,3.4.0)"',
@@ -120,8 +120,8 @@ def check_metadata() -> tuple[dict[str, str], str]:
         fail("YACL must be required on BOTH sides because common config types extend YACL")
 
     gate = (ROOT / "src/main/java/me/muksc/tacztweaks/TaczVersionSupport.java").read_text(encoding="utf-8")
-    if 'EXPECTED_FAMILY = "neoforge.26.2"' not in gate or "MIN_REVISION = 1" not in gate:
-        fail("TaczVersionSupport no longer targets the neoforge.26.2 R1+ release family")
+    if 'EXPECTED_FAMILY = "neoforge.26.3"' not in gate or "MIN_REVISION = 1" not in gate:
+        fail("TaczVersionSupport no longer targets the neoforge.26.3 R1+ release family")
     return props, meta
 
 
@@ -147,7 +147,7 @@ def check_docs(props: dict[str, str]) -> None:
     # metadata and changelog, not the reusable Modrinth/CurseForge project text.
     for rel in ("docs/publish/Modrinth.md", "docs/publish/CurseForge.md"):
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for forbidden in (version, "26.2", "Beta-1", "Beta-2"):
+        for forbidden in (version, "26.3", "Beta-1", "Beta-2"):
             if forbidden in text:
                 fail(f"{rel} should not embed reusable-publication forbidden token {forbidden}")
 
