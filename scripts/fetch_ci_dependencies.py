@@ -23,8 +23,12 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import sys
 import tempfile
+import time
+import traceback
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -59,10 +63,55 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def http_get(url: str, timeout: int = 300) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.read()
+RETRYABLE_HTTP_CODES = (408, 425, 429, 500, 502, 503, 504)
+
+
+def http_get(url: str, timeout: int = 300, attempts: int = 5) -> bytes:
+    """GET with retry/backoff.
+
+    CI runs several workflows per push and they all hit Modrinth/GitHub at once;
+    transient 429s and connection resets must not kill the whole job.
+    """
+    last: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code not in RETRYABLE_HTTP_CODES or attempt == attempts:
+                raise
+            last = exc
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+            if attempt == attempts:
+                raise
+            last = exc
+        delay = min(2 ** attempt, 30)
+        print(f"  retrying in {delay}s after attempt {attempt} failed ({last})")
+        time.sleep(delay)
+    raise AssertionError("unreachable")
+
+
+class _Tee:
+    """Fan stdout/stderr out to the Actions console and to a transcript file."""
+
+    def __init__(self, *streams) -> None:
+        self.streams = streams
+
+    def write(self, data: str) -> None:
+        for stream in self.streams:
+            try:
+                stream.write(data)
+                stream.flush()
+            except Exception:
+                pass
+
+    def flush(self) -> None:
+        for stream in self.streams:
+            try:
+                stream.flush()
+            except Exception:
+                pass
 
 
 def rows() -> list[dict[str, str]]:
@@ -143,12 +192,39 @@ def fetch_row(row: dict[str, str]) -> None:
     verify_or_report(path, expected)
 
 
-def main() -> int:
+def _run() -> int:
     for row in rows():
         fetch_row(row)
     present = sorted(p.name for p in LIBS.glob("*.jar")) if LIBS.is_dir() else []
     print("libs/ now contains:\n  " + ("\n  ".join(present) if present else "(nothing)"))
     return 0
+
+
+def main() -> int:
+    # On CI, mirror the whole transcript into build-reports/compile-java.log. If this
+    # fetch step fails, the workflow's compileJava step (which truncates that file
+    # before gradle) never runs, so the ci-log push-back uploads this transcript and
+    # the failure stays diagnosable without the Actions log UI. On success the
+    # workflow truncates the file before writing gradle output, so no noise leaks in.
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return _run()
+    log_dir = ROOT / "build-reports"
+    log_dir.mkdir(exist_ok=True)
+    transcript = (log_dir / "compile-java.log").open("w", encoding="utf-8")
+    sys.stdout = _Tee(sys.__stdout__, transcript)
+    sys.stderr = sys.stdout
+    try:
+        return _run()
+    except SystemExit as exc:
+        print(f"fetch_ci_dependencies: FATAL: {exc}")
+        return exc.code if isinstance(exc.code, int) else 1
+    except Exception:
+        traceback.print_exc()
+        return 1
+    finally:
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+        transcript.close()
 
 
 if __name__ == "__main__":
