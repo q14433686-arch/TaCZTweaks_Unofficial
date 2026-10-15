@@ -1,0 +1,123 @@
+name: audit
+
+# 本仓库独有的静态门禁（TaCZ 那边没有对应流程）。
+# scripts/audit_port.py 检查的是「编译通过也发现不了」的那一类错误：
+#   * mixin 类漏登记 / 拼错在 tacztweaks.mixins.json 里；
+#   * mixin 指向 TaCZ jar 里根本不存在的方法（混淆端口最常见的静默失效）；
+#   * common mixin 打到 @Environment(CLIENT) 方法上（专服会崩）；
+#   * 配置项被持久化/同步但没有任何行为代码读取；
+#   * 语言键漂移、图标元数据与校验和漂移、MixinExtras 版本低于 mixin JSON 声明的下限。
+#
+# 它只用 Python 标准库，不需要 Gradle —— 唯一的外部输入是 libs/ 里的 TaCZ jar
+# （用来核对 mixin 目标方法确实存在），所以必须先重建依赖。跑得比 build 快得多，
+# 值得独立成一条，让 mixin 目标漂移能第一时间报出来。
+#
+# ⚠️ 这里跑的是 **非 strict** 审计，这是 1.21.11 线特有的约束，不是从 26.3 抄来的疏漏：
+# 本分支 audit_port.py 的 --strict 还额外要求三个输入，缺任何一个都直接记为 error ——
+#   * --minecraft-named-jar      vanilla 具名 jar（校验 vanilla mixin 目标）
+#   * --minecraft-intermediary-jar  混淆 jar（校验运行时 intermediary 名）
+#   * 构建生成的 tacztweaks.refmap.json
+# 前两个来自 Loom/Mojang，只有跑过 ./gradlew build 才会落到 Gradle 缓存里；refmap 更是
+# 构建产物。也就是说 strict 审计**必须先有一次完整构建**，放在这条「最快反馈」的流程里
+# 逻辑上就是错的。26.x 是未混淆分支，既没有 intermediary 也没有 refmap，所以那边
+# audit.yml 可以直接 --strict —— 照抄过来必然全红。
+# 结论与 docs/maintenance/ci-workflow.yml 里那份早期提案一致：CI 跑非 strict 审计 + Gradle，
+# strict 审计留作发布前的手动门禁（命令见 BUILD.md「测试与门禁」）。
+#
+# 与 26.3 线的另一处差异：那边这一步还会跑 scripts/test_audit_optional_targets.py，
+# 该文件测的是 26.x **未混淆** classpath 上的 remap=false 可选 @At 目标
+# （BlocksAttacks / hurtBlockingItem 5 参 vs 6 参）。本分支是混淆 + Loom remap 端口，
+# audit_port.py 实现与目标类名都不同，那个自测在这里没有对应物，因此不移植。
+# 依赖区间回归测试放在 consistency.yml（纯 Python、最快的那条）。
+
+permissions:
+  # 需要 write：arena/** 上把审计输出回推到 build-reports/audit.log。
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '1.21.11'
+      - '26.3'
+      - '26.2(main)'
+      - '26.1.2'
+    paths-ignore:
+      - 'build-reports/**'
+  pull_request:
+    paths-ignore:
+      - 'build-reports/**'
+  workflow_dispatch:
+
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Restore vendored dependencies
+        run: python3 scripts/download_dependencies.py --print-sha256
+
+      # mixin 目标核对依赖 libs/ 里的 TaCZ jar，所以必须放在上一步之后。
+      # 非 strict：0 error 才算过；warning 是本分支已记录的已知状态（dormant compat 键、
+      # SoundBufferLibrary 的 narrow synthetic-target 例外），不让流程变红。
+      - name: Static port audit (0 error required)
+        run: |
+          mkdir -p build-reports
+          {
+            echo "commit: ${{ github.sha }}"
+            echo "ref: ${{ github.ref_name }}"
+            echo "mode: non-strict (strict needs the named/intermediary jars + generated refmap)"
+            echo
+          } > build-reports/audit.log
+          set +e
+          python3 scripts/audit_port.py >> build-reports/audit.log 2>&1
+          STATUS=$?
+          set -e
+          echo >> build-reports/audit.log
+          echo "== audit_port.py exit: $STATUS ==" >> build-reports/audit.log
+          exit "$STATUS"
+
+      - name: Release consistency (dependencies restored)
+        run: python3 scripts/check_release_consistency.py --require-deps
+
+      - name: Push audit log back via contents API
+        # 只在 arena/** 的 push 上回推 —— 主分支与 PR 不产生 ci-log commit。
+        # 受限沙箱读不到 Actions 的日志 blob 域，只能这样把审计结论取回去，
+        # 和 compile-check.yml 回推 compile-java.log 是同一个理由。
+        if: always() && github.event_name == 'push' && startsWith(github.ref_name, 'arena/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LOG=build-reports/audit.log
+          test -f "$LOG" || { echo "no audit log to push"; exit 0; }
+          # 审计输出很短，不像编译日志那样需要截断。
+          echo "== job status: ${{ job.status }} ==" >> "$LOG"
+          BRANCH="${{ github.ref_name }}"
+          CONTENT="$(base64 -w0 "$LOG")"
+          # compile-check.yml 会并发回推 build-reports/compile-java.log 到同一分支，
+          # 两边都可能撞上 409（父提交已前进）。重读 sha 后重试即可收敛。
+          for attempt in 1 2 3 4 5 6; do
+            SHA=$(gh api "repos/${{ github.repository }}/contents/$LOG?ref=$BRANCH" --jq .sha 2>/dev/null || true)
+            ARGS=(-X PUT "repos/${{ github.repository }}/contents/$LOG"
+                  -f message="ci-log: audit result (${{ job.status }}) for ${{ github.sha }}"
+                  -f branch="$BRANCH"
+                  -f content="$CONTENT")
+            if [ -n "$SHA" ]; then ARGS+=(-f sha="$SHA"); fi
+            if gh api "${ARGS[@]}" --jq .commit.sha; then
+              echo "pushed audit log on attempt $attempt"
+              exit 0
+            fi
+            echo "attempt $attempt failed (likely a concurrent build-reports commit); retrying"
+            sleep $((attempt * 5))
+          done
+          echo "::warning::could not push build-reports/audit.log after 6 attempts"

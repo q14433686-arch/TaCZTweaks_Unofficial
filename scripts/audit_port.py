@@ -670,7 +670,13 @@ def audit_versions(config: dict) -> tuple[list[str], list[str]]:
         errors.append(f"MixinExtras {bundled} is lower than mixin JSON minimum {required}")
 
     mod_version = properties.get("mod_version", "")
-    if not re.fullmatch(r"\d+\.\d+\.\d+\+fabric\.1\.21\.11\.(?:R\d+|Beta-\d+(?:-hotfix)?)", mod_version):
+    # Release suffix grammar for this line: R<n>, Beta-<n>, Beta-<n>-hotfix or a numbered
+    # Beta-<n>-hotfix<m>. The numbered form was added when the hotfix scheme was synced from
+    # the 26.3 line (Beta-1-hotfix -> Beta-1-hotfix2); it matches that line's Beta-1-hotfix1.
+    # Keep the trailing \d* optional so already-published unnumbered hotfix tags stay valid.
+    if not re.fullmatch(
+        r"\d+\.\d+\.\d+\+fabric\.1\.21\.11\.(?:R\d+|Beta-\d+(?:-hotfix\d*)?)", mod_version
+    ):
         errors.append(f"unexpected mod_version format: {mod_version}")
 
     readme_text = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -751,9 +757,20 @@ def audit_release_guards() -> list[str]:
         "docs/publish/README.md",
         "docs/publish/Modrinth.md",
         "docs/publish/CurseForge.md",
+        # Superseded by the installed workflows below, but kept as an archived proposal and
+        # still required so it is not silently deleted while docs point at it.
         "docs/maintenance/ci-workflow.yml",
         "scripts/download_dependencies.py",
         "scripts/check_release_consistency.py",
+        # Runtime-only-constraint gates synced from the 26.3 line. Deleting one of these
+        # would re-open the "CI green, game won't launch" hole, so the audit requires them.
+        "scripts/check_dependency_availability.py",
+        "scripts/test_dependency_ranges.py",
+        ".github/workflows/consistency.yml",
+        ".github/workflows/audit.yml",
+        ".github/workflows/compile-check.yml",
+        ".github/workflows/build.yml",
+        ".github/workflows/release.yml",
     }
     for name in sorted(required_files):
         if not (ROOT / name).is_file():

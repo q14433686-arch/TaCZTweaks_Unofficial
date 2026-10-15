@@ -1,0 +1,93 @@
+name: Version consistency
+
+# 版本一致性守门：改了 gradle.properties 却忘了同步 README / BUILD.md / fabric.mod.json 时，PR 会红。
+# build.yml 虽然也跑同一脚本，但它 paths-ignore 掉了 *.md 与 docs/**，
+# 「只改 README」的提交测不到 —— 本流程必须独立存在。
+# 本流程不需要 libs/ 里的 jar（未恢复的 manifest 行会打印 SKIP 而不是失败），因此跑得最快，
+# 是最先给出反馈的那一条。
+#
+# 从 26.3 同步过来的两类门禁也在这里跑，因为它们同样「编译不读、只有运行时才生效」：
+#   * check_runtime_version_gate —— TaCZTweaks.java 里硬编码的 TaCZ 版本闸门
+#     必须能放行 fabric.mod.json 声明的那个版本（26.3 上曾经不一致，导致全员启动崩溃）；
+#   * check_dependency_availability —— 去问上游「我们声明的区间到底有没有版本能命中」。
+# 依赖区间回归测试（scripts/test_dependency_ranges.py）也放在这条流程里。
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '1.21.11'
+      - '26.3'
+      - '26.2(main)'
+      - '26.1.2'
+    paths:
+      - 'gradle.properties'
+      - 'README.md'
+      - 'BUILD.md'
+      - 'CHANGELOG.md'
+      - 'RESOURCE_IMPORT_MANIFEST.tsv'
+      - 'src/main/resources/fabric.mod.json'
+      - 'src/main/java/me/muksc/tacztweaks/TaCZTweaks.java'
+      - 'docs/publish/**'
+      - 'docs/COMPATIBILITY.md'
+      - 'scripts/check_release_consistency.py'
+      - 'scripts/check_dependency_availability.py'
+      - 'scripts/test_dependency_ranges.py'
+      - '.github/workflows/consistency.yml'
+  pull_request:
+    paths:
+      - 'gradle.properties'
+      - 'README.md'
+      - 'BUILD.md'
+      - 'CHANGELOG.md'
+      - 'RESOURCE_IMPORT_MANIFEST.tsv'
+      - 'src/main/resources/fabric.mod.json'
+      - 'src/main/java/me/muksc/tacztweaks/TaCZTweaks.java'
+      - 'docs/publish/**'
+      - 'docs/COMPATIBILITY.md'
+      - 'scripts/check_release_consistency.py'
+      - 'scripts/check_dependency_availability.py'
+      - 'scripts/test_dependency_ranges.py'
+      - '.github/workflows/consistency.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: consistency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: README 与 gradle.properties 版本一致性
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 检查当前分支
+        run: python3 scripts/check_release_consistency.py
+
+      - name: Dependency-range regression tests
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/test_dependency_ranges.py -q
+
+      # 需要访问 api.modrinth.com。脚本在断网时打印 SKIP 并退 0，不会卡住构建；
+      # 因此验收要看输出里有没有 SKIP，而不是只看退出码。
+      - name: Dependency availability against upstream
+        run: python3 scripts/check_dependency_availability.py
+
+      - name: 失败提示
+        if: failure()
+        run: |
+          echo "::error::README.md / BUILD.md / fabric.mod.json 与 gradle.properties 的版本号或依赖区间不一致。"
+          echo "::error::请同步以下位置：顶部版本句 / 支持环境表 / 构建产物路径示例 / fabric.mod.json depends"
+          echo "::error::以及 RESOURCE_IMPORT_MANIFEST.tsv 的依赖版本与校验和。"
+          echo "::error::若报的是 runtime gate / dependency availability，说明代码里的 TaCZ 闸门或声明区间"
+          echo "::error::与上游实际发布版本脱节 —— 这类错误编译发现不了，只在游戏启动时炸。"

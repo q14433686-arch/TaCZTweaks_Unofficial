@@ -120,6 +120,11 @@ def download(row: dict[str, str]) -> None:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-only", action="store_true", help="fail if a dependency is missing; do not download")
+    parser.add_argument(
+        "--print-sha256",
+        action="store_true",
+        help="print the SHA-256 of every present dependency, so a manifest row can be pinned",
+    )
     args = parser.parse_args(argv)
 
     for row in rows():
@@ -132,6 +137,10 @@ def main(argv: list[str]) -> int:
             print(f"OK {target.relative_to(ROOT)} {rendered}")
         else:
             download(row)
+        # CI restores libs/ before building; emitting the digests keeps the manifest
+        # pinnable from a CI log even for rows that only carry a sha512 today.
+        if args.print_sha256 and target.is_file():
+            print(f"SHA256 {row['path']} {digest(target, 'sha256')}")
     return 0
 
 
