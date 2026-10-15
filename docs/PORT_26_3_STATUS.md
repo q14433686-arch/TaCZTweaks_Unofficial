@@ -4,6 +4,12 @@
 > 基线：本仓 `26.2(main)` @ `88738fb` → 目标 TaCZ `q14433686-arch/TaCZ_Refabricated_Unofficial` 分支 `26.3`
 > （发行版 `26.3_R1`，`1.1.8+fabric.26.3.R1`，2026-09-20 发布）。
 
+> **最新状态（2026-10-16）**：下方正文是 2026-09-22 初始移植的历史记录，不应把其中
+> 的“待 CI”“YACL 校验和占位符”当作当前状态。后续 PR #35 已合并，hotfix1 已发布；
+> CI 编译、完整构建和静态审计通过，YACL 校验和已写入 manifest。当前开发版本为
+> `2.14.2+fabric.26.3.Beta-1-hotfix2`，移植 26.2 PR #36 的 Loader/API/FLK/YACL
+> 下界政策；hotfix2 尚未发布。仓库未记录完整客户端、集成服、独立服验证矩阵。
+
 ## 0. 先读这个：本轮到底做了什么、没做什么
 
 **已经做到的（有 CI 实证）**
@@ -41,10 +47,9 @@
 | Kotlin / FLK | 1.13.13+kotlin.2.4.10 | **1.14.1+kotlin.2.4.20** | ⚠️ 起初误判为「未动」，实机启动即崩（见 §2.6）。FLK **确实**按 MC 版本打标签：Modrinth 上只有 1.14.1 带 26.3 标签 |
 | MixinExtras | 0.5.4 | **未动** | 无 26.3 相关变更证据 |
 
-**YACL 校验和是占位符**：`RESOURCE_IMPORT_MANIFEST.tsv` 里那一行写的是 `UNVERIFIED_PENDING_CI`。
-Modrinth 只公布 sha1/sha512，本沙箱拿不到文件本体算 sha256。
-第一次 CI 会用 `--print-sha256` 打印真实值，回填后把占位符换掉。
-（TaCZ 那一行的 sha256 是真的，取自 GitHub release 资产的 `digest` 字段。）
+**历史记录：初始移植时 YACL 校验和曾是占位符**。Modrinth 只公布 sha1/sha512，
+当时首次可访问依赖的 CI 用 `--print-sha256` 计算后完成回填；当前 `RESOURCE_IMPORT_MANIFEST.tsv`
+已固定 YACL 的 SHA-256 与上游 SHA-512。TaCZ 的 SHA-256 则取自 GitHub release 资产的 digest 字段。
 
 ---
 
@@ -146,9 +151,10 @@ Mod 'TaCZ Tweaks (Refabricated)' 需要 'Fabric Language Kotlin'
 我们声明 `>=1.13.13 <1.14.0`，26.3 上唯一可用的是 `1.14.1` ——
 **交集为空**，任何人装上都必崩，100% 复现。
 
-**修复**：
+**初始移植修复**（历史状态；hotfix2 后的当前范围见 README / COMPATIBILITY）：
 
-- `fabric.mod.json`：`>=1.13.13 <1.14.0` → `>=1.14.1+kotlin.2.4.20 <2.0.0`
+- `fabric.mod.json`：`>=1.13.13 <1.14.0` → `>=1.14.1+kotlin.2.4.20 <2.0.0`；
+  hotfix2 再移除 `<2.0.0` 上界，仅保留 `>=1.14.1+kotlin.2.4.20`。
 - `gradle.properties`：`flk_version` → `1.14.1+kotlin.2.4.20`
 - `build.gradle.kts`：Kotlin 插件 `2.4.10` → **`2.4.20`**（与 FLK 1.14.1 内置的 Kotlin 对齐，
   否则我们的类会按 2.4.10 的 stdlib ABI 编译，却在 2.4.20 的 stdlib 上运行）
@@ -370,10 +376,10 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 
 | 文件 | 改动 |
 |---|---|
-| `gradle.properties` | MC/Loader/FabricAPI/ModMenu 版本；`mod_version` → `2.14.2+fabric.26.3.Beta-1-hotfix1` |
+| `gradle.properties` | 初始移植时 MC/Loader/FabricAPI/ModMenu 版本；`mod_version` 初设为 `2.14.2+fabric.26.3.Beta-1-hotfix1` |
 | `build.gradle.kts` | TaCZ jar 文件名 → 26.3 R1 |
 | `src/main/resources/fabric.mod.json` | `depends` 全套 26.3 区间 |
-| `RESOURCE_IMPORT_MANIFEST.tsv` | 两条依赖换 26.3 来源/版本/校验和（YACL 待定） |
+| `RESOURCE_IMPORT_MANIFEST.tsv` | 初始移植时两条依赖改为 26.3 来源/版本；YACL 校验和当时待定，后续 CI 已回填 |
 | `.gitignore` / `libs/README.txt` | `libs/*.jar` 不再进 Git，改由脚本重建 |
 | `scripts/download_dependencies.py` | 支持 `UNVERIFIED_PENDING_CI`、`--print-sha256`、`--require-pinned` |
 | `src/main/kotlin/.../config/sync/BufCollectionCodec.kt` | **新增**，替代 26.3 删掉的 `FriendlyByteBuf#write/readCollection`，线格式不变 |

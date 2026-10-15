@@ -1,21 +1,9 @@
-commit: 765c7dc860e62f963146cbeffa46fbcb5adbe6e8
-ref: arena/133a950b-tacztweaks-unofficial
-Fetching distribution.
-Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
-.............10%.............20%..............30%.............40%.............50%..............60%.............70%..............80%.............90%.............100%
+commit: 5f78f1678397e8d2eb910745bf28fcce3e84a3fa
+ref: arena/97736467-tacztweaks-unofficial
 WARNING: A restricted method in java.lang.System has been called
 WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/home/runner/.gradle/wrapper/dists/gradle-9.5.1-bin/iq79hdu3mqx29lgffhp8bfmx/gradle-9.5.1/lib/native-platform-0.22-milestone-29.jar)
 WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
 WARNING: Restricted methods will be blocked in a future release unless native access is enabled
-
-
-Welcome to Gradle 9.5.1!
-
-Here are the highlights of this release:
- - Task provenance in reports and failure messages
- - Type-safe accessors for precompiled Kotlin Settings plugins
-
-For more details see https://docs.gradle.org/9.5.1/release-notes.html
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -36,9 +24,9 @@ AUDIT(minecraft): OK
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :compileKotlin
 > Task :compileJava
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792086304701.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792096524119.json
 
-BUILD SUCCESSFUL in 1m 40s
+BUILD SUCCESSFUL in 1m 30s
 4 actionable tasks: 4 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 

@@ -33,13 +33,13 @@
     "tacztweaks.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.19.5 <0.20.0",
+    "fabricloader": ">=0.19.5",
     "fabric-api": ">=0.160.7+26.3",
     "minecraft": "=26.3",
     "java": ">=25",
     "tacz": "=1.1.8+fabric.26.3.R1",
-    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20 <2.0.0",
-    "yet_another_config_lib_v3": "=3.9.7+26.3-fabric"
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "yet_another_config_lib_v3": ">=3.9.7+26.3-fabric"
   },
   "suggests": {
     "modmenu": "*",

@@ -4,10 +4,33 @@ All notable changes to the **`26.3` Fabric 26.3** line are tracked here. Other G
 branches keep their own changelogs. Release entries should be user-facing and concise; keep
 detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
-## 2.14.2+fabric.26.3.Beta-1-hotfix1 - Unreleased
+## 2.14.2+fabric.26.3.Beta-1-hotfix2 - Unreleased
 
-> Status: dependency coordinates and three source-verified API breaks are ported. **Not yet
-> compiled by CI and not tested in-game**; there is no downloadable build for this line.
+### Fixed
+
+- Removed the arbitrary upper bounds from Fabric Loader, Fabric Language Kotlin and the
+  existing Fabric API range, and changed YACL from an exact pin to a lower-bound-only range.
+  Minecraft and TaCZ remain exactly constrained to this 26.3 line.
+- Added a consistency guard that reads the compiled YACL version from
+  `RESOURCE_IMPORT_MANIFEST.tsv` and verifies all four dependency ranges include their build
+  baselines.
+
+### Added
+
+- Added regression tests for Loader/FLK/YACL lower-bound policies and upstream Modrinth
+  availability checks to the consistency workflow.
+- Corrected release-tag validation to preserve the published `HOTFIX-1` spelling; hotfix2
+  will use `26.3_BETA_1_HOTFIX-2` when explicitly released.
+
+### Compatibility
+
+- Open-ended ranges allow newer dependency versions through metadata; they do not imply that
+  every future Loader, Fabric API, FLK or YACL release has been game-tested.
+
+## 2.14.2+fabric.26.3.Beta-1-hotfix1 - 2026-10-15
+
+> Status: published to GitHub Releases with a downloadable JAR. CI compilation, full build and
+> static audit passed. The release notes do not record a separate client/server test matrix.
 
 ### Changed
 
@@ -41,11 +64,10 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
 ### Known gaps
 
-- The YACL manifest row still carries `UNVERIFIED_PENDING_CI` instead of a SHA-256; the first
-  CI run prints the real digest to pin.
-- Only breaks provable from the TaCZ 26.3 sources were applied. Anything that needs a
-  compiler or the game (mixin descriptors against vanilla 26.3, renderer/Iris behaviour) is
-  still unverified.
+- No separate client, integrated-server or dedicated-server test matrix is recorded for this
+  release; a green build and static audit do not prove runtime behaviour.
+- Fabric API releases above the selected minimum were not individually game-tested at the time
+  of this release.
 
 ## 2.14.2+fabric.26.2.Beta-1-hotfix - 26.2 line (historical)
 

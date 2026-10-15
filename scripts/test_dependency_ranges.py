@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
-"""Regression tests for Fabric Loader dependency-range launch failures.
+"""Regression tests for Fabric dependency-range launch failures and policy.
 
-Two bad Fabric dependency ranges have caused launch failures:
+Two concrete failures established the need for these guards:
 
 * ``fabric-language-kotlin: ">=1.13.13 <1.14.0"`` excluded the only FLK build published
   for Minecraft 26.3, ``1.14.1``.
 * ``fabric-api: ">=0.160.7+26.3 <0.162.0"`` excluded the user's installed
   ``0.162.0+26.3`` build by imposing an unnecessary upper cap.
 
-Compiling, the static mixin audit and jar packaging all passed, because none of them
-evaluate dependency ranges -- only the Fabric loader does.
+The 26.2 backport extends the lower-bound-only policy to Fabric Loader, FLK and YACL.
+The YACL compile version is read from RESOURCE_IMPORT_MANIFEST.tsv rather than duplicated
+as a hard-coded constant. Compiling and packaging alone do not enforce any of these ranges;
+Fabric Loader evaluates them only at game startup.
 
-These tests pin down which validation catches what:
+These tests cover four distinct checks:
 
-1. ``check_release_consistency._satisfies`` -- does the version we BUILD against satisfy
-   the range we SHIP? Catches the two files drifting apart.
-2. ``check_fabric_api_range_is_lower_bound_only`` -- does Fabric API avoid an arbitrary
-   upper cap that blocks later releases for the same game line?
-3. ``check_dependency_availability`` -- does upstream actually PUBLISH something in that
-   range for our Minecraft version? Catches the case where both files agree with each
-   other but disagree with reality, which is what happened in the FLK incident.
+1. ``check_release_consistency._satisfies`` and the manifest comparison ensure every
+   dependency version used to compile is admitted by the range shipped to users.
+2. Lower-bound-only policy checks prevent arbitrary caps or exact YACL pins from rejecting
+   newer versions for the same Minecraft line.
+3. ``check_dependency_availability`` asks Modrinth whether each checkable dependency has a
+   build for our Minecraft version that matches the shipped range. A network ``SKIP`` is not
+   an availability verification.
+4. Release-tag tests ensure hotfix version suffixes match the repository's actual tag format.
 
-Run: python3 -m pytest scripts/test_dependency_ranges.py
+Run: python3 -m pytest scripts/test_dependency_ranges.py scripts/test_validate_release_tag.py
 """
 
 from __future__ import annotations
@@ -76,7 +79,7 @@ def test_the_shipped_range_excluded_the_only_263_build() -> None:
 
 
 def test_current_flk_range_admits_the_only_263_build() -> None:
-    assert _range_matches("1.14.1+kotlin.2.4.20", ">=1.14.1+kotlin.2.4.20 <2.0.0")
+    assert _range_matches("1.14.1+kotlin.2.4.20", ">=1.14.1+kotlin.2.4.20")
 
 
 def test_range_operators() -> None:
@@ -113,9 +116,92 @@ def test_fabric_api_policy_rejects_an_upper_cap() -> None:
     assert raised, "a Fabric API upper cap must be rejected by release consistency"
 
 
+def test_loader_range_is_open_ended_from_its_build_minimum() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    declared = meta["depends"]["fabricloader"]
+
+    assert declared == f">={props['loader_version']}"
+    assert _range_matches("0.20.0", declared)
+    assert not _range_matches("0.19.4", declared)
+    consistency.check_fabric_loader_range_is_lower_bound_only(props, meta)
+
+
+def test_loader_policy_rejects_an_upper_cap() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    meta["depends"]["fabricloader"] += " <0.20.0"
+
+    raised = False
+    try:
+        consistency.check_fabric_loader_range_is_lower_bound_only(props, meta)
+    except SystemExit:
+        raised = True
+    assert raised, "a Loader upper cap must be rejected by release consistency"
+
+
+def test_flk_and_yacl_ranges_are_lower_bound_only() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    flk_range = meta["depends"]["fabric-language-kotlin"]
+    yacl_range = meta["depends"]["yet_another_config_lib_v3"]
+    yacl_minimum = consistency.read_yacl_manifest_version()
+
+    assert flk_range == f">={props['flk_version']}"
+    assert yacl_range == f">={yacl_minimum}"
+    # Synthetic newer versions confirm there is no artificial cap. This does not claim
+    # those versions have been game-tested; the CI availability check verifies releases.
+    assert _range_matches("2.0.0+kotlin.2.4.21", flk_range)
+    assert _range_matches("3.9.8+26.3-fabric", yacl_range)
+    assert not _range_matches("3.9.6+26.3-fabric", yacl_range)
+    consistency.check_flk_and_yacl_ranges_are_lower_bound_only(props, meta)
+
+
+def test_flk_policy_rejects_an_upper_cap() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    meta["depends"]["fabric-language-kotlin"] += " <2.0.0"
+
+    raised = False
+    try:
+        consistency.check_flk_and_yacl_ranges_are_lower_bound_only(props, meta)
+    except SystemExit:
+        raised = True
+    assert raised, "an FLK upper cap must be rejected by release consistency"
+
+
+def test_yacl_policy_rejects_an_exact_pin() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    meta["depends"]["yet_another_config_lib_v3"] = f"={consistency.read_yacl_manifest_version()}"
+
+    raised = False
+    try:
+        consistency.check_flk_and_yacl_ranges_are_lower_bound_only(props, meta)
+    except SystemExit:
+        raised = True
+    assert raised, "a YACL exact pin must be rejected by release consistency"
+
+
 def test_shipped_metadata_is_satisfiable_by_known_upstream_builds(monkeypatch) -> None:
     """The end-to-end guard must accept every currently known/reported 26.3 build."""
     monkeypatch.setattr(availability, "fetch_versions", lambda slug, gv: MODRINTH_26_3[slug])
+    assert availability.main([]) == 0
+
+
+def test_availability_check_fails_in_ci_if_network_would_be_skipped(monkeypatch) -> None:
+    def unreachable(slug: str, game_version: str) -> list[dict]:
+        raise OSError("simulated upstream outage")
+
+    monkeypatch.setattr(availability, "fetch_versions", unreachable)
+    assert availability.main(["--require-network"]) == 1
+
+
+def test_availability_check_keeps_offline_skip_mode_without_strict_flag(monkeypatch) -> None:
+    def unreachable(slug: str, game_version: str) -> list[dict]:
+        raise OSError("simulated offline sandbox")
+
+    monkeypatch.setattr(availability, "fetch_versions", unreachable)
     assert availability.main([]) == 0
 
 
@@ -147,6 +233,30 @@ def test_gradle_properties_and_fabric_mod_json_agree() -> None:
         assert _range_matches(props[prop_key], depends[depend_key]), (
             f"{depend_key} range {depends[depend_key]!r} excludes built {props[prop_key]!r}"
         )
+    yacl_version = consistency.read_yacl_manifest_version()
+    assert _range_matches(yacl_version, depends["yet_another_config_lib_v3"]), (
+        f"YACL range {depends['yet_another_config_lib_v3']!r} excludes compile "
+        f"version {yacl_version!r} from RESOURCE_IMPORT_MANIFEST.tsv"
+    )
+    consistency.check_declared_ranges_include_built_versions(props, meta)
+
+
+def test_compile_range_guard_rejects_a_yacl_floor_above_manifest_version() -> None:
+    """A correct policy string is not enough if its minimum excludes the compile jar."""
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    yacl_minimum = consistency.read_yacl_manifest_version()
+    meta["depends"]["yet_another_config_lib_v3"] = ">=3.9.8+26.3-fabric"
+
+    raised = False
+    try:
+        consistency.check_declared_ranges_include_built_versions(props, meta)
+    except SystemExit:
+        raised = True
+    assert raised, (
+        f"the consistency check must reject a YACL floor above the compile version "
+        f"recorded in the manifest ({yacl_minimum})"
+    )
 
 
 def _java_source() -> str:
