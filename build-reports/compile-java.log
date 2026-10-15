@@ -1,4 +1,4 @@
-commit: 31f228113a57cf39430dc390f821de7b24cf9513
+commit: 74312a39207a351433f0cc6a9bb34f5a1421b4f1
 ref: arena/e2c40ac7-tacztweaks-unofficial
 Fetching distribution.
 Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
@@ -62,11 +62,11 @@ w: file:///home/runner/work/TaCZTweaks_Unofficial/TaCZTweaks_Unofficial/src/main
 > Task :jar
 > Task :compileTestKotlin
 > Task :compileTestJava NO-SOURCE
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792091135254.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792091942705.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/TaCZTweaks_Unofficial/TaCZTweaks_Unofficial/build/reports/problems/problems-report.html
 
-BUILD SUCCESSFUL in 6m 20s
+BUILD SUCCESSFUL in 2m 54s
 7 actionable tasks: 7 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 
