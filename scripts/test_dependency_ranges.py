@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
-"""Regression tests for the 2026-09-22 "Incompatible mods found" incident.
+"""Regression tests for Fabric Loader dependency-range launch failures.
 
-The mod shipped ``fabric-language-kotlin: ">=1.13.13 <1.14.0"`` while the only FLK build
-published for Minecraft 26.3 was ``1.14.1``. The intersection was empty, so the game
-refused to start for every user. Compiling, the static mixin audit and jar packaging all
-passed, because none of them evaluate dependency ranges -- only the Fabric loader does.
+Two bad Fabric dependency ranges have caused launch failures:
 
-Two distinct guards came out of that, and these tests pin down which one catches what:
+* ``fabric-language-kotlin: ">=1.13.13 <1.14.0"`` excluded the only FLK build published
+  for Minecraft 26.3, ``1.14.1``.
+* ``fabric-api: ">=0.160.7+26.3 <0.162.0"`` excluded the user's installed
+  ``0.162.0+26.3`` build by imposing an unnecessary upper cap.
+
+Compiling, the static mixin audit and jar packaging all passed, because none of them
+evaluate dependency ranges -- only the Fabric loader does.
+
+These tests pin down which validation catches what:
 
 1. ``check_release_consistency._satisfies`` -- does the version we BUILD against satisfy
    the range we SHIP? Catches the two files drifting apart.
-2. ``check_dependency_availability`` -- does upstream actually PUBLISH something in that
+2. ``check_fabric_api_range_is_lower_bound_only`` -- does Fabric API avoid an arbitrary
+   upper cap that blocks later releases for the same game line?
+3. ``check_dependency_availability`` -- does upstream actually PUBLISH something in that
    range for our Minecraft version? Catches the case where both files agree with each
-   other but disagree with reality, which is what actually happened.
+   other but disagree with reality, which is what happened in the FLK incident.
 
 Run: python3 -m pytest scripts/test_dependency_ranges.py
 """
@@ -41,11 +48,12 @@ availability = _load("check_dependency_availability", "check_dependency_availabi
 
 satisfies = consistency._satisfies
 
-# Exactly what api.modrinth.com/v2 returned for game_versions=["26.3"], loaders=["fabric"]
-# on 2026-09-22. FLK having a single 26.3 build is the crux of the incident.
+# Representative Fabric builds for Minecraft 26.3. The 0.162.0+26.3 entry is the
+# concrete version from the user's crash report; the previous upper cap rejected it.
 MODRINTH_26_3 = {
     "fabric-language-kotlin": [{"version_number": "1.14.1+kotlin.2.4.20"}],
     "fabric-api": [
+        {"version_number": "0.162.0+26.3"},
         {"version_number": "0.161.0+26.3"},
         {"version_number": "0.160.7+26.3"},
         {"version_number": "0.160.6+26.3"},
@@ -67,12 +75,14 @@ def test_the_shipped_range_excluded_the_only_263_build() -> None:
     assert not _range_matches("1.14.1+kotlin.2.4.20", ">=1.13.13 <1.14.0")
 
 
-def test_current_range_admits_the_only_263_build() -> None:
+def test_current_flk_range_admits_the_only_263_build() -> None:
     assert _range_matches("1.14.1+kotlin.2.4.20", ">=1.14.1+kotlin.2.4.20 <2.0.0")
 
 
 def test_range_operators() -> None:
-    assert _range_matches("0.160.7+26.3", ">=0.160.7+26.3 <0.162.0")
+    assert _range_matches("0.160.7+26.3", ">=0.160.7+26.3")
+    assert _range_matches("0.162.0+26.3", ">=0.160.7+26.3")
+    # This reproduces the reported failure: the old artificial cap rejected 0.162.0.
     assert not _range_matches("0.162.0+26.3", ">=0.160.7+26.3 <0.162.0")
     assert _range_matches("1.1.8+fabric.26.3.R1", "=1.1.8+fabric.26.3.R1")
     # '=' is exact: build metadata must match too, so R2 must not satisfy an R1 pin.
@@ -80,8 +90,31 @@ def test_range_operators() -> None:
     assert _range_matches("9.9.9", "*")
 
 
-def test_shipped_metadata_is_satisfiable_by_real_upstream_builds(monkeypatch) -> None:
-    """The end-to-end guard, against real upstream data: the repo as it stands must pass."""
+def test_fabric_api_range_is_open_ended_and_accepts_reported_version() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    declared = meta["depends"]["fabric-api"]
+
+    assert declared == f">={props['fabric_version']}"
+    assert _range_matches("0.162.0+26.3", declared)
+    consistency.check_fabric_api_range_is_lower_bound_only(props, meta)
+
+
+def test_fabric_api_policy_rejects_an_upper_cap() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
+    meta["depends"]["fabric-api"] += " <0.162.0"
+
+    raised = False
+    try:
+        consistency.check_fabric_api_range_is_lower_bound_only(props, meta)
+    except SystemExit:
+        raised = True
+    assert raised, "a Fabric API upper cap must be rejected by release consistency"
+
+
+def test_shipped_metadata_is_satisfiable_by_known_upstream_builds(monkeypatch) -> None:
+    """The end-to-end guard must accept every currently known/reported 26.3 build."""
     monkeypatch.setattr(availability, "fetch_versions", lambda slug, gv: MODRINTH_26_3[slug])
     assert availability.main([]) == 0
 

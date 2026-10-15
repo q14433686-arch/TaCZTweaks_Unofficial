@@ -145,6 +145,24 @@ def check_declared_ranges_include_built_versions(props: dict[str, str], meta: di
             )
 
 
+def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep the Fabric API dependency open-ended above its tested minimum.
+
+    Fabric API releases for one Minecraft line can advance from e.g. 0.160.x to
+    0.162.x without changing the supported game version. An arbitrary upper bound
+    rejects such compatible updates even though this mod's Minecraft dependency is
+    pinned separately. Keep the selected build version as the minimum, with no cap.
+    """
+    declared = meta.get("depends", {}).get("fabric-api", "")
+    expected = f">={props['fabric_version']}"
+    if declared != expected:
+        fail(
+            f"fabric.mod.json depends.fabric-api should be the lower-bound-only range "
+            f"'{expected}' (no upper cap); got '{declared}'. An upper cap can reject "
+            f"newer Fabric API releases for the same Minecraft line."
+        )
+
+
 def check_metadata() -> tuple[dict[str, str], dict]:
     props = read_properties(ROOT / "gradle.properties")
     meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
@@ -169,6 +187,7 @@ def check_metadata() -> tuple[dict[str, str], dict]:
             fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
+    check_fabric_api_range_is_lower_bound_only(props, meta)
     check_declared_ranges_include_built_versions(props, meta)
     return props, meta
 
