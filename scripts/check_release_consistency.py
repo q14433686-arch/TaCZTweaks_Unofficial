@@ -138,10 +138,11 @@ def check_declared_ranges_include_built_versions(props: dict[str, str], meta: di
     and jar packaging all pass regardless of what the range says. Only the loader enforces
     it, at startup.
 
-    On this 1.21.11 line the FLK range ">=1.13.13 <1.14.0" is CORRECT and must not be
-    copied from 26.3 -- verified against api.modrinth.com (2026-09-22, recorded in
-    docs/CROSS_BRANCH_SYNC.md §2.4 on the 26.3 branch), FLK 1.13.12 / 1.13.13 / 1.13.14 /
-    1.14.0 / 1.14.1 are all tagged for 1.21.11. What is synced is the gate, not the numbers.
+    On this 1.21.11 line the FLK *minimum* must stay 1.13.13 -- it is the build this branch
+    compiles against, while 26.3 had to move its floor to 1.14.1 because that was the only
+    build tagged for 26.3. What is synced from 26.3 is the gate, not the numbers: 1.21.11
+    keeps its own minimum but, like every other dependency here, no upper cap (see
+    check_flk_and_yacl_ranges_are_lower_bound_only, 2026-10-16).
     """
     depends = meta.get("depends", {})
     # gradle.properties key -> fabric.mod.json depends key
@@ -186,6 +187,99 @@ def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict
         )
 
 
+def check_fabric_loader_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep the Fabric Loader dependency open-ended above loader_version.
+
+    Fabric Loader 0.20.0 was released on 2026-10-15 (stable) and the old
+    ">=0.19.3 <0.20.0" made the Loader reject every user who updated to it -- the same class
+    of bug as the Fabric API / FLK / YACL caps, on the one dependency every user has.
+
+    Why removing the cap is safe for this branch's mixins: Fabric derives each mod's Mixin
+    compatibility level from the *minimum* of its fabricloader dependency
+    (FabricMixinBootstrap.getMixinCompat + FabricMixinVersions), so ">=0.19.3" still resolves
+    to COMPATIBILITY_0_17_1 on 0.20.0 -- the upper bound never took part. Raising the minimum
+    to 0.19.4 or later would switch the level, so treat that as a behaviour change.
+    """
+    declared = meta.get("depends", {}).get("fabricloader", "")
+    expected = f">={props['loader_version']}"
+    if declared != expected:
+        fail(
+            f"fabric.mod.json depends.fabricloader should be the lower-bound-only range "
+            f"'{expected}' (no upper cap); got '{declared}'. An upper cap rejects newer "
+            f"Fabric Loader releases with 'Incompatible mods found'."
+        )
+
+
+# This branch gets YACL from the vendored libs/yacl-fabric.jar instead of a Maven coordinate,
+# so the version it compiles against is recorded in two places: build.gradle.kts references the
+# jar path, and RESOURCE_IMPORT_MANIFEST.tsv records the Modrinth release that jar came from
+# (project 1eAoo2KR). Both are cross-checked below, so swapping the jar without updating the
+# declared minimum fails here.
+YACL_BUILD_JAR = "libs/yacl-fabric.jar"
+YACL_BUILT_VERSION = "3.8.2+1.21.11-fabric"
+
+
+def _manifest_row(path: str) -> dict[str, str] | None:
+    manifest = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
+    with manifest.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            if row.get("path") == path:
+                return row
+    return None
+
+
+def check_flk_and_yacl_ranges_are_lower_bound_only(
+    props: dict[str, str], meta: dict, build_script: str
+) -> None:
+    """Keep Fabric Language Kotlin and YACL open-ended above the versions this build uses.
+
+    On the 26.2 line (Issue #33) Fabric Loader rejected the user's FLK 1.14.2+kotlin.2.4.21
+    because of ">=1.13.13 <1.14.0" and YACL 3.9.7+26.2-fabric because of the exact pin
+    "=3.9.6+26.2-fabric". This line declared those same two shapes, and here the FLK cap
+    already bit: FLK 1.14.0 / 1.14.1 / 1.14.2 are published and all three are tagged for
+    Minecraft 1.21.11, so ">=1.13.13 <1.14.0" rejected real, compatible releases.
+
+    Minimums stay exactly what this build compiles against: FLK = the release part of
+    flk_version ("1.13.13+kotlin.2.4.10" -> ">=1.13.13"), YACL = YACL_BUILT_VERSION, which is
+    tied to the vendored jar and its manifest row so replacing either without updating the
+    declared minimum fails here.
+
+    Fabric ignores build metadata when comparing, so ">=3.8.2+1.21.11-fabric" means
+    ">=3.8.2"; a YACL build for another game line is still rejected by YACL's own minecraft
+    dependency.
+    """
+    if f'"{YACL_BUILD_JAR}"' not in build_script:
+        fail(
+            f"build.gradle.kts no longer resolves YACL from {YACL_BUILD_JAR}; update "
+            "YACL_BUILT_VERSION in scripts/check_release_consistency.py and the "
+            "fabric.mod.json minimum together."
+        )
+    row = _manifest_row(YACL_BUILD_JAR)
+    if row is None:
+        fail(f"RESOURCE_IMPORT_MANIFEST.tsv has no row for {YACL_BUILD_JAR}")
+    elif row.get("upstream_version") != YACL_BUILT_VERSION:
+        fail(
+            f"RESOURCE_IMPORT_MANIFEST.tsv records YACL {row.get('upstream_version')} for "
+            f"{YACL_BUILD_JAR}, but this build's declared minimum is {YACL_BUILT_VERSION}. "
+            "Update the manifest row and the fabric.mod.json minimum together."
+        )
+    flk_version = props.get("flk_version", "")
+    if not flk_version:
+        fail("gradle.properties is missing flk_version")
+    for depend_key, minimum in (
+        ("fabric-language-kotlin", flk_version.split("+", 1)[0]),
+        ("yet_another_config_lib_v3", YACL_BUILT_VERSION),
+    ):
+        expected = f">={minimum}"
+        declared = meta.get("depends", {}).get(depend_key, "")
+        if declared != expected:
+            fail(
+                f"fabric.mod.json depends.{depend_key} should be the lower-bound-only range "
+                f"'{expected}' (no upper cap, no exact pin); got '{declared}'. Caps and exact "
+                "pins reject newer compatible releases with 'Incompatible mods found'."
+            )
+
+
 def check_metadata() -> tuple[dict[str, str], dict]:
     props = read_properties(ROOT / "gradle.properties")
     meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
@@ -205,9 +299,6 @@ def check_metadata() -> tuple[dict[str, str], dict]:
         "minecraft": f"={props['minecraft_version']}",
         "java": ">=21",
         "tacz": "=1.1.8+fabric.1.21.11.R2",
-        "yet_another_config_lib_v3": "=3.8.2+1.21.11-fabric",
-        "fabricloader": ">=0.19.3 <0.20.0",
-        "fabric-language-kotlin": ">=1.13.13 <1.14.0",
     }
     for key, value in expected_depends.items():
         if meta["depends"].get(key) != value:
@@ -216,9 +307,14 @@ def check_metadata() -> tuple[dict[str, str], dict]:
         fail("fabric.mod.json should suggest modmenu: *")
     if props.get("minecraft_version") != "1.21.11":
         fail(f"gradle.properties minecraft_version drifted: {props.get('minecraft_version')}")
-    # fabric-api is deliberately NOT in expected_depends: it must stay a lower-bound-only
-    # range derived from gradle.properties, which the two checks below enforce.
+    # fabric-api, fabricloader, fabric-language-kotlin and yet_another_config_lib_v3 are
+    # deliberately NOT in expected_depends: each must stay a lower-bound-only range whose
+    # minimum comes from gradle.properties (or, for YACL, the vendored jar), which the checks
+    # below enforce.
     check_fabric_api_range_is_lower_bound_only(props, meta)
+    check_fabric_loader_range_is_lower_bound_only(props, meta)
+    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+    check_flk_and_yacl_ranges_are_lower_bound_only(props, meta, build_script)
     check_declared_ranges_include_built_versions(props, meta)
     return props, meta
 
