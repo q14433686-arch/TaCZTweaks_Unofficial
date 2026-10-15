@@ -20,8 +20,8 @@ filing issues.
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-本线最新已发布版本为 [**Beta-1-hotfix1**](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases/tag/26.3_BETA_1_HOTFIX-1)
-（`2.14.2+fabric.26.3.Beta-1-hotfix1`）；当前开发版本为 **Beta-1-hotfix2**。
+本线最新已发布版本为 [**Beta-1-hotfix1**](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases/tag/26.3_BETA_1_HOTFIX-1)；
+当前开发版本为 **Beta-1-hotfix2**（`2.14.2+fabric.26.3.Beta-1-hotfix2`）。
 
 > **当前变更**：hotfix2 移植了 26.2 依赖范围修复：Loader、Fabric API、FLK 与 YACL
 > 均保留本线编译基线作为最低版本，但不再设置任意上界/精确 pin；Minecraft 与 TaCZ
