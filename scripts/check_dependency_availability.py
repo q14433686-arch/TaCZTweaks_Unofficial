@@ -27,6 +27,7 @@ Usage::
 
     python3 scripts/check_dependency_availability.py            # fail on problems
     python3 scripts/check_dependency_availability.py --warn-only
+    python3 scripts/check_dependency_availability.py --require-network  # CI: fail on SKIP
 """
 
 from __future__ import annotations
@@ -80,7 +81,14 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="report problems without failing (use when the network may be unavailable)",
     )
+    parser.add_argument(
+        "--require-network",
+        action="store_true",
+        help="fail instead of silently skipping if any upstream request is unreachable",
+    )
     args = parser.parse_args(argv)
+    if args.warn_only and args.require_network:
+        parser.error("--warn-only cannot be combined with --require-network")
 
     props = read_properties(ROOT / "gradle.properties")
     meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
@@ -124,7 +132,10 @@ def main(argv: list[str]) -> int:
             )
 
     for note in unreachable:
-        print(f"SKIP (network unavailable) {note}")
+        if args.require_network:
+            problems.append(f"upstream availability could not be verified: {note}")
+        else:
+            print(f"SKIP (network unavailable) {note}")
 
     if problems:
         for problem in problems:

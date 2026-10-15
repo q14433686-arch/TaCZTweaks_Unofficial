@@ -64,8 +64,9 @@ Loader 的上界以及 YACL 的精确 pin 会拦截同一 Minecraft 发行线中
 | YetAnotherConfigLib | `3.9.7+26.3-fabric` |
 
 这些范围**仅从本线已选编译版本起开放**，并不宣称所有更新版本都已实机验证；
-CI 必须让 Modrinth 可用性检查返回 `OK`，若显示 `SKIP`（网络不可用），该项仍未验证，
-须按 §2.4 离线核对。仍需按发行流程执行完整 CI 和游戏验证。`minecraft` 与 TaCZ
+CI 以 `--require-network` 运行 Modrinth 可用性检查，网络不可用时会失败；本地若显示
+`SKIP`，该项仍未验证，须按 §2.4 离线核对。仍需按发行流程执行完整 CI 和游戏验证。
+`minecraft` 与 TaCZ
 声明继续精确约束，TaCZ 运行时 R<n> 规则仍由本线自己的 gate 决定。同步到其他分支时
 只能采用相同的范围政策，不能照搬这张表的版本号；NeoForge 线不使用 Fabric API。
 

@@ -76,7 +76,7 @@ jobs:
         run: python3 scripts/check_release_consistency.py
 
       - name: 检查 Modrinth 上游依赖是否可用
-        run: python3 scripts/check_dependency_availability.py
+        run: python3 scripts/check_dependency_availability.py --require-network
 
       - name: 依赖范围与 Release tag 回归测试
         run: |

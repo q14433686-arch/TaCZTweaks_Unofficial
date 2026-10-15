@@ -189,6 +189,22 @@ def test_shipped_metadata_is_satisfiable_by_known_upstream_builds(monkeypatch) -
     assert availability.main([]) == 0
 
 
+def test_availability_check_fails_in_ci_if_network_would_be_skipped(monkeypatch) -> None:
+    def unreachable(slug: str, game_version: str) -> list[dict]:
+        raise OSError("simulated upstream outage")
+
+    monkeypatch.setattr(availability, "fetch_versions", unreachable)
+    assert availability.main(["--require-network"]) == 1
+
+
+def test_availability_check_keeps_offline_skip_mode_without_strict_flag(monkeypatch) -> None:
+    def unreachable(slug: str, game_version: str) -> list[dict]:
+        raise OSError("simulated offline sandbox")
+
+    monkeypatch.setattr(availability, "fetch_versions", unreachable)
+    assert availability.main([]) == 0
+
+
 def test_availability_check_rejects_the_historical_bug(monkeypatch, tmp_path) -> None:
     """Reintroducing the bad range must fail the check, otherwise the guard is worthless."""
     monkeypatch.setattr(availability, "fetch_versions", lambda slug, gv: MODRINTH_26_3[slug])

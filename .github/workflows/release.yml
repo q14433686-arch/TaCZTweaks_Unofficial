@@ -56,7 +56,7 @@ jobs:
         run: python3 scripts/audit_port.py --strict
 
       - name: Dependency availability check
-        run: python3 scripts/check_dependency_availability.py
+        run: python3 scripts/check_dependency_availability.py --require-network
 
       - name: Dependency-range and release-tag regression tests
         run: |
