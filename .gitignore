@@ -13,3 +13,6 @@ __pycache__/
 
 # Manually downloaded compile/runtime dependencies.
 libs/*.jar
+
+# CI step logs (summarised into job annotations by scripts/ci_log_annotation.py).
+build-reports/

@@ -19,7 +19,7 @@ authors. Install the exact dependencies listed below before filing issues. Start
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.1.2.Beta-1-hotfix`）。
+当前测试版本：**Beta-1-hotfix2**（`2.14.2+fabric.26.1.2.Beta-1-hotfix2`）。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [已知问题](docs/KNOWN_ISSUES.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
@@ -86,11 +86,11 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 | 类型 | 依赖 | 版本 |
 |---|---|---|
 | 必需 | Minecraft | 26.1.2 |
-| 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
-| 必需 | Fabric API | >=0.155.2+26.1.2、<0.157.0 |
+| 必需 | Fabric Loader | >=0.19.3（只设下界，不设上界） |
+| 必需 | Fabric API | >=0.155.2+26.1.2（只设下界，不设上界） |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | `1.1.8+fabric.26.1.2.R<n>`，n >= 2（接受 R2、R2-hotfix 以及 R3、R10 等同一发布系列；Minecraft 版本、TaCZ 核心版本和 fabric release family 仍严格匹配） |
-| 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
-| 必需 | YetAnotherConfigLib | 3.9.6+26.1-fabric |
+| 必需 | Fabric Language Kotlin | >=1.13.13（只设下界，不设上界；FLK 1.14.x 自身要求 Fabric Loader >=0.19.5） |
+| 必需 | YetAnotherConfigLib | >=3.9.6+26.1-fabric（只设下界，不再精确锁定） |
 | 可选 | Sound Physics Remastered | 1.5.1+26.1.2 Fabric |
 | 可选 | First Aid New | >=1.2.8、<1.3.0 Fabric 26.1.2 |
 | 可选 | Pillager’s Gun (Unofficial Port) | >=3.2.2、<3.3.0 Fabric 26.1.2 |
@@ -101,6 +101,18 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 > 具体未来构建仍需通过对应的 descriptor、客户端和服务器验证。错误的 Minecraft 版本、
 > TaCZ 核心版本和 fabric release family 仍然拒绝。
 
+> 依赖范围：Fabric Loader、Fabric API、Fabric Language Kotlin、YetAnotherConfigLib 都只声明最低版本
+> （即本线构建所用的版本），不设上界、不精确锁定；Minecraft 仍精确锁定 `=26.1.2`。高于最低版本的上述依赖
+> 都未逐一实测。
+>
+> - Fabric Loader：2026-10-15 发布的 0.20.0 会被旧的 `<0.20.0` 拒绝。Fabric 按模组声明的**最低** Loader
+>   版本决定 Mixin 兼容级别，所以本模组在新 Loader 上的 mixin 兼容级别与 0.19.3 相同。
+> - Fabric API：同步自 26.3 线，那里的 `<0.162.0` 拒绝了用户的 `0.162.0+26.3`。本线此前没有已发布版本被拒，属预防。
+> - FLK / YACL：26.2 线 Issue #33 里，`<1.14.0` 和 `=3.9.6+26.2-fabric` 让 Fabric Loader 拒绝了
+>   FLK `1.14.2+kotlin.2.4.21` 和 YACL `3.9.7+26.2-fabric`；本线写法相同，已发布的 FLK 1.14.0 ~ 1.14.2
+>   此前都会被拒绝。FLK 1.14.x 自身要求 Fabric Loader `>=0.19.5`；YACL 每个构建自带 Minecraft 版本约束，
+>   其他游戏版本的 YACL 仍会被拒绝。
+
 ## 构建与审计
 
 ```bash
@@ -108,9 +120,13 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
+python3 scripts/test_dependency_ranges.py
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix2.jar
 ```
+
+推送到 `26.1.2` / `arena/**` 或开 PR 时，GitHub Actions 会自动运行上述门禁，并在 Linux 和 Windows 上构建；
+发版用的 tag 流程见 [BUILD.md](BUILD.md) 第 7 节。
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、
 MixinExtras 最低版本，以及模组图标的元数据路径、尺寸、SHA-256 与许可声明。`./gradlew build`

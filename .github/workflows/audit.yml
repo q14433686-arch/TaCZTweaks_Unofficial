@@ -1,0 +1,63 @@
+name: audit
+
+# 本仓库独有的静态门禁。scripts/audit_port.py --strict 检查「编译通过也发现不了」的错误：
+#   * mixin 类漏登记 / 拼错在 tacztweaks.mixins.json 里；
+#   * mixin 指向 TaCZ R2 jar 里不存在的方法（目标改名后最常见的静默失效）；
+#   * common mixin 打到 @Environment(CLIENT) 方法上（专服会崩）；
+#   * 配置项被持久化/同步但没有行为代码读取；语言键漂移；图标与许可漂移；
+#   * MixinExtras 版本低于 mixin JSON 声明的下限；版本标识在 README / BUILD 中不唯一。
+#
+# 只用 Python 标准库，不需要 Gradle / Minecraft；唯一的外部输入是 libs/ 里的 TaCZ jar，
+# 所以先按 manifest 重建。比 build 快得多，mixin 目标漂移能第一时间报出来。
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.3'
+      - '26.2(main)'
+      - '26.1.2'
+      - '1.21.11'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Restore vendored dependencies (SHA-256 checked)
+        run: python3 scripts/download_dependencies.py
+
+      # mixin 目标核对依赖 libs/ 里的 TaCZ jar，所以必须放在上一步之后。
+      - name: Static port audit (0 error required)
+        run: |
+          mkdir -p build-reports
+          python3 scripts/audit_port.py --strict 2>&1 | tee build-reports/audit.log
+
+      - name: Icon provenance
+        run: python3 scripts/check_mod_icon.py
+
+      # 本线的脚本测试都是纯标准库脚本（不依赖 pytest），直接运行即可。
+      - name: Script self-tests
+        run: |
+          python3 scripts/test_audit_optional_targets.py
+          python3 scripts/test_dependency_ranges.py
+          python3 scripts/test_ci_helpers.py
+
+      - name: Report audit output (readable via the annotations API)
+        if: always()
+        run: python3 scripts/ci_log_annotation.py --title "audit" --status "${{ job.status }}" build-reports/audit.log

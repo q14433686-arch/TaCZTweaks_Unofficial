@@ -2,8 +2,8 @@
 
 本模组是 **TaCZ Tweaks 的 Fabric 26.1.2 移植版**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
-`2.14.2+fabric.26.1.2.Beta-1-hotfix`。
+当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix2**：
+`2.14.2+fabric.26.1.2.Beta-1-hotfix2`。
 
 ---
 
@@ -49,7 +49,8 @@
 ## 3. 放 TaCZ 编译期依赖到 libs/ 目录
 
 TaCZ 本体通过本地文件引用。仓库会用 `RESOURCE_IMPORT_MANIFEST.tsv` 固定来源、许可证和 SHA-256；其余依赖会自动从 Maven 拉。
-YACL 3.9.6+26.1-fabric 已由 Gradle 从 Modrinth Maven 自动解析，不需要手动下载。
+YACL 3.9.6+26.1-fabric 已由 Gradle 从 Modrinth Maven 自动解析，不需要手动下载。这是编译基线；运行时
+`fabric.mod.json` 只要求 `>=3.9.6+26.1-fabric`（不精确锁定）。
 
 ### TaCZ 本体（compileOnly，提供 mixin 目标类）
 
@@ -103,7 +104,7 @@ gradlew.bat build
 
 - **首次构建**会下载 Gradle 9.5.1、Minecraft 26.1.2、Fabric API 等，视网速可能要几分钟到十几分钟；
 - `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
+- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`、`python scripts/test_dependency_ranges.py`（Linux/macOS 使用 `python3`）；后两者会拒绝给 Fabric Loader、Fabric API、Fabric Language Kotlin、YACL 依赖加上界或精确锁定（`fabric.mod.json` 必须分别是 `>=<loader_version>`、`>=<fabric_version>`、`>=<flk_version 的版本号部分>`、`>=3.9.6+26.1-fabric`）；
 - 成功后输出：
   ```
   BUILD SUCCESSFUL
@@ -112,8 +113,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.1.2.Beta-1-hotfix.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix2.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.1.2.Beta-1-hotfix2.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁
@@ -147,3 +148,55 @@ python scripts/check_server_log.py run/logs/latest.log
 依赖只在第一次下载，之后都会走 `%USERPROFILE%\.gradle` 缓存，第二次构建一般只需几十秒。
 
 改完源码后重新 `gradlew.bat build` 即可得到新 jar。
+
+---
+
+## 7. CI：GitHub Actions 构建与发布
+
+`.github/workflows/` 里有四条验证流程和一条**只由发行 tag 触发**的发布流程。每条流程都会先运行
+`scripts/download_dependencies.py`，按 `RESOURCE_IMPORT_MANIFEST.tsv` 下载 TaCZ R2 jar 并校验 SHA-256。
+
+| 流程 | 文件 | 跑什么 | 触发方式 |
+|---|---|---|---|
+| `Version consistency` | `consistency.yml` | `check_release_consistency.py`（版本号、Fabric Loader / Fabric API / FLK / YACL 只设下界、manifest 校验和）与 `test_dependency_ranges.py` | 改到版本、依赖或发行文档相关文件的 push / PR |
+| `audit` | `audit.yml` | `audit_port.py --strict`、`check_mod_icon.py`、三个脚本自测 | 发行线或 `arena/**` 的 push，以及全部 PR |
+| `compile-check` | `compile-check.yml` | `compileJava compileKotlin`（快速反馈） | 同上 |
+| `build` | `build.yml` | Linux：`./gradlew build`，再用产物复核 `check_release_consistency.py --jar`，上传 jar 与示例包（Actions artifact，保留 14 天）；Windows：`gradlew.bat build` | 同上；只改 `*.md` / `docs/**` 时跳过 |
+| `GitHub Release` | `release.yml` | 校验 tag 与 `mod_version` 对应、tag 在 `26.1.2` 分支上；审计、一致性检查、完整构建；创建 Release，或给已有 Release 补传 jar | 只在推送 `26.1.2_*` / `26.1.2-*` tag 时 |
+
+### 在受限沙箱里读 CI 结果
+
+开发沙箱通常只能访问 `api.github.com`，读不到 Actions 日志正文。各流程会把日志要点写进 job annotation
+（失败时是 Gradle 的 `* What went wrong:`、编译/测试错误行和日志尾部；成功时是简短的日志尾部），用 REST API 读取：
+
+```bash
+gh run list --branch <分支> --limit 10
+gh api repos/q14433686-arch/TaCZTweaks_Unofficial/actions/runs/<run_id>/jobs \
+  --jq '.jobs[] | "\(.id) \(.name) \(.conclusion)"'
+gh api repos/q14433686-arch/TaCZTweaks_Unofficial/check-runs/<job_id>/annotations --jq '.[].message'
+```
+
+26.3 线把编译日志 commit 回 `build-reports/compile-java.log`；本线不回推，PR 里不会出现 CI commit。
+
+### 发版（GitHub Releases）
+
+PR 合并进 `26.1.2` 并验证通过后，用下面任意一种方式发版（以当前版本为例）：
+
+- **推送 tag**：
+
+  ```bash
+  git checkout 26.1.2 && git pull --ff-only origin 26.1.2
+  python3 scripts/check_release_tag.py --suggest     # 打印与 mod_version 对应的 tag
+  git tag -a 26.1.2_BETA_1_HOTFIX2 -m "Release 2.14.2+fabric.26.1.2.Beta-1-hotfix2"
+  git push origin 26.1.2_BETA_1_HOTFIX2
+  ```
+
+  流程通过后自动创建 Release，附上 CI 构建的 jar 和自动生成的发行说明。
+
+- **网页发版**：在 Releases 页点「Draft a new release」，填一个新 tag（如 `26.1.2_BETA_1_HOTFIX2`，写成
+  `26.1.2_BETA_1_HOTFIX-2` 也可以），目标分支选 `26.1.2`，照常填写标题和说明后发布。发布时创建的 tag 会触发同一流程：
+  因为 Release 已存在，流程只补传 CI 构建的 jar；如果你已经手动上传了同名 jar，则保留你的文件，标题和说明也不会改动。
+
+tag 后缀必须与 `gradle.properties` 的 `mod_version` 对应（比较时忽略 `_` / `-` 和大小写）。对不上，或 tag 不在
+`26.1.2` 分支上时，流程在构建前就会失败，不发布任何东西；可以先用 `python3 scripts/check_release_tag.py <tag>`
+在本地验证。此流程只负责 GitHub Releases，Modrinth / CurseForge 仍按 [`docs/publish/`](docs/publish/README.md) 人工发布。

@@ -29,6 +29,10 @@ python3 scripts/audit_port.py --strict
 python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged-26.1.2.jar
 ```
 
+**网络受限环境（通常只能访问 `api.github.com`）**：本地跑不了 `./gradlew`，也下载不了 TaCZ jar。
+把改动 push 到 `arena/**` 分支或开 PR，由 `.github/workflows/` 的流程完成审计与构建，再按 BUILD.md §7
+的命令读回 job annotation 里的日志要点。**不要因为本地跑不了 Gradle 就把「未编译」写成「已编译」**，见 §4。
+
 审计必须保持 0 error / 0 warning。编译通过仍不代表 mixin 运行时安全；新增 mixin 必须核对：
 
 - mixin 所在 common/client 分组；
@@ -41,6 +45,15 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 
 修改 `gradle.properties` 的 `mod_version`、Minecraft/Fabric/Kotlin/MixinExtras 版本时，必须在同一
 工作分支同步 README、BUILD 和依赖表。`scripts/audit_port.py` 会校验当前版本标识唯一一致。
+
+`fabric.mod.json` 的 `fabricloader`、`fabric-api`、`fabric-language-kotlin`、`yet_another_config_lib_v3`
+只写下界，不加 `<下一版本` 上界、不精确锁定（Fabric API 同步自 26.3 线，2026-10-15；FLK / YACL 是 26.2 线
+Issue #33 的同类问题，Fabric Loader 是 0.20.0 发布后的同类问题，均 2026-10-16）。下界分别等于 `loader_version`、
+`fabric_version`、`flk_version` 的版本号部分（`1.13.13`）、`build.gradle.kts` 解析的 YACL 构建
+（`3.9.6+26.1-fabric`，Modrinth `svTkvBec`）；升级编译依赖时一并抬高下界，不要照搬其他线的数值（例如 26.3 的
+FLK `>=1.14.1`、Loader `>=0.19.5`）。注意：Fabric 按 `fabricloader` 的下界决定 Mixin 兼容级别，把它抬到
+0.19.4 及以上会改变 mixin 行为，必须重新实测。`scripts/check_release_consistency.py` 会强制这一点，
+`scripts/test_dependency_ranges.py` 覆盖。
 
 ## 4. 不得夸大
 

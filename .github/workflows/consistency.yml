@@ -1,0 +1,81 @@
+name: Version consistency
+
+# 版本 / 依赖范围一致性守门：改了 gradle.properties 却忘了同步 README / BUILD.md / CHANGELOG /
+# fabric.mod.json，或者给 Fabric Loader / Fabric API / FLK / YACL 依赖重新加了上界、把 YACL 改回精确版本时，PR 会红。
+# check_release_consistency.py 会从 build.gradle.kts 读 YACL 的 Modrinth 坐标，所以它也在 paths 里。
+# build.yml 会 paths-ignore 掉 *.md 与 docs/**，「只改 README」的提交测不到 —— 本流程必须独立存在。
+#
+# 与 26.3 线的同名流程不同：26.1.2 的 check_release_consistency.py 会对 manifest 里的
+# TaCZ jar 做 SHA-256 校验（缺文件即失败），所以这里先按 manifest 重建 libs/。
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.3'
+      - '26.2(main)'
+      - '26.1.2'
+      - '1.21.11'
+    paths:
+      - 'gradle.properties'
+      - 'README.md'
+      - 'BUILD.md'
+      - 'CHANGELOG.md'
+      - 'RESOURCE_IMPORT_MANIFEST.tsv'
+      - 'src/main/resources/fabric.mod.json'
+      - 'build.gradle.kts'
+      - 'docs/publish/**'
+      - 'scripts/check_release_consistency.py'
+      - 'scripts/test_dependency_ranges.py'
+      - 'scripts/download_dependencies.py'
+      - '.github/workflows/consistency.yml'
+  pull_request:
+    paths:
+      - 'gradle.properties'
+      - 'README.md'
+      - 'BUILD.md'
+      - 'CHANGELOG.md'
+      - 'RESOURCE_IMPORT_MANIFEST.tsv'
+      - 'src/main/resources/fabric.mod.json'
+      - 'build.gradle.kts'
+      - 'docs/publish/**'
+      - 'scripts/check_release_consistency.py'
+      - 'scripts/test_dependency_ranges.py'
+      - 'scripts/download_dependencies.py'
+      - '.github/workflows/consistency.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: consistency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 版本号、依赖范围与发行文档一致性
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Restore vendored dependencies (SHA-256 checked)
+        run: python3 scripts/download_dependencies.py
+
+      - name: Release consistency
+        run: python3 scripts/check_release_consistency.py
+
+      - name: Dependency-range regression tests
+        run: python3 scripts/test_dependency_ranges.py
+
+      - name: 失败提示
+        if: failure()
+        run: |
+          echo "::error::README.md / BUILD.md / CHANGELOG.md / fabric.mod.json 与 gradle.properties 不一致，或依赖范围违反门禁。"
+          echo "::error::同步：README 顶部版本句与依赖表、BUILD.md 版本与产物路径、CHANGELOG 当前条目、fabric.mod.json depends。"
+          echo "::error::Fabric Loader / Fabric API / FLK / YACL 只写下界：'>=<loader_version>'、'>=<fabric_version>'、'>=<flk_version 的版本号部分>'、'>=3.9.6+26.1-fabric'（不设上界、不精确锁定）；RESOURCE_IMPORT_MANIFEST.tsv 的校验和必须匹配。"
