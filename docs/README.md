@@ -50,12 +50,21 @@
 
 - [README 当前状态、已知差距与依赖](../README.md)
 - [当前静态审计实现](../scripts/audit_port.py)
-- [发布一致性检查](../scripts/check_release_consistency.py)
+- [发布一致性检查（含运行时 TaCZ 闸门交叉校验）](../scripts/check_release_consistency.py)
+- [依赖可用性门禁（查上游实际发布版本）](../scripts/check_dependency_availability.py)
+- [依赖区间回归测试](../scripts/test_dependency_ranges.py)
 - [专用服务器日志门禁](../scripts/check_server_log.py)
 - [移植笔记](../PORTING_NOTES.md)
-- [建议 CI workflow](maintenance/ci-workflow.yml)
+- 已安装的 GitHub Actions 流程：[`consistency`](../.github/workflows/consistency.yml) ·
+  [`audit`](../.github/workflows/audit.yml) ·
+  [`compile-check`](../.github/workflows/compile-check.yml) ·
+  [`build`](../.github/workflows/build.yml) ·
+  [`release`](../.github/workflows/release.yml)（仅 `1.21.11_*` tag 触发）
+- [早期提案版 CI workflow（已被上面五条取代，仅存档）](maintenance/ci-workflow.yml)
 
 当前分支保留了静态审计、测试夹具与服务器日志门禁，但 README 中列出的实机矩阵仍未全部完成。审计命令及其外部 jar/refmap 前置条件以 [BUILD.md](../BUILD.md) 为准。
+
+`fabric.mod.json` 的 `depends` 区间与 `TaCZTweaks.java` 里硬编码的版本闸门属于**只在运行时生效的约束**：编译、mixin 静态审计与打包都不读它们，只有 Fabric Loader 在游戏启动时执行。`26.3` 线因此出过三次「CI 全绿、游戏起不来」，跨线同步的完整工单在该分支的 `docs/CROSS_BRANCH_SYNC.md`。
 
 **历史过程笔记可能已被后续结论推翻。判断当前事实时，应优先查看当前源码、当前审计结论、`fabric.mod.json` 和实际依赖的 class descriptor，而不是较早的移植设想。**
 

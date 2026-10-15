@@ -8,8 +8,8 @@ validation until the matching test has actually been run for the stated versions
 |---|---|---|---:|---|---|
 | Minecraft | hard platform | `=1.21.11` | yes | compile/test/build intended; obfuscated + Loom remap | No other Minecraft versions are declared. |
 | Fabric Loader | hard dependency | `>=0.19.3 <0.20.0` | yes | compile/test/build intended | Loader API drift outside this range is not claimed. |
-| Fabric API | hard dependency | `>=0.141.6+1.21.11 <0.143.0` | yes | compile/test/build intended | Keep release metadata and Gradle property aligned. |
-| Fabric Language Kotlin | hard dependency | `>=1.13.13 <1.14.0` | yes | compile/test/build intended | Runtime Kotlin stdlib comes through FLK. |
+| Fabric API | hard dependency | `>=0.141.6+1.21.11` (deliberately no upper cap) | yes | compile/test/build intended; range enforced by `check_fabric_api_range_is_lower_bound_only` | Lower bound only. `minecraft` is pinned separately, so a cap would just reject compatible same-line releases — that is exactly what broke 26.3 users on `0.162.0+26.3`. Keep release metadata and the Gradle property aligned. |
+| Fabric Language Kotlin | hard dependency | `>=1.13.13 <1.14.0` | yes | compile/test/build intended; FLK 1.13.12 / 1.13.13 / 1.13.14 / 1.14.0 / 1.14.1 all tagged for 1.21.11 | Runtime Kotlin stdlib comes through FLK. **Do not copy the 26.3 range (`>=1.14.1+kotlin.2.4.20`) here** — 26.3 only moved because 1.14.1 is the sole FLK build tagged for that game version; copying it would exclude the 1.13.13 this branch compiles against. |
 | TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.1.21.11.R<n>` with `n >= 2` | required | compile/test/static descriptor audit | Mixin targets are pinned to the 1.21.11 R2 compile/test descriptors; the runtime gate accepts R2 and later numeric revisions in this same release family. |
 | YetAnotherConfigLib | hard dependency | exactly `3.8.2+1.21.11-fabric` | required | compile/build/checksum | Runtime mod is not nested; users must install it. |
 | Mod Menu | optional UI entry | `*` suggested; compiled against `17.0.0` | when present | compile-only | Absence must not break startup. |

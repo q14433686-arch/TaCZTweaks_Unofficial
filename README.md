@@ -20,7 +20,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 原项目：**[MUKSC/TaCZTweaks](https://github.com/MUKSC/TaCZTweaks)**（Forge 1.20.1 / TaCZ 1.1.8），
 代码遵循 **GPL-3.0** 发布。本项目与 MUKSC、TACZ Dev Team 无从属或背书关系。
 
-当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.1.21.11.Beta-1-hotfix`）。
+当前测试版本：**Beta-1-hotfix2**（`2.14.2+fabric.1.21.11.Beta-1-hotfix2`）。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
@@ -58,7 +58,37 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - 恢复 `betterMonoConversion`：把 TaCZ 的 mono 标记重新接回 `GunSoundInstance` → `SoundBufferLibrary` PCM downmix 路径，并按 1.21.11 源码验证 `SoundBuffer` 构造点；
 - 恢复 First Aid / Pillager’s Gun / Sound Physics Remastered 可选兼容代码路径；
 - 增加 dedicated-server 日志门禁脚本、混淆端口审计脚本、JUnit 基础测试脚手架与 ASCII `GRADLE_USER_HOME` test staging；
-- 版本号与说明文档统一对齐到 **Beta-1-hotfix** 命名，并修正文档中遗留的版本/依赖描述错误。
+- 版本号与说明文档统一对齐到 **Beta-1-hotfix**（上一轮）/ **Beta-1-hotfix2**（本轮）命名，并修正文档中遗留的版本/依赖描述错误。
+
+本轮（**Beta-1-hotfix2**）从 Fabric **`26.3`** 分支同步了那两类「CI 全绿、游戏起不来」的门禁修复。
+26.3 线在 2026-09-22 与 2026-10-15 连续踩到三次同类事故，根因都是**只在运行时生效的约束**：
+`fabric.mod.json` 的 `depends` 区间与代码里硬编码的版本闸门，编译不读、mixin 静态审计不读、
+打包也不读，只有 Fabric Loader 在游戏启动时才执行。同步的是**门禁工具**，不是版本号本身。
+
+- **Fabric API 依赖去掉人为上界**：`>=0.141.6+1.21.11 <0.143.0` → `>=0.141.6+1.21.11`。
+  26.3 上同形状的 `<0.162.0` 曾让用户已装的 `0.162.0+26.3` 被 Loader 直接拒绝。
+  本线的最低版本保持不变，只删上界；
+- **新增依赖可用性门禁** `scripts/check_dependency_availability.py`：去问 Modrinth
+  「我们声明的区间在当前 Minecraft 版本上到底有没有构建能命中」，
+  拦下 `gradle.properties` 与 `fabric.mod.json` **彼此自洽但双双脱离现实**的情况；
+- **新增运行时闸门交叉校验** `check_runtime_version_gate()`：从 `TaCZTweaks.java` 解析
+  `SUPPORTED_TACZ_VERSION` / `SUPPORTED_TACZ_VERSION_PREFIX` / `MIN_SUPPORTED_TACZ_REVISION`，
+  验证 `fabric.mod.json` 声明的 TaCZ 版本**能通过这道游戏内闸门**。本线闸门仍是
+  **≥R2**（1.21.11 R1 早于本模组需要的 API），26.3 是 ≥R1 —— 两边都不可互相照抄；
+- **刻意没有同步 26.3 的 FLK 区间**：本线 `fabric-language-kotlin: ">=1.13.13 <1.14.0"` 是正确的
+  （已核实 FLK 1.13.12 / 1.13.13 / 1.13.14 / 1.14.0 / 1.14.1 均打了 1.21.11 标签）。
+  26.3 因为该线上只有 `1.14.1` 才被迫改成 `>=1.14.1+kotlin.2.4.20`；照抄过来会把本线实际
+  编译用的 `1.13.13` 排除掉。回归测试 `test_copying_263_flk_range_is_rejected` 固化了这一点；
+- **改写版本闸门测试**：`TaCZTweaksVersionTest` 现在对 `TaCZTweaks.SUPPORTED_TACZ_VERSION`
+  常量求值，而不是手抄字面量 —— 26.3 那次事故正是因为测试断言了**上一条线**的期望，
+  一路绿灯反而制造了「已验证」的错觉；
+- **落地 5 条 GitHub Actions 流程**：`consistency` / `audit` / `compile-check` / `build`，
+  外加仅由 `1.21.11_*` tag 触发的 `release`（自动创建 GitHub Release 并附上正式 jar 与示例包）。
+  四条验证流程按本线改写为 **JDK 21**（26.x 未混淆线用 JDK 25），`compile-check` 额外编译测试源集；
+- `check_release_consistency.py` 增加 `--require-deps`：`libs/*.jar` 不入 Git，未恢复依赖时
+  快速一致性门禁打印 `SKIP` 而不是失败，只有真正恢复过依赖的 job 才强制要求它们存在。
+
+> 跨线同步的完整工单与「不要做什么」清单在 `26.3` 分支的 `docs/CROSS_BRANCH_SYNC.md`。
 
 ---
 
@@ -69,7 +99,14 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - First Aid / Sound Physics / Pillager’s Gun 的 **1.21.11 实机运行矩阵**；
 - `betterMonoConversion` 的 **实机运行验证**（源码与审计例外已补，仍需用户侧带真实 1.21.11 jars/游戏进程做最终确认）；
 - 多人/专服/客户端完整实机矩阵；
-- 依赖真实 TaCZ / Minecraft jars 的最终 strict audit 与整仓 `./gradlew clean build` 验证。
+- 依赖真实 TaCZ / Minecraft jars 的最终 strict audit 与整仓 `./gradlew clean build` 验证；
+- **新增 5 条 workflow 与新增测试源集的首次 CI 实跑**：本轮改动是在只能访问
+  `api.github.com` 的沙箱里完成的，`./gradlew` 与 `api.modrinth.com` 均不可达。
+  Python 侧门禁已本地跑通（`check_release_consistency.py` → OK，`test_dependency_ranges.py`
+  → 13 passed），但 `TaCZTweaksVersionTest.kt` 的编译与 `check_dependency_availability.py`
+  对真实上游数据的核对，要等 Actions 首次运行才算验证；
+- `docs/maintenance/ci-workflow.yml`（早期提案版）已被 `.github/workflows/` 下五条真实流程取代，
+  仅作存档保留，不要再安装。
 
 这表示“**尚未完成实测验收**”，不是“Fabric/1.21.11 做不到”。
 
@@ -81,7 +118,7 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 |---|---|---|
 | 必需 | Minecraft | `=1.21.11` |
 | 必需 | Fabric Loader | `>=0.19.3 <0.20.0` |
-| 必需 | Fabric API | `>=0.141.6+1.21.11 <0.143.0` |
+| 必需 | Fabric API | `>=0.141.6+1.21.11` |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | **`1.1.8+fabric.1.21.11.R<n>`，其中 n >= 2**（Minecraft、TaCZ 核心版本和 Fabric release family 严格匹配；运行时按 friendly string 验证） |
 | 必需 | Fabric Language Kotlin | `>=1.13.13 <1.14.0` |
 | 必需 | YetAnotherConfigLib (YACL) | **`3.8.2+1.21.11-fabric`** |
@@ -107,8 +144,8 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 python3 scripts/download_dependencies.py --check-only
 python3 scripts/check_release_consistency.py
 ./gradlew build
-# 产物：build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1-hotfix.jar
-# 示例包：build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1-hotfix.zip
+# 产物：build/libs/tacztweaks-2.14.2+fabric.1.21.11.Beta-1-hotfix2.jar
+# 示例包：build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.1.21.11.Beta-1-hotfix2.zip
 ```
 
 本分支的发布产物是 Loom **remapJar**（混淆环境），不是 26.x 的未 remap jar。
