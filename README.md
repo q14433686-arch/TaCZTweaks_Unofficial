@@ -19,7 +19,7 @@ authors. Install the exact dependencies listed below before filing issues. Start
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.1.2.Beta-1-hotfix`）。
+当前测试版本：**Beta-1-hotfix2**（`2.14.2+fabric.26.1.2.Beta-1-hotfix2`）。
 
 [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [已知问题](docs/KNOWN_ISSUES.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
@@ -114,7 +114,7 @@ python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
 python3 scripts/test_dependency_ranges.py
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix2.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、

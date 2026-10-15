@@ -4,7 +4,48 @@ All notable changes to this unofficial Fabric port are tracked here. Release ent
 be user-facing and concise; keep detailed process notes in `docs/maintenance/` or the
 handoff/audit documents.
 
-## 2.14.2+fabric.26.1.2.Beta-1-hotfix - Unreleased
+## 2.14.2+fabric.26.1.2.Beta-1-hotfix2 - Unreleased
+
+### Fixed
+
+- Removed the artificial upper bound from the Fabric API dependency: `fabric.mod.json` now
+  declares `>=0.155.2+26.1.2` instead of `>=0.155.2+26.1.2 <0.157.0`. Synced from the 26.3
+  line, where the same kind of cap made Fabric Loader reject a user's newer Fabric API as
+  "incompatible". The minimum stays this line's own `0.155.2+26.1.2`, and Minecraft stays
+  pinned to `=26.1.2`. On 26.1.2 this is preventive: the newest Fabric API published for
+  26.1.2 when this was changed, `0.155.3+26.1.2`, was still accepted by the old range.
+- Hardened the shield-durability mixin against `BlocksAttacks#hurtBlockingItem` call-site
+  drift (port of the 26.2 line's `IncorrectArgumentCountException` fix): both the vanilla
+  5-parameter shape and the 6-parameter shape with a trailing `int` are wrapped with
+  `require = 0`, each handler passes `original` exactly its own argument count, and a one-time
+  warning is logged if shield rules resolved but no durability wrap ran. Merged after
+  `Beta-1-hotfix` was published; first shipped in this build.
+
+### Changed
+
+- The artifact version is now `2.14.2+fabric.26.1.2.Beta-1-hotfix2`, because `Beta-1-hotfix`
+  was already published as the GitHub release `26.1.2_BETA_1_HOTFIX`.
+- `scripts/check_release_consistency.py` now fails unless `depends.fabric-api` is exactly
+  `>=<fabric_version>` and the Fabric Loader / Fabric API / Fabric Language Kotlin versions used
+  for the build satisfy their declared ranges. The new `scripts/test_dependency_ranges.py`
+  covers both checks, including a regression case for the removed cap.
+
+### Compatibility
+
+- Fabric API: `>=0.155.2+26.1.2` (no upper bound).
+- Unchanged from `Beta-1-hotfix`: Minecraft `26.1.2`; Fabric Loader `>=0.19.3 <0.20.0`;
+  Java `>=25`; TaCZ Refabricated Unofficial `1.1.8+fabric.26.1.2.R<n>` with `n >= 2`;
+  Fabric Language Kotlin `>=1.13.13 <1.14.0`; YetAnotherConfigLib exactly `3.9.6+26.1-fabric`.
+
+### Test matrix
+
+- Required before release: `python3 scripts/audit_port.py --strict` with the TaCZ R2 jar
+  restored, `python3 scripts/check_release_consistency.py`,
+  `python3 scripts/test_dependency_ranges.py`, `./gradlew clean build --stacktrace`, and
+  client / integrated-server / dedicated-server launches with the newest available 26.1.2
+  Fabric API.
+
+## 2.14.2+fabric.26.1.2.Beta-1-hotfix - 2026-08-22
 
 ### Added
 
