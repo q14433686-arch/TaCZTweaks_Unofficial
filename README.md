@@ -25,9 +25,9 @@ filing issues.
 
 > **当前变更**：hotfix2 移植了 26.2 依赖范围修复：Loader、Fabric API、FLK 与 YACL
 > 均保留本线编译基线作为最低版本，但不再设置任意上界/精确 pin；Minecraft 与 TaCZ
-> 约束继续保持精确。代码和文档尚待合并、CI 验证后才会发布 hotfix2。
+> 约束继续保持精确。hotfix2 的 GitHub Actions 编译、完整构建、静态审计及严格 Modrinth
+> 可用性检查已通过；PR 仍待合并与游戏内验证，因此尚未发布。
 >
-> hotfix1 已通过 26.3 GitHub Actions 的编译、完整构建和静态审计，并已发布 JAR。
 > 仓库当前未记录 hotfix2 对更高依赖版本的独立客户端、集成服或独立服验证；开放范围
 > 表示不由元数据拒绝更新版本，不代表所有未来版本均已实机验证。
 > 详见 [兼容矩阵](docs/COMPATIBILITY.md) 与 [26.3 移植状态](docs/PORT_26_3_STATUS.md)。
