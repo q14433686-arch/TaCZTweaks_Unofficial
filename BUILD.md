@@ -246,7 +246,7 @@ python3 scripts/check_release_consistency.py; echo "exit=$?"   # 期望 exit=1
 | 流程 | 文件 | 跑什么 | 触发方式 |
 |---|---|---|---|
 | `Version consistency` | `consistency.yml` | `check_release_consistency.py`（版本号 + 依赖区间 + **运行时 TaCZ 闸门交叉校验**）、`test_dependency_ranges.py`、`check_dependency_availability.py` | 相关文件 push / PR |
-| `audit` | `audit.yml` | `audit_port.py --strict`（mixin 登记与目标方法、配置项死开关、语言键、图标）+ 恢复依赖后的一致性校验 | 发行线或 `arena/**` push / PR |
+| `audit` | `audit.yml` | `audit_port.py`（**非 strict**，要求 0 error）：mixin 登记与目标方法、配置项死开关、语言键、图标；+ 恢复依赖后的一致性校验；`arena/**` 上回推 `build-reports/audit.log` | 发行线或 `arena/**` push / PR |
 | `compile-check` | `compile-check.yml` | Java/Kotlin **主源集与测试源集**编译；`arena/**` 上回推日志到 `build-reports/compile-java.log` | 发行线或 `arena/**` push / PR |
 | `build` | `build.yml` | 完整 `./gradlew build`（含 JUnit 与三个 jar 门禁），上传 JAR 和示例包 Actions artifacts（保留 14 天） | 发行线或 `arena/**` push / PR |
 | `GitHub Release` | `release.yml` | 复核 tag 与 `mod_version`、验证 tag 属于 `1.21.11` 分支、静态审计、依赖范围测试、完整构建；创建 GitHub Release 并附上正式 JAR 与示例包 | 仅 `1.21.11_*` tag push |
@@ -255,6 +255,29 @@ python3 scripts/check_release_consistency.py; echo "exit=$?"   # 期望 exit=1
 `RESOURCE_IMPORT_MANIFEST.tsv` 重建 `libs/`。**本分支全部用 JDK 21**（26.x 未混淆线用
 JDK 25，不要照抄）。发布流程失败时不会创建 Release；它使用 Actions 自带的
 `GITHUB_TOKEN`，无需个人访问令牌。
+
+### CI 里的 audit 是非 strict 的（1.21.11 线特有）
+
+`audit.yml` 跑 `python3 scripts/audit_port.py`，**不带 `--strict`**。本分支的 `--strict`
+还额外要求三个输入，缺任何一个都直接记成 error：
+
+- `--minecraft-named-jar`（vanilla 具名 jar，校验 vanilla mixin 目标）
+- `--minecraft-intermediary-jar`（混淆 jar，校验运行时 intermediary 名）
+- 构建生成的 `tacztweaks.refmap.json`
+
+前两个来自 Loom / Mojang，只有跑过 `./gradlew build` 才会落进 Gradle 缓存；refmap 本身就是
+构建产物。所以 strict 审计**必须先有一次完整构建**，放进「最快反馈」那条流程里逻辑上就是错的。
+26.x 是未混淆分支，既没有 intermediary 也没有 refmap，那边的 `audit.yml` 可以直接
+`--strict` —— **照抄过来必然全红**。`docs/maintenance/ci-workflow.yml` 里那份早期提案
+当初就判断对了这一点，已安装的流程沿用了它的结论。
+
+CI 里非 strict 审计要求 **0 error**；warning 是本分支已记录的已知状态（`compat.lsoCompat` 等
+dormant 键、`SoundBufferLibraryMixin` 的 narrow synthetic-target 例外），不让流程变红。
+发布前仍须按上面的命令手动跑一次 strict 审计。
+
+`audit.yml` 在 `arena/**` 的 push 上把审计输出回推到 `build-reports/audit.log`（理由与
+`compile-check.yml` 回推编译日志相同：受限沙箱读不到 Actions 的日志 blob 域）。它和
+compile-check 并发写同一分支，所以回推带 409 重试。
 
 ### 在受限沙箱里读编译错误
 

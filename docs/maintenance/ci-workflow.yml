@@ -5,14 +5,20 @@
 # line and adapted for this branch: JDK 21, `1.21.11_*` release tags):
 #
 #   .github/workflows/consistency.yml   version / dependency-range / runtime-TaCZ-gate checks
-#   .github/workflows/audit.yml         audit_port.py --strict
+#   .github/workflows/audit.yml         audit_port.py (non-strict), log pushed back on arena/**
 #   .github/workflows/compile-check.yml main + test source sets, log pushed back on arena/**
 #   .github/workflows/build.yml         full ./gradlew build + artifacts
 #   .github/workflows/release.yml       tag-triggered GitHub Release
 #
-# Those files are authoritative. Notably, they DO run `audit_port.py --strict` (this proposal
-# downgraded it to non-strict), and they add the runtime-only-constraint gates described in
+# Those files are authoritative, and they add the runtime-only-constraint gates described in
 # docs/CROSS_BRANCH_SYNC.md on the 26.3 branch.
+#
+# This proposal's one substantive judgement call was CORRECT and the installed workflows kept
+# it: CI runs the non-strict audit. `--strict` on this branch additionally demands
+# --minecraft-named-jar, --minecraft-intermediary-jar and a generated tacztweaks.refmap.json,
+# and all three only exist after a full Gradle build. The 26.x lines are unobfuscated, so they
+# have neither intermediary names nor a refmap and their audit.yml can pass --strict directly;
+# copying that here makes the workflow red on every run. Strict stays a manual pre-release gate.
 #
 # Original notes follow.
 #

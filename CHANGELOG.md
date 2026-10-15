@@ -65,8 +65,11 @@ The work order lives in `docs/CROSS_BRANCH_SYNC.md` on the `26.3` branch.
   workflow instead of only in `build.yml`.
 - `docs/maintenance/ci-workflow.yml` (the original single-file CI *proposal*, written when the
   bot credentials could not push under `.github/workflows/`) is now marked superseded and kept
-  for reference only. The five installed workflows are authoritative — and unlike the proposal,
-  they do run `audit_port.py --strict` rather than downgrading it.
+  for reference only. The five installed workflows are authoritative. Its one substantive
+  judgement call was right and is kept: CI runs the **non-strict** audit, because `--strict` on
+  this branch additionally demands `--minecraft-named-jar`, `--minecraft-intermediary-jar` and a
+  generated `tacztweaks.refmap.json` — all three of which only exist after a full Gradle build,
+  so they cannot live in the fastest-feedback workflow. Strict remains a manual pre-release gate.
 - Docs updated to match: `CONTRIBUTING.md` gains the runtime-only-constraint rules and the
   "never cap `fabric-api`" / "workflow files need `workflows` permission" expectations;
   `docs/KNOWN_ISSUES.md` gains "green CI does not prove the game launches";
