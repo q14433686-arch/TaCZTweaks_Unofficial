@@ -48,6 +48,9 @@ jobs:
       - name: Release consistency check
         run: python3 scripts/check_release_consistency.py
 
+      - name: Dependency-range regression tests
+        run: python3 scripts/test_dependency_ranges.py
+
       - name: Build and test
         run: ./gradlew clean build --stacktrace
 

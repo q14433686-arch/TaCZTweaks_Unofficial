@@ -103,7 +103,7 @@ gradlew.bat build
 
 - **首次构建**会下载 Gradle 9.5.1、Minecraft 26.1.2、Fabric API 等，视网速可能要几分钟到十几分钟；
 - `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
+- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`、`python scripts/test_dependency_ranges.py`（Linux/macOS 使用 `python3`）；后两者会拒绝给 Fabric API 依赖加上界（`fabric.mod.json` 必须是 `>=<fabric_version>`）；
 - 成功后输出：
   ```
   BUILD SUCCESSFUL

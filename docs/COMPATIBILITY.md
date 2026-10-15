@@ -8,7 +8,7 @@ run for the stated versions.
 |---|---|---|---:|---|---|
 | Minecraft | hard platform | `26.1.2` | yes | compile/test/build | No other Minecraft versions are declared. |
 | Fabric Loader | hard dependency | `>=0.19.3 <0.20.0` | yes | compile/test/build | Loader API drift outside this range is not claimed. |
-| Fabric API | hard dependency | `>=0.155.2+26.1.2 <0.157.0` | yes | compile/test/build | Keep release metadata and Gradle property aligned. |
+| Fabric API | hard dependency | `>=0.155.2+26.1.2` (lower bound only) | yes | compile/test/build against `0.155.2+26.1.2` | No artificial upper cap (synced from the 26.3 line); the minimum must equal `fabric_version`, enforced by `check_release_consistency.py`. Later 26.1.2 Fabric API builds are accepted but not individually tested. |
 | Fabric Language Kotlin | hard dependency | `>=1.13.13 <1.14.0` | yes | compile/test/build | Runtime Kotlin stdlib comes through FLK. |
 | TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.26.1.2.R<n>` with `n >= 2`; R2 baseline | required | compile/test/static descriptor audit + version gate test | Mixin targets are pinned to R2 descriptors; the runtime gate accepts later R<n> builds in the same release family. Future builds must still pass the matching descriptor, client and server validation. |
 | YetAnotherConfigLib | hard dependency | exactly `3.9.6+26.1-fabric` | required | compile/build/checksum | Runtime mod is not nested; users must install it. |

@@ -29,6 +29,21 @@ python3 scripts/audit_port.py --strict \
   `src/test/kotlin/me/muksc/tacztweaks/TaCZTweaksVersionTest.kt` 覆盖；当前仅静态/单元验证，
   未进行客户端、集成服、独立服游戏矩阵实测。
 
+## Fabric API 依赖范围（2026-10-15，同步 26.3 线修复）
+
+- 26.3 线的 `fabric-api: ">=0.160.7+26.3 <0.162.0"` 让 Fabric Loader 拒绝了用户已安装的
+  `0.162.0+26.3`（Issue #34）。本线有同形上界 `>=0.155.2+26.1.2 <0.157.0`，现改为
+  `>=0.155.2+26.1.2`：只删上界，最低版本保留本线自己的 `fabric_version`，不照搬 26.3 的数值；
+- 查证（FabricMC/fabric 的 GitHub tags/releases，2026-10-15）：26.1.2 已发布的最高版本是
+  `0.155.3+26.1.2`（2026-09-07），旧范围也接受，所以本线此前没有已发布版本被实际拒绝，属预防性修复；
+- `minecraft` 仍精确为 `=26.1.2`；Fabric Language Kotlin `>=1.13.13 <1.14.0` 与 YACL
+  `=3.9.6+26.1-fabric` 未在本次改动（26.3 的跨线同步说明只要求删 Fabric API 上界）；
+- 门禁：`check_release_consistency.py` 新增 `check_fabric_api_range_is_lower_bound_only`
+  （要求 `depends.fabric-api == ">=" + fabric_version`）与 `check_declared_ranges_include_built_versions`
+  （构建所用 Loader / Fabric API / FLK 必须落在声明范围内），由 `scripts/test_dependency_ranges.py`
+  覆盖，并验证过：把旧上界改回去时检查确实失败；
+- 验证级别：静态/脚本验证；尚未 Gradle 构建，也未用更新的 Fabric API 实机启动。
+
 ## 总结
 
 用户的判断基本正确：旧文档把“原注入点/原 Forge 类型不存在”误写成了“功能不能做”。

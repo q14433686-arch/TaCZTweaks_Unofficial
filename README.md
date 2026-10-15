@@ -87,7 +87,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 |---|---|---|
 | 必需 | Minecraft | 26.1.2 |
 | 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
-| 必需 | Fabric API | >=0.155.2+26.1.2、<0.157.0 |
+| 必需 | Fabric API | >=0.155.2+26.1.2（只设下界，不设上界） |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | `1.1.8+fabric.26.1.2.R<n>`，n >= 2（接受 R2、R2-hotfix 以及 R3、R10 等同一发布系列；Minecraft 版本、TaCZ 核心版本和 fabric release family 仍严格匹配） |
 | 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
 | 必需 | YetAnotherConfigLib | 3.9.6+26.1-fabric |
@@ -101,6 +101,10 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 > 具体未来构建仍需通过对应的 descriptor、客户端和服务器验证。错误的 Minecraft 版本、
 > TaCZ 核心版本和 fabric release family 仍然拒绝。
 
+> Fabric API 只声明最低版本（与构建所用 `fabric_version` 一致），不再设 `<0.157.0` 这类人为上界：
+> 同一 Minecraft 26.1.2 线后续发布的 Fabric API 不会再被 Fabric Loader 判为不兼容；Minecraft
+> 本身仍精确锁定 `=26.1.2`。该修复同步自 26.3 线；高于 `0.155.2+26.1.2` 的 Fabric API 未逐一实测。
+
 ## 构建与审计
 
 ```bash
@@ -108,6 +112,7 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.1.2 实际发�
 python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
+python3 scripts/test_dependency_ranges.py
 ./gradlew build
 # build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix.jar
 ```
