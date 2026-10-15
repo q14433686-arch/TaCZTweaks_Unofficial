@@ -66,6 +66,8 @@
 
 `fabric.mod.json` 的 `depends` 区间与 `TaCZTweaks.java` 里硬编码的版本闸门属于**只在运行时生效的约束**：编译、mixin 静态审计与打包都不读它们，只有 Fabric Loader 在游戏启动时执行。`26.3` 线因此出过三次「CI 全绿、游戏起不来」，跨线同步的完整工单在该分支的 `docs/CROSS_BRANCH_SYNC.md`。
 
+2026-10-16 又从 `26.1.2` 线同步了同类修复：`fabricloader` 的 `>=0.19.3 <0.20.0`、FLK 的 `>=1.13.13 <1.14.0` 与 YACL 的精确钉版本 `=3.8.2+1.21.11-fabric` 一并去掉（Fabric Loader 0.20.0 于 2026-10-15 发布，FLK 1.14.0/1.14.1/1.14.2 也已发布且均带 1.21.11 标签）。四个必需依赖现在全部是「只有下界、无上界」，由 `check_fabric_api_range_is_lower_bound_only` / `check_fabric_loader_range_is_lower_bound_only` / `check_flk_and_yacl_ranges_are_lower_bound_only` 三条门禁守住；**最低版本一个都没动**。
+
 **历史过程笔记可能已被后续结论推翻。判断当前事实时，应优先查看当前源码、当前审计结论、`fabric.mod.json` 和实际依赖的 class descriptor，而不是较早的移植设想。**
 
 ## 维护规则

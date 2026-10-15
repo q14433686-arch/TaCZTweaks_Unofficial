@@ -8,6 +8,11 @@ Synced from the ``26.3`` branch, where two bad Fabric dependency ranges caused
   for Minecraft 26.3, ``1.14.1``.
 * ``fabric-api: ">=0.160.7+26.3 <0.162.0"`` excluded a user's installed ``0.162.0+26.3``
   by imposing an unnecessary upper cap.
+* On 1.21.11 three more of the same shapes -- ``fabricloader: ">=0.19.3 <0.20.0"``,
+  ``fabric-language-kotlin: ">=1.13.13 <1.14.0"`` and ``yet_another_config_lib_v3:
+  "=3.8.2+1.21.11-fabric"`` -- rejected Fabric Loader 0.20.0 (released 2026-10-15), Fabric
+  Language Kotlin 1.14.2, and any later YACL build for this game line. All three are fixed
+  here as well (2026-10-16 sync of the 26.1.2 line's fixes).
 
 Compiling, the static mixin audit and jar packaging all passed in both cases, because none
 of them evaluate dependency ranges -- only the Fabric loader does, at startup.
@@ -16,11 +21,11 @@ of them evaluate dependency ranges -- only the Fabric loader does, at startup.
 ---------------------------------------
 The *gates* are copied. The *version numbers* are not, and must not be:
 
-* On this line ``fabric-language-kotlin: ">=1.13.13 <1.14.0"`` is CORRECT. FLK 1.13.12 /
-  1.13.13 / 1.13.14 / 1.14.0 / 1.14.1 are all tagged for Minecraft 1.21.11, so the range
-  is satisfiable. Copying 26.3's ``>=1.14.1+kotlin.2.4.20`` floor here would exclude the
-  1.13.13 build this branch actually compiles against. ``test_copying_263_flk_range_is_rejected``
-  pins that down.
+* This line's FLK **minimum** stays 1.13.13 -- it is the build this branch compiles against.
+  Copying 26.3's ``>=1.14.1+kotlin.2.4.20`` floor here would exclude that build and
+  reproduce the 26.3 incident on purpose. ``test_copying_263_flk_range_is_rejected`` pins
+  that down. What *is* shared is the policy: no upper cap (FLK 1.14.0 / 1.14.1 / 1.14.2 are
+  all tagged for 1.21.11, so ``<1.14.0`` was rejecting published releases here too).
 * This line's TaCZ floor is R2 (1.21.11 R1 predates APIs this mod needs); 26.3 ships R1.
   The runtime-gate check reads the floor from ``TaCZTweaks.java`` instead of hardcoding it.
 * The ``fabric-api`` upper cap (``<0.143.0``) IS removed here, matching 26.3's fix.
@@ -36,11 +41,16 @@ These tests pin down which validation catches what:
 
 1. ``check_release_consistency._satisfies`` -- does the version we BUILD against satisfy
    the range we SHIP? Catches the two files drifting apart.
-2. ``check_fabric_api_range_is_lower_bound_only`` -- does Fabric API avoid an arbitrary
-   upper cap that blocks later releases for the same game line?
-3. ``check_runtime_version_gate`` -- does the hardcoded in-game TaCZ gate accept the
+2. ``check_fabric_api_range_is_lower_bound_only`` and
+   ``check_fabric_loader_range_is_lower_bound_only`` -- do the two loader-provided
+   dependencies avoid an arbitrary upper cap that blocks later releases for the same game
+   line?
+3. ``check_flk_and_yacl_ranges_are_lower_bound_only`` -- are FLK and YACL exactly ``>=``
+   what this build compiles against, with YACL's minimum tied to the vendored jar and its
+   manifest row?
+4. ``check_runtime_version_gate`` -- does the hardcoded in-game TaCZ gate accept the
    version ``fabric.mod.json`` declares?
-4. ``check_dependency_availability`` -- does upstream actually PUBLISH something in that
+5. ``check_dependency_availability`` -- does upstream actually PUBLISH something in that
    range for our Minecraft version? Catches the case where both files agree with each
    other but disagree with reality, which is what happened in the FLK incident.
 
@@ -85,6 +95,7 @@ JAVA_PATH = ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java"
 # the exact failure shape reported on 26.3 with 0.162.0+26.3.
 MODRINTH_1_21_11 = {
     "fabric-language-kotlin": [
+        {"version_number": "1.14.2+kotlin.2.4.21"},
         {"version_number": "1.14.1+kotlin.2.4.20"},
         {"version_number": "1.14.0+kotlin.2.4.10"},
         {"version_number": "1.13.14+kotlin.2.4.10"},
@@ -101,6 +112,32 @@ MODRINTH_1_21_11 = {
         {"version_number": "3.8.2+1.21.11-fabric"},
     ],
 }
+
+# Fabric Loader releases at or above this line's minimum (FabricMC/fabric-loader GitHub
+# releases, verified 2026-10-16). 0.20.0 was published on 2026-10-15 and is exactly the build
+# the old ">=0.19.3 <0.20.0" cap rejected.
+PUBLISHED_LOADER = ["0.19.3", "0.19.4", "0.19.5", "0.20.0"]
+FUTURE_LOADER = ["0.20.1", "0.21.0", "1.0.0"]
+OLD_CAPPED_LOADER = ">=0.19.3 <0.20.0"
+
+# Fabric Language Kotlin builds tagged for Minecraft 1.21.11 (api.modrinth.com, verified
+# 2026-10-16). 1.14.2+kotlin.2.4.21 (2026-10-09) is the newest; the removed "<1.14.0" cap
+# rejected 1.14.0, 1.14.1 and 1.14.2.
+PUBLISHED_FLK = [
+    "1.13.13+kotlin.2.4.10", "1.13.14+kotlin.2.4.20", "1.14.0+kotlin.2.4.20",
+    "1.14.1+kotlin.2.4.20", "1.14.2+kotlin.2.4.21",
+]
+FUTURE_FLK = ["1.15.0+kotlin.2.5.0", "2.0.0+kotlin.3.0.0"]
+OLD_CAPPED_FLK = ">=1.13.13 <1.14.0"
+
+# YACL Fabric builds published for 1.21.11 (api.modrinth.com, verified 2026-10-16): only 3.8.1
+# and 3.8.2 so far, so on this line the exact pin was preventive rather than already broken --
+# it would reject the next 3.8.x for this same game line. 3.8.2+1.21.11-fabric is the jar this
+# branch vendors; RESOURCE_IMPORT_MANIFEST.tsv records it with sha512 392db7d4...
+PUBLISHED_YACL_1_21_11 = ["3.8.1+1.21.11-fabric", "3.8.2+1.21.11-fabric"]
+FUTURE_YACL_1_21_11 = ["3.8.3+1.21.11-fabric", "3.9.0+1.21.11-fabric", "4.0.0+1.21.11-fabric"]
+OLD_PINNED_YACL = "=3.8.2+1.21.11-fabric"
+
 
 
 def _range_matches(version: str, declared: str) -> bool:
@@ -160,16 +197,26 @@ def test_range_operators() -> None:
     assert _range_matches("9.9.9", "*")
 
 
-def test_flk_range_on_this_line_is_satisfiable_and_must_not_be_copied_from_263() -> None:
-    """1.21.11 legitimately keeps ">=1.13.13 <1.14.0"; 26.3 could not."""
-    published = [v["version_number"] for v in MODRINTH_1_21_11["fabric-language-kotlin"]]
+def test_flk_range_keeps_this_lines_minimum_but_drops_the_cap() -> None:
+    """The FLK cap was this line's own bug, not a 26.3 import: 1.14.x is published for 1.21.11.
 
-    # Correct here: several published 1.21.11 builds fall inside the range.
-    assert _range_matches("1.13.13+kotlin.2.4.10", ">=1.13.13 <1.14.0")
-    assert any(_range_matches(v, ">=1.13.13 <1.14.0") for v in published)
+    The minimum must stay 1.13.13 -- it is what this branch compiles against and what the
+    removed 26.3-style floor (``>=1.14.1``) would have excluded. But ``<1.14.0`` rejected FLK
+    1.14.0, 1.14.1 and 1.14.2, all of which upstream tags for Minecraft 1.21.11: the same
+    "Incompatible mods found" shape as Issue #33 on the 26.2 line.
+    """
+    props = _props()
+    declared = _meta()["depends"]["fabric-language-kotlin"]
+    assert declared == f">={props['flk_version'].split('+', 1)[0]}", declared
+    assert "<" not in declared, declared
 
-    # The same range on 26.3, where only 1.14.1 existed: empty intersection, game won't start.
-    assert not _range_matches("1.14.1+kotlin.2.4.20", ">=1.13.13 <1.14.0")
+    for version in PUBLISHED_FLK + FUTURE_FLK:
+        assert _range_matches(version, declared), f"{declared!r} rejects {version}"
+    assert not _range_matches("1.13.12+kotlin.2.3.21", declared), "the minimum must still hold"
+
+    # The removed cap rejected every 1.14.x build while admitting the rest.
+    assert not _range_matches("1.14.2+kotlin.2.4.21", OLD_CAPPED_FLK)
+    assert _range_matches("1.13.13+kotlin.2.4.10", OLD_CAPPED_FLK)
 
 
 def test_copying_263_flk_range_is_rejected() -> None:
@@ -217,6 +264,126 @@ def test_fabric_api_policy_rejects_an_upper_cap() -> None:
     errors = _expect_failure(consistency.check_fabric_api_range_is_lower_bound_only, props, meta)
     assert errors, "a Fabric API upper cap must be rejected by release consistency"
     assert any("no upper cap" in e for e in errors)
+
+
+# ---------------------------------------------------------------------------
+# Fabric Loader: lower bound only, no artificial cap
+# ---------------------------------------------------------------------------
+
+
+def test_fabric_loader_range_is_lower_bound_only() -> None:
+    props, meta = _props(), _meta()
+    declared = meta["depends"]["fabricloader"]
+    assert declared == f">={props['loader_version']}", declared
+    assert "<" not in declared, f"Fabric Loader range must not carry an upper cap: {declared!r}"
+    assert not _expect_failure(consistency.check_fabric_loader_range_is_lower_bound_only, props, meta)
+
+
+def test_fabric_loader_range_admits_published_and_later_builds() -> None:
+    declared = _meta()["depends"]["fabricloader"]
+    for version in PUBLISHED_LOADER + FUTURE_LOADER:
+        assert _range_matches(version, declared), f"{declared!r} rejects {version}"
+    assert not _range_matches("0.19.2", declared), "the minimum must still hold"
+    # 0.20.0 (2026-10-15) is the release the old cap rejected; everything below it passed.
+    assert not _range_matches("0.20.0", OLD_CAPPED_LOADER)
+    assert _range_matches("0.19.5", OLD_CAPPED_LOADER)
+
+
+def test_fabric_loader_policy_rejects_caps_drift_and_the_263_range() -> None:
+    props = _props()
+    for declared in (
+        OLD_CAPPED_LOADER,
+        ">=0.19.3 <1.0.0",
+        ">=0.19.5 <0.20.0",  # the 26.3 line's range
+        ">=0.19.5",  # 26.3's minimum; it would also switch the Mixin compatibility level
+        "*",
+    ):
+        meta = _meta()
+        meta["depends"]["fabricloader"] = declared
+        errors = _expect_failure(
+            consistency.check_fabric_loader_range_is_lower_bound_only, props, meta
+        )
+        assert errors, f"fabricloader = {declared!r} must be rejected"
+
+
+# ---------------------------------------------------------------------------
+# Fabric Language Kotlin and YACL: lower bound only, no cap and no exact pin
+# ---------------------------------------------------------------------------
+
+
+def test_flk_and_yacl_ranges_are_lower_bound_only() -> None:
+    """The repo as it stands must pass, and YACL must stay tied to the vendored jar."""
+    props, meta = _props(), _meta()
+    declared = meta["depends"]["yet_another_config_lib_v3"]
+    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+
+    assert declared == f">={consistency.YACL_BUILT_VERSION}", declared
+    assert _range_matches(consistency.YACL_BUILT_VERSION, declared)
+    for version in FUTURE_YACL_1_21_11:
+        assert _range_matches(version, declared), f"{declared!r} rejects {version}"
+    # 3.8.1 is published for 1.21.11, but the minimum must still hold at what we build against.
+    assert PUBLISHED_YACL_1_21_11[0] == "3.8.1+1.21.11-fabric"
+    assert not _range_matches(PUBLISHED_YACL_1_21_11[0], declared), "the minimum must still hold"
+    # The removed pin admitted exactly one build.
+    assert not _range_matches("3.8.3+1.21.11-fabric", OLD_PINNED_YACL)
+
+    assert not _expect_failure(
+        consistency.check_flk_and_yacl_ranges_are_lower_bound_only, props, meta, build_script
+    )
+
+
+def test_flk_and_yacl_policy_rejects_caps_pins_and_drift() -> None:
+    props = _props()
+    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+    flk_minimum = props["flk_version"].split("+", 1)[0]
+    for depend_key, declared in (
+        ("fabric-language-kotlin", OLD_CAPPED_FLK),
+        ("fabric-language-kotlin", ">=1.14.1+kotlin.2.4.20 <2.0.0"),  # the 26.3 range
+        ("fabric-language-kotlin", ">=1.13.13 <2.0.0"),
+        ("fabric-language-kotlin", f"={flk_minimum}"),
+        ("yet_another_config_lib_v3", OLD_PINNED_YACL),
+        ("yet_another_config_lib_v3", ">=3.8.2"),
+        ("yet_another_config_lib_v3", "=3.8.2+1.21.10-fabric"),
+    ):
+        meta = _meta()
+        meta["depends"][depend_key] = declared
+        errors = _expect_failure(
+            consistency.check_flk_and_yacl_ranges_are_lower_bound_only, props, meta, build_script
+        )
+        assert errors, f"{depend_key} = {declared!r} must be rejected"
+
+
+def test_yacl_minimum_is_tied_to_the_vendored_jar_and_manifest() -> None:
+    """Swapping the YACL jar or its manifest row without moving the minimum must fail.
+
+    This branch vendors ``libs/yacl-fabric.jar`` instead of resolving YACL from a Maven
+    coordinate, so the coupling is to build.gradle.kts's jar path and the manifest row's
+    ``upstream_version`` -- the same job 26.1.2 does with its Modrinth coordinate.
+    """
+    props, meta = _props(), _meta()
+    build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+
+    errors = _expect_failure(
+        consistency.check_flk_and_yacl_ranges_are_lower_bound_only,
+        props,
+        meta,
+        build_script.replace('"libs/yacl-fabric.jar"', '"libs/yacl-other.jar"'),
+    )
+    assert errors, "build.gradle.kts no longer resolving the vendored YACL jar must be rejected"
+    assert any("no longer resolves YACL" in e for e in errors)
+
+    manifest = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
+    original = manifest.read_text(encoding="utf-8")
+    swapped = original.replace(
+        "\t3.8.2+1.21.11-fabric\t", "\t3.8.3+1.21.11-fabric\t"
+    )
+    assert swapped != original, "manifest row for libs/yacl-fabric.jar must record its version"
+    with _rewrite(manifest, original, swapped):
+        errors = _expect_failure(
+            consistency.check_flk_and_yacl_ranges_are_lower_bound_only, props, meta, build_script
+        )
+    assert errors, "a manifest row disagreeing with the declared YACL minimum must be rejected"
+    assert any("RESOURCE_IMPORT_MANIFEST.tsv records YACL" in e for e in errors)
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +500,32 @@ def test_runtime_gate_catches_a_disagreement_with_fabric_mod_json() -> None:
         errors = _expect_failure(consistency.check_runtime_version_gate, _meta())
     assert errors
     assert any("disagrees with the declared" in e for e in errors)
+
+
+# ---------------------------------------------------------------------------
+# The aggregate gate: check_metadata() must actually run the new policies
+# ---------------------------------------------------------------------------
+
+
+def test_check_metadata_enforces_every_lower_bound_only_policy() -> None:
+    """Each removed shape must be rejected by the real entry point, not only by a helper.
+
+    A helper nobody calls is not a gate -- which is exactly the failure mode these guards
+    exist to prevent.
+    """
+    assert not _expect_failure(consistency.check_metadata)
+
+    original = META_PATH.read_text(encoding="utf-8")
+    for depend_key, declared in (
+        ("fabricloader", OLD_CAPPED_LOADER),
+        ("fabric-language-kotlin", OLD_CAPPED_FLK),
+        ("yet_another_config_lib_v3", OLD_PINNED_YACL),
+    ):
+        broken = json.loads(original)
+        broken["depends"][depend_key] = declared
+        with _rewrite(META_PATH, original, json.dumps(broken, indent=2)):
+            errors = _expect_failure(consistency.check_metadata)
+        assert errors, f"check_metadata must reject {depend_key} = {declared!r}"
 
 
 if __name__ == "__main__":

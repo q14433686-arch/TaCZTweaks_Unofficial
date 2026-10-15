@@ -21,9 +21,28 @@ unsatisfiable dependency range, once from an artificial upper bound on `fabric-a
 rejected a user's installed build.
 
 The synced gates (`check_runtime_version_gate`, `check_declared_ranges_include_built_versions`,
-`check_fabric_api_range_is_lower_bound_only`, `scripts/check_dependency_availability.py`) narrow
-that window considerably, but they still cannot replace one real launch of the client, an
+`check_fabric_api_range_is_lower_bound_only`, `check_fabric_loader_range_is_lower_bound_only`,
+`check_flk_and_yacl_ranges_are_lower_bound_only`, `scripts/check_dependency_availability.py`)
+narrow that window considerably, but they still cannot replace one real launch of the client, an
 integrated server and a dedicated server before a release is published.
+
+`Beta-1-hotfix2` removed four of those artificial caps (`fabricloader`, `fabric-api`,
+`fabric-language-kotlin`, and YACL's exact pin) for exactly this reason: they had started
+rejecting published, compatible releases — Fabric Loader `0.20.0` (2026-10-15) and Fabric
+Language Kotlin 1.14.x in particular. None of those four fixes has been proven in game yet;
+the launch matrix below is still the missing evidence.
+
+## Dependency versions users can hit that this mod does not control
+
+- **Fabric Language Kotlin 1.14.x requires Fabric Loader `>=0.19.5`.** This mod's own minimum
+  stays `>=0.19.3` (that is the loader it was compiled and tested against, and Fabric reads the
+  mod's Mixin compatibility level from that minimum). On Loader 0.19.3 or 0.19.4, FLK 1.14.x
+  fails FLK's *own* dependency check. Either stay on FLK 1.13.13/1.13.14 there, or update the
+  loader.
+- **YetAnotherConfigLib must still match this game line.** The dependency is now
+  `>=3.8.2+1.21.11-fabric` instead of an exact pin, so any newer `+1.21.11-fabric` build is
+  accepted; a YACL build for another game line is rejected by YACL's own `minecraft`
+  dependency, not by this mod.
 
 ## 50 untriaged audit warnings against the real TaCZ R2 jar
 
