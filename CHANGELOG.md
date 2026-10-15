@@ -4,7 +4,7 @@ All notable changes to the **`26.3` Fabric 26.3** line are tracked here. Other G
 branches keep their own changelogs. Release entries should be user-facing and concise; keep
 detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
-## 2.14.2+fabric.26.3.Beta-1 - Unreleased
+## 2.14.2+fabric.26.3.Beta-1-hotfix1 - Unreleased
 
 > Status: dependency coordinates and three source-verified API breaks are ported. **Not yet
 > compiled by CI and not tested in-game**; there is no downloadable build for this line.
@@ -33,6 +33,11 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 - `download_dependencies.py --print-sha256` / `--require-pinned`, and
   `check_release_consistency.py --require-deps`, so the manifest can carry a not-yet-pinned
   checksum without either silently passing or blocking the port.
+
+### Fixed
+
+- Removed the upper bound from the Fabric API dependency range so Fabric API `0.162.0+26.3`
+  is accepted instead of being incorrectly rejected as incompatible.
 
 ### Known gaps
 

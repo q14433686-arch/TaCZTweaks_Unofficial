@@ -5,8 +5,8 @@
 NeoForge 线以及 26.2 / 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
 [分支对照](docs/BRANCHES.md)。
 
-本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
-`2.14.2+fabric.26.3.Beta-1`。
+本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix1**：
+`2.14.2+fabric.26.3.Beta-1-hotfix1`。
 
 ---
 
@@ -125,8 +125,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix1.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1-hotfix1.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁

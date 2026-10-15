@@ -20,7 +20,7 @@ filing issues.
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-本线当前测试版本：**Beta-1**（`2.14.2+fabric.26.3.Beta-1`）。
+本线当前测试版本：**Beta-1-hotfix1**（`2.14.2+fabric.26.3.Beta-1-hotfix1`）。
 
 > **本线状态（2026-09-22）**：依赖坐标已切到 26.3，五处 26.3 API 破坏已适配
 > （`EntityBulletRenderer#shouldRender` 新增 `float partialTicks`、`GunSoundInstance#resolve`
@@ -117,7 +117,7 @@ python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix1.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、
