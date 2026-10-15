@@ -1,4 +1,4 @@
-commit: 6ccfbbc2d17f9047c2e87357c56585b2e6b6410a
+commit: 765c7dc860e62f963146cbeffa46fbcb5adbe6e8
 ref: arena/133a950b-tacztweaks-unofficial
 Fetching distribution.
 Downloading https://services.gradle.org/distributions/gradle-9.5.1-bin.zip
@@ -36,9 +36,9 @@ AUDIT(minecraft): OK
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :compileKotlin
 > Task :compileJava
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792084487153.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792086304701.json
 
-BUILD SUCCESSFUL in 2m 25s
+BUILD SUCCESSFUL in 1m 40s
 4 actionable tasks: 4 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 
