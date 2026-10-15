@@ -29,6 +29,10 @@ python3 scripts/audit_port.py --strict
 python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged-26.1.2.jar
 ```
 
+**网络受限环境（通常只能访问 `api.github.com`）**：本地跑不了 `./gradlew`，也下载不了 TaCZ jar。
+把改动 push 到 `arena/**` 分支或开 PR，由 `.github/workflows/` 的流程完成审计与构建，再按 BUILD.md §7
+的命令读回 job annotation 里的日志要点。**不要因为本地跑不了 Gradle 就把「未编译」写成「已编译」**，见 §4。
+
 审计必须保持 0 error / 0 warning。编译通过仍不代表 mixin 运行时安全；新增 mixin 必须核对：
 
 - mixin 所在 common/client 分组；

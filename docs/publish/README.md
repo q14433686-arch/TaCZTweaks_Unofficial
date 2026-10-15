@@ -38,6 +38,12 @@ python3 scripts/audit_port.py --strict
 - Source、Issues、License 和环境 metadata 均已填写；
 - 项目页没有外部 jar 下载链接。
 
+## GitHub Releases（本发行线）
+
+本线已配置 tag 驱动的 GitHub Actions 发布（`.github/workflows/release.yml`）：推送一个与当前 `mod_version` 对应、指向本发行线分支的 tag 后，CI 会完成审计和构建，并创建 Release、上传模组 JAR、生成发行说明。也可以照常在网页上新建 Release（同时新建 tag），CI 只会给它补传 JAR，不改标题和说明，也不覆盖已手动上传的同名文件。完整步骤与 tag 写法见 [`BUILD.md`](../../BUILD.md) 第 7 节。普通 push 和 PR 不会发布；不要为未合并或未验证的提交打发行 tag。
+
+此自动化只覆盖 GitHub Releases。Modrinth / CurseForge 的文件 metadata、依赖字段、披露和上传仍须按各自平台规则人工检查与发布。
+
 ## AI 披露
 
 这些发布文案使用了生成式 AI 辅助并由维护者复核。Modrinth 当前规则要求对使用生成式 AI 辅助的项目页作相应披露；发布者应启用平台提供的 AI content disclosure，并保留文案中的说明。不得使用 AI 生成或 AI 修改的项目图标、横幅或 Gallery 图片。

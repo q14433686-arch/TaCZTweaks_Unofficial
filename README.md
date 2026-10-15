@@ -117,6 +117,9 @@ python3 scripts/test_dependency_ranges.py
 # build/libs/tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix2.jar
 ```
 
+推送到 `26.1.2` / `arena/**` 或开 PR 时，GitHub Actions 会自动运行上述门禁，并在 Linux 和 Windows 上构建；
+发版用的 tag 流程见 [BUILD.md](BUILD.md) 第 7 节。
+
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、
 MixinExtras 最低版本，以及模组图标的元数据路径、尺寸、SHA-256 与许可声明。`./gradlew build`
 也会通过 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁。可再传 `--minecraft-jar <loom生成的26.1.2.jar>` 做原版

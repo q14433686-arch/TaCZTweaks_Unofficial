@@ -21,6 +21,14 @@ handoff/audit documents.
   warning is logged if shield rules resolved but no durability wrap ran. Merged after
   `Beta-1-hotfix` was published; first shipped in this build.
 
+### Added
+
+- GitHub Actions for this line: version/dependency consistency, the static port audit, a compile
+  check, Linux and Windows Gradle builds (the Linux jar is uploaded as an Actions artifact), and
+  a tag-triggered GitHub Release workflow that also works for releases created in the web UI.
+  These are the first active workflows on this line; the `Beta-1-hotfix` entry below listed CI,
+  but only a proposed workflow file existed then.
+
 ### Changed
 
 - The artifact version is now `2.14.2+fabric.26.1.2.Beta-1-hotfix2`, because `Beta-1-hotfix`
