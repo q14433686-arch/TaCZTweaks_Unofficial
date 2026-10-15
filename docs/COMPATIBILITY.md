@@ -5,13 +5,15 @@ lines have their own matrices on those branches ([branch map](BRANCHES.md)).
 
 This matrix separates implementation state from evidence. Do not promote an integration from
 static/build verification to game or server validation until the matching test has actually been
-run for the stated versions.
+run for the stated versions. The build evidence below refers to the previous 26.2 baseline;
+`Beta-1-hotfix2` has only been statically audited and Python-tested in this workspace, not
+built with JDK 25 or exercised in-game.
 
 | Project | Type | Supported range | Auto enabled | Current evidence | Known boundary |
 |---|---|---|---:|---|---|
 | Minecraft | hard platform | `26.2` | yes | compile/test/build | No other Minecraft versions are declared. |
 | Fabric Loader | hard dependency | `>=0.19.3 <0.20.0` | yes | compile/test/build | Loader API drift outside this range is not claimed. |
-| Fabric API | hard dependency | `>=0.155.2+26.2 <0.157.0` | yes | compile/test/build | Keep release metadata and Gradle property aligned. |
+| Fabric API | hard dependency | `>=0.155.2+26.2` (no upper cap) | yes | baseline compiled against 0.155.2; new range statically tested | Newer releases on 26.2 have not all been exercised; Minecraft is still pinned to 26.2. |
 | Fabric Language Kotlin | hard dependency | `>=1.13.13 <1.14.0` | yes | compile/test/build | Runtime Kotlin stdlib comes through FLK. |
 | TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same release family | required | compile/test/static descriptor audit; startup accepts revisions >= R2 | Minecraft/core version and `fabric.26.2` family remain strict; pre-R2 and unrelated builds are rejected. |
 | YetAnotherConfigLib | hard dependency | exactly `3.9.6+26.2-fabric` | required | compile/build/checksum | Runtime mod is not nested; users must install it. |

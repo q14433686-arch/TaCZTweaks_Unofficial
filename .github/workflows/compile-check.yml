@@ -1,0 +1,83 @@
+name: compile-check
+
+# 编译验证闭环（对标 TaCZ_Refabricated_Unofficial 的同名流程）。
+#
+# Maven Fabric / Minecraft 仓库在受限容器中不可达，不能用本地 ./gradlew
+# 作为编译结果；此流程提供 Actions 编译检查，并在 arena/** 回推日志。
+#
+# 而 Actions 的日志 blob 域在同一个沙箱里也读不到，所以 arena/** 分支上把日志
+# 通过 Contents API 写回 build-reports/compile-java.log，沙箱用
+# `gh api repos/{owner}/{repo}/contents/build-reports/compile-java.log?ref=<branch>`
+# 就能直接读到编译错误。主分支与 PR 不回推（不让 CI commit 污染发行线），看 Actions 即可。
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+      - '26.2(main)'
+    # 防止「日志回推 commit」再次触发本流程造成死循环
+    paths-ignore:
+      - 'build-reports/**'
+  pull_request:
+    paths-ignore:
+      - 'build-reports/**'
+  workflow_dispatch:
+
+concurrency:
+  # 同一分支的过期 run 直接取消，省配额（push 连发时只编最新的）
+  group: compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # 26.2 的 libs/*.jar 已入库；先按 manifest 校验 SHA-256，避免损坏的 jar
+      # 导致 compileJava 的 mixin 目标解析失败。
+      - name: Verify vendored dependencies
+        run: python3 scripts/download_dependencies.py --check-only
+
+      - name: compileJava / compileKotlin
+        run: |
+          mkdir -p build-reports
+          echo "commit: ${{ github.sha }}" > build-reports/compile-java.log
+          echo "ref: ${{ github.ref_name }}" >> build-reports/compile-java.log
+          ./gradlew compileJava compileKotlin --console=plain --stacktrace --no-daemon \
+            >> build-reports/compile-java.log 2>&1
+
+      - name: Push compile log back via contents API
+        # 只在 arena/** 的 push 上回推 —— 主分支与 PR 不产生 ci-log commit
+        if: always() && github.event_name == 'push' && startsWith(github.ref_name, 'arena/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 日志可能很大，只保留头 200 行 + 尾 800 行
+          LOG=build-reports/compile-java.log
+          LINES=$(wc -l < "$LOG")
+          if [ "$LINES" -gt 1000 ]; then
+            { head -n 200 "$LOG"; echo "...[truncated ${LINES} lines total]..."; tail -n 800 "$LOG"; } > /tmp/log-trimmed
+            mv /tmp/log-trimmed "$LOG"
+          fi
+          echo "" >> "$LOG"
+          echo "== job status: ${{ job.status }} ==" >> "$LOG"
+          BRANCH="${{ github.ref_name }}"
+          SHA=$(gh api "repos/${{ github.repository }}/contents/$LOG?ref=$BRANCH" --jq .sha 2>/dev/null || true)
+          ARGS=(-X PUT "repos/${{ github.repository }}/contents/$LOG"
+                -f message="ci-log: compile result (${{ job.status }}) for ${{ github.sha }}"
+                -f branch="$BRANCH"
+                -f content="$(base64 -w0 "$LOG")")
+          if [ -n "$SHA" ]; then ARGS+=(-f sha="$SHA"); fi
+          gh api "${ARGS[@]}" --jq .commit.sha

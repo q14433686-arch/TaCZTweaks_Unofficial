@@ -4,7 +4,28 @@ All notable changes to the **`26.2(main)` Fabric 26.2** line are tracked here. O
 branches keep their own changelogs. Release entries should be user-facing and concise; keep
 detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
-## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
+## 2.14.2+fabric.26.2.Beta-1-hotfix2 - Unreleased
+
+### Fixed
+
+- Backported the Fabric 26.3 dependency-range fix to this **26.2** line: Fabric API now
+  requires `>=0.155.2+26.2` without an artificial upper cap that could reject newer
+  Fabric API releases; Minecraft remains exactly `26.2`.
+- The release-consistency gate now checks that the built Fabric Loader / Fabric API / Fabric
+  Language Kotlin versions satisfy the published ranges, and that the TaCZ runtime gate's
+  **26.2 R2** family and minimum agree with `fabric.mod.json`. It rejects mismatches before
+  a build is published instead of waiting for a launch-time failure.
+- Added an upstream dependency-availability check, regression tests for both gates, and
+  CI workflows for audit, compilation, full build, and version consistency. The shield
+  optional-target audit self-test now runs under pytest without exiting during import.
+
+### Validation
+
+- Dependency availability requires access to Modrinth; offline `SKIP` does not count as a
+  successful upstream check. Compiling and in-game client/server smoke tests still require
+  a suitable JDK/network/test environment; do not infer game validation from static checks.
+
+## 2.14.2+fabric.26.2.Beta-1-hotfix - 2026-08-22
 
 ### Documentation
 

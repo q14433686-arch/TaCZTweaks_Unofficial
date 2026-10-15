@@ -63,6 +63,118 @@ def check_manifest() -> None:
                     fail(f"Manifest row for {row['path']} has empty {column}")
 
 
+def _semver_key(value: str) -> tuple[int, ...]:
+    """Compare numeric release components; Fabric ignores build metadata after '+'."""
+    core = value.split("+", 1)[0].split("-", 1)[0]
+    return tuple(int(part) if part.isdigit() else 0 for part in core.split("."))
+
+
+def _satisfies(version: str, predicate: str) -> bool:
+    """Evaluate the Fabric dependency predicates used by this release line."""
+    predicate = predicate.strip()
+    if not predicate or predicate == "*":
+        return True
+    for op in (">=", "<=", "=", ">", "<"):
+        if predicate.startswith(op):
+            bound = predicate[len(op):].strip()
+            if op == "=":
+                # Exact pins include build metadata (e.g. the TaCZ release family).
+                return version == bound
+            actual, expected = _semver_key(version), _semver_key(bound)
+            if op == ">=":
+                return actual >= expected
+            if op == "<=":
+                return actual <= expected
+            if op == ">":
+                return actual > expected
+            return actual < expected
+    return version == predicate
+
+
+def check_declared_ranges_include_built_versions(props: dict[str, str], meta: dict) -> None:
+    """Fail if the loader would reject an exact version we compile against.
+
+    This catches drift between gradle.properties and fabric.mod.json; the separate
+    check_dependency_availability.py catches ranges matching NO published build.
+    """
+    depends = meta.get("depends", {})
+    for prop_key, depend_key in (
+        ("flk_version", "fabric-language-kotlin"),
+        ("fabric_version", "fabric-api"),
+        ("loader_version", "fabricloader"),
+    ):
+        built = props.get(prop_key)
+        declared = depends.get(depend_key)
+        if not built or not declared:
+            fail(f"missing {prop_key} or fabric.mod.json depends.{depend_key}")
+        if not all(_satisfies(built, part) for part in declared.split()):
+            fail(
+                f"fabric.mod.json depends.{depend_key} = '{declared}' excludes the version "
+                f"this build actually uses ({prop_key} = {built}). Users would get "
+                "'Incompatible mods found'."
+            )
+
+
+def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Don't reject newer Fabric API releases for the same pinned Minecraft line."""
+    declared = meta.get("depends", {}).get("fabric-api", "")
+    expected = f">={props['fabric_version']}"
+    if declared != expected:
+        fail(
+            f"fabric.mod.json depends.fabric-api should be the lower-bound-only range "
+            f"'{expected}' (no upper cap); got '{declared}'."
+        )
+
+
+def check_runtime_version_gate(meta: dict) -> None:
+    """Ensure the in-code TaCZ gate admits the exact version declared to Fabric.
+
+    The gate executes at game startup, not during compilation or mixin auditing.
+    In 26.2 the declared TaCZ build is R2, not 26.3's R1; copying that floor here
+    would either reject supported versions or admit an incompatible hook surface.
+    """
+    source = (ROOT / "src/main/java/me/muksc/tacztweaks/TaCZTweaks.java").read_text(encoding="utf-8")
+
+    def constant(name: str) -> str | None:
+        match = re.search(rf'{name}\s*=\s*"([^"]+)"', source)
+        return match.group(1) if match else None
+
+    prefix = constant("SUPPORTED_TACZ_VERSION_PREFIX")
+    supported = constant("SUPPORTED_TACZ_VERSION")
+    if prefix is None or supported is None:
+        fail("could not parse the TaCZ version gate constants from TaCZTweaks.java")
+
+    revision_match = re.search(
+        r"MIN_SUPPORTED_TACZ_REVISION\s*=\s*BigInteger\.(?:valueOf\((\d+)\)|(ONE)|(ZERO))", source
+    )
+    if not revision_match:
+        fail("could not parse MIN_SUPPORTED_TACZ_REVISION from TaCZTweaks.java")
+    minimum = int(revision_match.group(1)) if revision_match.group(1) else (1 if revision_match.group(2) else 0)
+
+    declared = meta.get("depends", {}).get("tacz", "")
+    if not declared.startswith("=") or not declared[1:]:
+        fail("fabric.mod.json must declare an exact tacz dependency")
+    required = declared[1:]
+    if not required.startswith(prefix):
+        fail(
+            f"runtime gate accepts only '{prefix}<n>' but fabric.mod.json requires "
+            f"'{required}'. The mod would refuse to start against its own declared dependency."
+        )
+    revision_text = required[len(prefix):].split("-", 1)[0]
+    if not revision_text.isdigit():
+        fail(f"cannot read the R-revision out of the declared tacz version '{required}'")
+    if int(revision_text) < minimum:
+        fail(
+            f"runtime gate demands revision >= R{minimum} but fabric.mod.json requires "
+            f"'{required}'. The mod would refuse to start against its own declared dependency."
+        )
+    if supported != required:
+        fail(
+            f"TaCZTweaks.SUPPORTED_TACZ_VERSION ('{supported}') disagrees with the declared "
+            f"tacz dependency ('{required}')"
+        )
+
+
 def check_metadata() -> tuple[dict[str, str], dict]:
     props = read_properties(ROOT / "gradle.properties")
     meta = json.loads((ROOT / "src/main/resources/fabric.mod.json").read_text(encoding="utf-8"))
@@ -87,6 +199,8 @@ def check_metadata() -> tuple[dict[str, str], dict]:
             fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
+    check_fabric_api_range_is_lower_bound_only(props, meta)
+    check_declared_ranges_include_built_versions(props, meta)
     return props, meta
 
 
@@ -142,7 +256,8 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     check_manifest()
-    props, _meta = check_metadata()
+    props, meta = check_metadata()
+    check_runtime_version_gate(meta)
     check_docs(props)
     if args.jar:
         check_jar(args.jar, props)
