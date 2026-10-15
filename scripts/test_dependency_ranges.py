@@ -17,12 +17,18 @@ also rejected FLK ``1.14.2+kotlin.2.4.21`` because of ``">=1.13.13 <1.14.0"`` an
 same shapes, and here the FLK cap already bit: FLK 1.14.0, 1.14.1 and 1.14.2 are published
 (FabricMC/fabric-language-kotlin GitHub releases) and the old range rejected all three.
 
+Fabric Loader -- 2026-10-16. Fabric Loader 0.20.0 was released on 2026-10-15 and the old
+``">=0.19.3 <0.20.0"`` rejected it. Fabric picks a mod's Mixin compatibility level from the
+*minimum* of its loader dependency, so dropping the cap keeps this mod's mixins on the same
+level (``COMPATIBILITY_0_17_1``) on 0.20.0 as on 0.19.3.
+
 Compiling, the static mixin audit and jar packaging never evaluate dependency ranges --
 only Fabric Loader does, at launch -- so these tests pin the policy down offline:
 
 1. ``check_fabric_api_range_is_lower_bound_only`` -- the shipped Fabric API range is exactly
    ``>=<fabric_version>`` (this line's own minimum, no upper cap); re-adding a cap or
-   drifting the minimum is rejected.
+   drifting the minimum is rejected. ``check_fabric_loader_range_is_lower_bound_only`` does
+   the same for ``fabricloader`` and ``loader_version``.
 2. ``check_flk_and_yacl_ranges_are_lower_bound_only`` -- FLK is exactly ``>=`` + the release
    part of ``flk_version`` and YACL exactly ``>=3.9.6+26.1-fabric`` (the artifact
    build.gradle.kts resolves); caps, exact pins, another line's minimum or a swapped YACL
@@ -84,6 +90,12 @@ OLD_CAPPED_FLK = ">=1.13.13 <1.14.0"
 PUBLISHED_YACL_26_1 = ["3.9.6+26.1-fabric", "3.9.7+26.1-fabric"]
 FUTURE_YACL_26_1 = ["3.9.8+26.1-fabric", "3.10.0+26.1-fabric", "4.0.0+26.1-fabric"]
 OLD_PINNED_YACL = "=3.9.6+26.1-fabric"
+
+# Fabric Loader releases at or above this line's minimum (FabricMC/fabric-loader GitHub releases,
+# 2026-10-16). 0.20.0 (2026-10-15) is the release the old "<0.20.0" cap rejected.
+PUBLISHED_LOADER = ["0.19.3", "0.19.4", "0.19.5", "0.20.0"]
+FUTURE_LOADER = ["0.20.1", "0.21.0", "1.0.0"]
+OLD_CAPPED_LOADER = ">=0.19.3 <0.20.0"
 
 
 def _range_matches(version: str, declared: str) -> bool:
@@ -152,6 +164,40 @@ def test_fabric_api_policy_rejects_a_drifted_minimum() -> None:
         meta = _meta()
         meta["depends"]["fabric-api"] = drifted
         assert _rejects(consistency.check_fabric_api_range_is_lower_bound_only, props, meta), drifted
+
+
+def test_fabric_loader_range_is_lower_bound_only() -> None:
+    props, meta = _props(), _meta()
+    declared = meta["depends"]["fabricloader"]
+    assert declared == f">={props['loader_version']}", declared
+    assert "<" not in declared, f"Fabric Loader range must not carry an upper cap: {declared!r}"
+    consistency.check_fabric_loader_range_is_lower_bound_only(props, meta)
+
+
+def test_fabric_loader_range_admits_published_and_later_builds() -> None:
+    declared = _meta()["depends"]["fabricloader"]
+    for version in PUBLISHED_LOADER + FUTURE_LOADER:
+        assert _range_matches(version, declared), f"{declared!r} rejects {version}"
+    assert not _range_matches("0.19.2", declared), "the minimum must still hold"
+    # The removed cap rejected the 0.20.0 release while admitting everything before it.
+    assert not _range_matches("0.20.0", OLD_CAPPED_LOADER)
+    assert _range_matches("0.19.5", OLD_CAPPED_LOADER)
+
+
+def test_fabric_loader_policy_rejects_caps_and_drift() -> None:
+    props = _props()
+    for declared in (
+        OLD_CAPPED_LOADER,
+        ">=0.19.3 <1.0.0",
+        ">=0.19.5 <0.20.0",  # the 26.3 line's range
+        ">=0.19.5",  # 26.3's minimum; it would also switch the Mixin compatibility level
+        "*",
+    ):
+        meta = _meta()
+        meta["depends"]["fabricloader"] = declared
+        assert _rejects(consistency.check_fabric_loader_range_is_lower_bound_only, props, meta), (
+            f"fabricloader = {declared!r} must be rejected"
+        )
 
 
 def test_flk_and_yacl_ranges_are_lower_bound_only() -> None:
@@ -249,7 +295,8 @@ def test_gradle_properties_and_fabric_mod_json_agree() -> None:
 
 def test_built_version_check_rejects_an_excluding_range() -> None:
     props, meta = _props(), _meta()
-    meta["depends"]["fabricloader"] = ">=0.20.0"
+    # Strictly above whatever loader_version is, so a future loader bump can't make this pass.
+    meta["depends"]["fabricloader"] = f">{props['loader_version']}"
     assert _rejects(consistency.check_declared_ranges_include_built_versions, props, meta)
 
 
@@ -284,6 +331,7 @@ def test_check_metadata_enforces_the_policy() -> None:
     assert not _check_metadata_rejects({"fabric-api": f">={_props()['fabric_version']}"})
     for depends in (
         {"fabric-api": OLD_CAPPED_RANGE},
+        {"fabricloader": OLD_CAPPED_LOADER},
         {"fabric-language-kotlin": OLD_CAPPED_FLK},
         {"yet_another_config_lib_v3": OLD_PINNED_YACL},
     ):

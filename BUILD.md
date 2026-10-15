@@ -104,7 +104,7 @@ gradlew.bat build
 
 - **首次构建**会下载 Gradle 9.5.1、Minecraft 26.1.2、Fabric API 等，视网速可能要几分钟到十几分钟；
 - `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`、`python scripts/test_dependency_ranges.py`（Linux/macOS 使用 `python3`）；后两者会拒绝给 Fabric API、Fabric Language Kotlin、YACL 依赖加上界或精确锁定（`fabric.mod.json` 必须分别是 `>=<fabric_version>`、`>=<flk_version 的版本号部分>`、`>=3.9.6+26.1-fabric`）；
+- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`、`python scripts/test_dependency_ranges.py`（Linux/macOS 使用 `python3`）；后两者会拒绝给 Fabric Loader、Fabric API、Fabric Language Kotlin、YACL 依赖加上界或精确锁定（`fabric.mod.json` 必须分别是 `>=<loader_version>`、`>=<fabric_version>`、`>=<flk_version 的版本号部分>`、`>=3.9.6+26.1-fabric`）；
 - 成功后输出：
   ```
   BUILD SUCCESSFUL
@@ -158,7 +158,7 @@ python scripts/check_server_log.py run/logs/latest.log
 
 | 流程 | 文件 | 跑什么 | 触发方式 |
 |---|---|---|---|
-| `Version consistency` | `consistency.yml` | `check_release_consistency.py`（版本号、Fabric API / FLK / YACL 只设下界、manifest 校验和）与 `test_dependency_ranges.py` | 改到版本、依赖或发行文档相关文件的 push / PR |
+| `Version consistency` | `consistency.yml` | `check_release_consistency.py`（版本号、Fabric Loader / Fabric API / FLK / YACL 只设下界、manifest 校验和）与 `test_dependency_ranges.py` | 改到版本、依赖或发行文档相关文件的 push / PR |
 | `audit` | `audit.yml` | `audit_port.py --strict`、`check_mod_icon.py`、三个脚本自测 | 发行线或 `arena/**` 的 push，以及全部 PR |
 | `compile-check` | `compile-check.yml` | `compileJava compileKotlin`（快速反馈） | 同上 |
 | `build` | `build.yml` | Linux：`./gradlew build`，再用产物复核 `check_release_consistency.py --jar`，上传 jar 与示例包（Actions artifact，保留 14 天）；Windows：`gradlew.bat build` | 同上；只改 `*.md` / `docs/**` 时跳过 |

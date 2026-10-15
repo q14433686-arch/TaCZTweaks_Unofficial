@@ -76,6 +76,30 @@ python3 scripts/audit_port.py --strict \
   的 `./gradlew build` 均通过并输出 `JAR CONTENTS: OK`（`processResources` 只展开 `fabric.mod.json` 的 `${version}`，
   depends 原样打包）。本地另做了上述变异测试。**尚未**用 FLK 1.14.x / YACL 3.9.7 做客户端 / 集成服 / 独立服实机启动。
 
+## Fabric Loader 依赖范围（2026-10-16，Loader 0.20.0 发布）
+
+- Fabric Loader 0.20.0 于 2026-10-15 发布（FabricMC/fabric-loader GitHub release，非预发布），旧声明
+  `fabricloader: ">=0.19.3 <0.20.0"` 会拒绝它。现改为 `>=0.19.3`：只删上界，最低版本保持 `loader_version`；
+- 查证（2026-10-16）：
+  - 0.19.3 → 0.20.0 共 18 个提交：Mixin `0.17.3 → 0.17.5`、MixinExtras `0.5.4 → 0.5.5`、ASM `9.10.1 → 9.11`，
+    另有可转换包白名单、环境剥离开关、`.x` 谓词修正、只读 zip fs、错误界面提示等。提交标题里没有 API 移除；
+    `remove nested mod candidates for env disabled mods` 只影响按环境禁用的模组，本模组 `environment` 为 `*`；
+  - Mixin 兼容级别：`FabricMixinBootstrap.getMixinCompat` 取模组 `fabricloader` 依赖的**下界**，再查
+    `FabricMixinVersions` 表（0.20.0：`0.20.0 → 0_17_5`、`0.19.4 → 0_17_4`、`0.19.0 → 0_17_1`）。本模组下界
+    `0.19.3` 在 Loader 0.19.3 和 0.20.0 上都对应 `COMPATIBILITY_0_17_1`，上界从来不参与这个计算，所以去掉上界
+    不改变 mixin 的兼容行为。反过来，把下界抬到 0.19.4 及以上会切换兼容级别，需要重新实测；
+  - mixin 配置为 `minVersion: 0.8`、`compatibilityLevel: JAVA_17`，0.20.0 自带的 Mixin（0.8.7 基线）满足。本模组内嵌
+    MixinExtras 0.5.4，Loader 0.20.0 自带 0.5.5；
+  - 必需依赖链里没有别的 Loader 上界：TaCZ R2 / R3 声明 `>=${loader_version}`（即 `>=0.19.3`），TaCZ 依赖的
+    Forge Config API Port 由构建脚本生成 `>=<最低版本>` 或 `*`，Fabric API `0.155.3+26.1.2` 为 `>=0.18.4`，
+    FLK 为 `>=0.16.9`（1.13.x）/ `>=0.19.5`（1.14.x），YACL 为 `>=0.18.0`；
+- 门禁：`check_release_consistency.py` 新增 `check_fabric_loader_range_is_lower_bound_only`（要求
+  `depends.fabricloader == ">=" + loader_version`）。`scripts/test_dependency_ranges.py` 增至 18 个用例；在临时副本里
+  放回旧上界、26.3 的 `>=0.19.5 <0.20.0`、`>=0.19.5`，或只把 `loader_version` 改成 0.20.0 而不改范围，测试与
+  `check_metadata()` 都会失败。顺带修正了一个旧用例：它把 `>=0.20.0` 硬编码成“高于构建版本”的范围，Loader 真升级到
+  0.20.0 时会误报，现改为由 `loader_version` 推出；
+- 验证级别：本地脚本测试与上述变异测试通过；CI 结果待补；**尚未**在 Loader 0.20.0 上做客户端 / 集成服 / 独立服实机启动。
+
 ## 总结
 
 用户的判断基本正确：旧文档把“原注入点/原 Forge 类型不存在”误写成了“功能不能做”。

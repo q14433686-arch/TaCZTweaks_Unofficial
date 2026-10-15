@@ -46,11 +46,13 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 修改 `gradle.properties` 的 `mod_version`、Minecraft/Fabric/Kotlin/MixinExtras 版本时，必须在同一
 工作分支同步 README、BUILD 和依赖表。`scripts/audit_port.py` 会校验当前版本标识唯一一致。
 
-`fabric.mod.json` 的 `fabric-api`、`fabric-language-kotlin`、`yet_another_config_lib_v3` 只写下界，不加
-`<下一版本` 上界、不精确锁定（Fabric API 同步自 26.3 线，2026-10-15；FLK / YACL 是 26.2 线 Issue #33 的
-同类问题，2026-10-16）。下界分别等于 `fabric_version`、`flk_version` 的版本号部分（`1.13.13`）、
-`build.gradle.kts` 解析的 YACL 构建（`3.9.6+26.1-fabric`，Modrinth `svTkvBec`）；升级编译依赖时一并抬高下界，
-不要照搬其他线的数值（例如 26.3 的 FLK `>=1.14.1`）。`scripts/check_release_consistency.py` 会强制这一点，
+`fabric.mod.json` 的 `fabricloader`、`fabric-api`、`fabric-language-kotlin`、`yet_another_config_lib_v3`
+只写下界，不加 `<下一版本` 上界、不精确锁定（Fabric API 同步自 26.3 线，2026-10-15；FLK / YACL 是 26.2 线
+Issue #33 的同类问题，Fabric Loader 是 0.20.0 发布后的同类问题，均 2026-10-16）。下界分别等于 `loader_version`、
+`fabric_version`、`flk_version` 的版本号部分（`1.13.13`）、`build.gradle.kts` 解析的 YACL 构建
+（`3.9.6+26.1-fabric`，Modrinth `svTkvBec`）；升级编译依赖时一并抬高下界，不要照搬其他线的数值（例如 26.3 的
+FLK `>=1.14.1`、Loader `>=0.19.5`）。注意：Fabric 按 `fabricloader` 的下界决定 Mixin 兼容级别，把它抬到
+0.19.4 及以上会改变 mixin 行为，必须重新实测。`scripts/check_release_consistency.py` 会强制这一点，
 `scripts/test_dependency_ranges.py` 覆盖。
 
 ## 4. 不得夸大

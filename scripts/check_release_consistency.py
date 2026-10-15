@@ -163,6 +163,25 @@ def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict
         )
 
 
+def check_fabric_loader_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep the Fabric Loader dependency open-ended above loader_version.
+
+    Fabric Loader 0.20.0 (2026-10-15) was rejected by the old ">=0.19.3 <0.20.0". Fabric
+    derives each mod's Mixin compatibility level from the *minimum* of its fabricloader
+    dependency (FabricMixinBootstrap.getMixinCompat), so ">=0.19.3" keeps this mod on
+    COMPATIBILITY_0_17_1 on newer loaders as well; the cap never affected that. Raising the
+    minimum to 0.19.4 or later would switch the level, so treat it as a behaviour change.
+    """
+    declared = meta.get("depends", {}).get("fabricloader", "")
+    expected = f">={props['loader_version']}"
+    if declared != expected:
+        fail(
+            f"fabric.mod.json depends.fabricloader should be the lower-bound-only range "
+            f"'{expected}' (no upper cap); got '{declared}'. An upper cap rejects newer "
+            f"Fabric Loader releases with 'Incompatible mods found'."
+        )
+
+
 # build.gradle.kts resolves YACL by Modrinth version id, not by version string, so the version
 # this build compiles against is recorded here (same id/version pair as THIRD_PARTY_NOTICES.md).
 YACL_BUILD_COORDINATE = "maven.modrinth:1eAoo2KR:svTkvBec"
@@ -231,6 +250,7 @@ def check_metadata() -> tuple[dict[str, str], dict]:
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
     check_fabric_api_range_is_lower_bound_only(props, meta)
+    check_fabric_loader_range_is_lower_bound_only(props, meta)
     build_script = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
     check_flk_and_yacl_ranges_are_lower_bound_only(props, meta, build_script)
     check_declared_ranges_include_built_versions(props, meta)
