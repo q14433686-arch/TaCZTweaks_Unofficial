@@ -70,7 +70,9 @@ https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2
 ```
 https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar
 ```
-保存为：`yacl-fabric.jar`（约 1MB）
+保存为：`yacl-fabric.jar`（约 1MB）。这个固定的 3.9.6 JAR 仅用于可重复编译及 SHA-256 校验；
+模组的运行时依赖是 `>=3.9.6+26.2-fabric`，没有人为上界，玩家也可安装
+`3.9.7+26.2-fabric` 等更新的 **Fabric 26.2** 构件（游戏内兼容性仍须验证）。
 
 也可以直接让脚本按 manifest 下载并校验：
 

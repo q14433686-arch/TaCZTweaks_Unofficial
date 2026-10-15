@@ -2,7 +2,9 @@
 
 The 26.3 line exposed two gaps: a declared dependency range can exclude installed
 builds even when the source compiles, and an in-code TaCZ version gate can reject
-its own declared dependency. Test both positive cases and deliberately broken inputs.
+its own declared dependency. Issue #33 reproduced the range bug on 26.2 with Fabric
+API 0.161.0, FLK 1.14.2 and YACL 3.9.7. Test the reported versions as well as
+intentionally broken ranges and version gates.
 Run: python3 -m pytest scripts/test_dependency_ranges.py -q
 """
 
@@ -30,12 +32,20 @@ def matches(version: str, predicates: str) -> bool:
     return all(consistency._satisfies(version, part) for part in predicates.split())
 
 
-# Representative published 26.2 builds: the pinned dependencies and FLK 1.13.13,
-# which the 26.3 branch's CROSS_BRANCH_SYNC.md checked against Modrinth.
+# The baseline compile dependencies plus the 26.2 builds reported in Issue #33.
 PUBLISHED_26_2 = {
-    "fabric-api": [{"version_number": "0.155.2+26.2"}],
-    "fabric-language-kotlin": [{"version_number": "1.13.13+kotlin.2.4.10"}],
-    "yacl": [{"version_number": "3.9.6+26.2-fabric"}],
+    "fabric-api": [
+        {"version_number": "0.155.2+26.2"},
+        {"version_number": "0.161.0+26.2"},
+    ],
+    "fabric-language-kotlin": [
+        {"version_number": "1.13.13+kotlin.2.4.10"},
+        {"version_number": "1.14.2+kotlin.2.4.21"},
+    ],
+    "yacl": [
+        {"version_number": "3.9.6+26.2-fabric"},
+        {"version_number": "3.9.7+26.2-fabric"},
+    ],
 }
 
 
@@ -46,9 +56,25 @@ def test_shipped_ranges_include_built_versions() -> None:
     assert props["minecraft_version"] == "26.2"
     assert meta["depends"]["minecraft"] == "=26.2"
     assert matches("1.13.13+kotlin.2.4.10", meta["depends"]["fabric-language-kotlin"])
-    # Do not import 26.3's FLK minimum or TaCZ revision into the 26.2 line.
-    assert not matches("1.14.1+kotlin.2.4.20", meta["depends"]["fabric-language-kotlin"])
+    assert matches("3.9.6+26.2-fabric", meta["depends"]["yet_another_config_lib_v3"])
+    # The minimums remain at the 26.2 baseline; only the upper caps go away.
+    assert not matches("1.13.12+kotlin.2.4.10", meta["depends"]["fabric-language-kotlin"])
+    assert not matches("3.9.5+26.2-fabric", meta["depends"]["yet_another_config_lib_v3"])
     assert meta["depends"]["tacz"] == "=1.1.8+fabric.26.2.R2"
+
+
+def test_issue_33_versions_are_accepted_without_loosening_the_minimums() -> None:
+    depends = metadata()["depends"]
+    reported = {
+        "fabric-api": ("0.161.0+26.2", ">=0.155.2+26.2 <0.157.0"),
+        "fabric-language-kotlin": ("1.14.2+kotlin.2.4.21", ">=1.13.13 <1.14.0"),
+        "yet_another_config_lib_v3": ("3.9.7+26.2-fabric", "=3.9.6+26.2-fabric"),
+    }
+    for key, (version, old_range) in reported.items():
+        assert matches(version, depends[key]), f"Issue #33: {key} {version} remains blocked"
+        assert not matches(version, old_range), f"Issue #33: {key} old range unexpectedly admits it"
+    assert depends["minecraft"] == "=26.2"
+    assert depends["tacz"] == "=1.1.8+fabric.26.2.R2"
 
 
 def test_build_range_drift_fails() -> None:
@@ -57,6 +83,18 @@ def test_build_range_drift_fails() -> None:
     meta["depends"]["fabric-language-kotlin"] = ">=99.0.0"
     with pytest.raises(SystemExit, match="excludes the version"):
         consistency.check_declared_ranges_include_built_versions(props, meta)
+
+
+def test_yacl_manifest_build_is_in_declared_range() -> None:
+    meta = metadata()
+    consistency.check_declared_ranges_include_built_versions(
+        consistency.read_properties(ROOT / "gradle.properties"), meta
+    )
+    meta["depends"]["yet_another_config_lib_v3"] = ">=3.9.7+26.2-fabric"
+    with pytest.raises(SystemExit, match="yet_another_config_lib_v3"):
+        consistency.check_declared_ranges_include_built_versions(
+            consistency.read_properties(ROOT / "gradle.properties"), meta
+        )
 
 
 def test_fabric_api_allows_newer_26_2_versions_without_a_cap() -> None:
@@ -77,6 +115,21 @@ def test_fabric_api_upper_cap_fails_consistency() -> None:
     meta["depends"]["fabric-api"] += " <0.157.0"
     with pytest.raises(SystemExit, match="no upper cap"):
         consistency.check_fabric_api_range_is_lower_bound_only(props, meta)
+
+
+@pytest.mark.parametrize(
+    ("depend_key", "old_range"),
+    (
+        ("fabric-language-kotlin", ">=1.13.13 <1.14.0"),
+        ("yet_another_config_lib_v3", "=3.9.6+26.2-fabric"),
+        ("yet_another_config_lib_v3", ">=3.9.6+26.2-fabric <3.9.7"),
+    ),
+)
+def test_flk_and_yacl_caps_fail_consistency(depend_key: str, old_range: str) -> None:
+    meta = metadata()
+    meta["depends"][depend_key] = old_range
+    with pytest.raises(SystemExit, match="no upper cap or exact pin"):
+        consistency.check_flk_and_yacl_ranges_are_lower_bound_only(meta)
 
 
 def test_runtime_gate_accepts_26_2_r2_dependency() -> None:

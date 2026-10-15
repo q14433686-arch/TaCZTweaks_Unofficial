@@ -11,6 +11,10 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 - Backported the Fabric 26.3 dependency-range fix to this **26.2** line: Fabric API now
   requires `>=0.155.2+26.2` without an artificial upper cap that could reject newer
   Fabric API releases; Minecraft remains exactly `26.2`.
+- Addressed the other two loader rejections in Issue #33: FLK now requires `>=1.13.13`
+  and YACL `>=3.9.6+26.2-fabric`, both without an upper bound. The reported 26.2 versions
+  FLK `1.14.2+kotlin.2.4.21` and YACL `3.9.7+26.2-fabric` satisfy these ranges; actual
+  client/server behavior with those newer dependencies still needs in-game verification.
 - The release-consistency gate now checks that the built Fabric Loader / Fabric API / Fabric
   Language Kotlin versions satisfy the published ranges, and that the TaCZ runtime gate's
   **26.2 R2** family and minimum agree with `fabric.mod.json`. It rejects mismatches before
@@ -22,8 +26,8 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 ### Validation
 
 - Dependency availability requires access to Modrinth; offline `SKIP` does not count as a
-  successful upstream check. Compiling and in-game client/server smoke tests still require
-  a suitable JDK/network/test environment; do not infer game validation from static checks.
+  successful upstream check. A baseline CI build does not verify runtime behavior with
+  newer FLK/YACL; client and server smoke tests with those versions are still required.
 
 ## 2.14.2+fabric.26.2.Beta-1-hotfix - 2026-08-22
 
