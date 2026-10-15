@@ -98,7 +98,10 @@ python3 scripts/audit_port.py --strict \
   放回旧上界、26.3 的 `>=0.19.5 <0.20.0`、`>=0.19.5`，或只把 `loader_version` 改成 0.20.0 而不改范围，测试与
   `check_metadata()` 都会失败。顺带修正了一个旧用例：它把 `>=0.20.0` 硬编码成“高于构建版本”的范围，Loader 真升级到
   0.20.0 时会误报，现改为由 `loader_version` 推出；
-- 验证级别：本地脚本测试与上述变异测试通过；CI 结果待补；**尚未**在 Loader 0.20.0 上做客户端 / 集成服 / 独立服实机启动。
+- 验证级别（2026-10-16，GitHub Actions，commit `817cfe7`，push 与 pull_request 共 8 个 run 全绿）：`audit_port.py --strict`
+  用真实 TaCZ R2 jar 为 0 error / 0 warning；`check_release_consistency.py` 与 18 个依赖范围测试通过；Linux 与 Windows 的
+  `./gradlew build` 均通过并输出 `JAR CONTENTS: OK`。本地另做了上述变异测试。**尚未**在 Loader 0.20.0 上做客户端 /
+  集成服 / 独立服实机启动。
 
 ## 总结
 
