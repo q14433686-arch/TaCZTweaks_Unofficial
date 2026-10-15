@@ -71,8 +71,10 @@ python3 scripts/audit_port.py --strict \
   `maven.modrinth:1eAoo2KR:svTkvBec`，只换 YACL 构建、不改下界会失败），`check_metadata()` 不再要求 YACL 精确等于
   `3.9.6+26.1-fabric`。`scripts/test_dependency_ranges.py` 增至 15 个用例；在临时副本里把旧 FLK 上界、旧 YACL 精确锁定、
   26.3 的 `<2.0.0` 写法、26.2 的 YACL 构建名、换掉的 YACL 坐标逐一放回去，测试与 `check_metadata()` 都会失败；
-- 验证级别：本地脚本测试与上述变异测试通过；CI 结果待补；**尚未**用 FLK 1.14.x / YACL 3.9.7 做客户端 / 集成服 /
-  独立服实机启动。
+- 验证级别（2026-10-16，GitHub Actions，commit `5b924ef`）：`audit_port.py --strict` 用真实 TaCZ R2 jar 为
+  0 error / 0 warning；`check_release_consistency.py`（含 manifest 校验和）与 15 个依赖范围测试通过；Linux 与 Windows
+  的 `./gradlew build` 均通过并输出 `JAR CONTENTS: OK`（`processResources` 只展开 `fabric.mod.json` 的 `${version}`，
+  depends 原样打包）。本地另做了上述变异测试。**尚未**用 FLK 1.14.x / YACL 3.9.7 做客户端 / 集成服 / 独立服实机启动。
 
 ## 总结
 
