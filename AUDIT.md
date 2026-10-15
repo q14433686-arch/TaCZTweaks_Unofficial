@@ -42,7 +42,11 @@ python3 scripts/audit_port.py --strict \
   （要求 `depends.fabric-api == ">=" + fabric_version`）与 `check_declared_ranges_include_built_versions`
   （构建所用 Loader / Fabric API / FLK 必须落在声明范围内），由 `scripts/test_dependency_ranges.py`
   覆盖，并验证过：把旧上界改回去时检查确实失败；
-- 验证级别：静态/脚本验证；尚未 Gradle 构建，也未用更新的 Fabric API 实机启动。
+- 验证级别（2026-10-15，GitHub Actions，commit `c496024`）：`audit_port.py --strict` 用真实 TaCZ R2 jar
+  为 0 error / 0 warning；`check_release_consistency.py`（含 jar 校验和）与依赖范围测试通过；Linux 与 Windows
+  的 `./gradlew build`（含 JUnit、`checkModIcon` / `checkVendoredDependencies` / `checkJarContents`）均通过，
+  产物为 `tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix2.jar`。这也是 #26 盾牌 mixin 加固在本线的首次编译与测试。
+  **尚未**用更新的 Fabric API 做客户端 / 集成服 / 独立服实机启动。
 
 ## 总结
 
