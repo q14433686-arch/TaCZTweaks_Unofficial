@@ -1,6 +1,12 @@
 """Simulated --minecraft-jar gate check for the optional remap=false @At target.
 
-Run: python3 scripts/test_audit_optional_targets.py
+Run either way:
+    python3 scripts/test_audit_optional_targets.py     # standalone, prints a report
+    python3 -m pytest scripts/test_audit_optional_targets.py
+
+The assertions live inside test_optional_targets() rather than at module scope: pytest
+imports test modules, and a module-scope sys.exit() aborts the whole pytest session with
+an INTERNALERROR (this is what broke the audit workflow on 2026-09-22).
 
 Builds a stub JarIndex that models the unobfuscated vanilla 26.2 classpath:
 BlocksAttacks has ONLY the 5-arg hurtBlockingItem + resolveBlockedDamage, and
@@ -89,64 +95,79 @@ class StubJars:
         return info is not None and signature in info.field_signatures
 
 
-config = mod.json.loads(mod.MIXIN_JSON.read_text(encoding="utf-8"))
-jars = StubJars([Path("fake/minecraft-26.2.jar")])
-errors, warnings = mod.audit_mixins(config, jars, strict=True)
+def _run_checks():
+    config = mod.json.loads(mod.MIXIN_JSON.read_text(encoding="utf-8"))
+    jars = StubJars([Path("fake/minecraft-26.2.jar")])
+    errors, warnings = mod.audit_mixins(config, jars, strict=True)
 
-shield_errors = [e for e in errors if "BlocksAttacks" in e or "bullet_interactions" in e]
-shield_warnings = [w for w in warnings if "BlocksAttacks" in w or "bullet_interactions" in w]
+    shield_errors = [e for e in errors if "BlocksAttacks" in e or "bullet_interactions" in e]
+    shield_warnings = [w for w in warnings if "BlocksAttacks" in w or "bullet_interactions" in w]
 
-print("--- shield-related strict errors ---")
-for e in shield_errors:
-    print("  ", e)
-print("--- shield-related warnings ---")
-for w in shield_warnings:
-    print("  ", w)
+    print("--- shield-related strict errors ---")
+    for e in shield_errors:
+        print("  ", e)
+    print("--- shield-related warnings ---")
+    for w in shield_warnings:
+        print("  ", w)
 
-# Also confirm the optional-target classification directly on the mixin source.
-text = (
-    ROOT / "src/main/java/me/muksc/tacztweaks/mixin/features/bullet_interactions/LivingEntityMixin.java"
-).read_text(encoding="utf-8")
-import re
+    # Also confirm the optional-target classification directly on the mixin source.
+    text = (
+        ROOT / "src/main/java/me/muksc/tacztweaks/mixin/features/bullet_interactions/LivingEntityMixin.java"
+    ).read_text(encoding="utf-8")
+    import re
 
-optional_targets = set()
-for annotation in re.finditer(rf"@(?:{mod.INJECTOR_ANNOTATIONS})\s*\(", text):
-    body = mod._annotation_body(text, text.index("(", annotation.start()))
-    if body is None or not re.search(r"\bremap\s*=\s*false", body):
-        continue
-    for owner, name, descriptor in re.findall(
-        r'target\s*=\s*"L([^;]+);([^(:"]+)(\([^\"]+)', body
-    ):
-        optional_targets.add((owner, name, descriptor))
-print("--- remap=false optional targets detected ---")
-for t in sorted(optional_targets):
-    print("  ", "/".join(t))
+    optional_targets = set()
+    for annotation in re.finditer(rf"@(?:{mod.INJECTOR_ANNOTATIONS})\s*\(", text):
+        body = mod._annotation_body(text, text.index("(", annotation.start()))
+        if body is None or not re.search(r"\bremap\s*=\s*false", body):
+            continue
+        for owner, name, descriptor in re.findall(
+            r'target\s*=\s*"L([^;]+);([^(:"]+)(\([^\"]+)', body
+        ):
+            optional_targets.add((owner, name, descriptor))
+    print("--- remap=false optional targets detected ---")
+    for t in sorted(optional_targets):
+        print("  ", "/".join(t))
 
-ok = True
-if shield_errors:
-    ok = False
-    print("FAIL: expected no strict errors for the shield mixin, got %d" % len(shield_errors))
-expected_warn = (
-    f"@At method reference is absent: {BA}#hurtBlockingItem{HURT6} "
-    "(src/main/java/me/muksc/tacztweaks/mixin/features/bullet_interactions/LivingEntityMixin.java)"
-    " [remap=false: optional call-site variant]"
-)
-if expected_warn not in warnings:
-    ok = False
-    print("FAIL: expected the 6-arg optional target warning, not found in warnings")
-BA_SLASH = "net/minecraft/world/item/component/BlocksAttacks"
-if (BA_SLASH, "hurtBlockingItem", HURT6) not in optional_targets:
-    ok = False
-    print("FAIL: 6-arg target not classified as remap=false optional")
-if (BA_SLASH, "hurtBlockingItem", HURT5) in optional_targets:
-    ok = False
-    print("FAIL: 5-arg vanilla target must NOT be optional")
-if (BA_SLASH, "resolveBlockedDamage", RESOLVE) in optional_targets:
-    ok = False
-    print("FAIL: resolveBlockedDamage target must NOT be optional")
-if len(optional_targets) != 1:
-    ok = False
-    print("FAIL: expected exactly one optional target, got %r" % (optional_targets,))
+    ok = True
+    failures: list[str] = []
+    if shield_errors:
+        ok = False
+        failures.append("FAIL: expected no strict errors for the shield mixin, got %d" % len(shield_errors))
+    expected_warn = (
+        f"@At method reference is absent: {BA}#hurtBlockingItem{HURT6} "
+        "(src/main/java/me/muksc/tacztweaks/mixin/features/bullet_interactions/LivingEntityMixin.java)"
+        " [remap=false: optional call-site variant]"
+    )
+    if expected_warn not in warnings:
+        ok = False
+        failures.append("FAIL: expected the 6-arg optional target warning, not found in warnings")
+    BA_SLASH = "net/minecraft/world/item/component/BlocksAttacks"
+    if (BA_SLASH, "hurtBlockingItem", HURT6) not in optional_targets:
+        ok = False
+        failures.append("FAIL: 6-arg target not classified as remap=false optional")
+    if (BA_SLASH, "hurtBlockingItem", HURT5) in optional_targets:
+        ok = False
+        failures.append("FAIL: 5-arg vanilla target must NOT be optional")
+    if (BA_SLASH, "resolveBlockedDamage", RESOLVE) in optional_targets:
+        ok = False
+        failures.append("FAIL: resolveBlockedDamage target must NOT be optional")
+    if len(optional_targets) != 1:
+        ok = False
+        failures.append("FAIL: expected exactly one optional target, got %r" % (optional_targets,))
 
-print("RESULT:", "PASS" if ok else "FAIL")
-sys.exit(0 if ok else 1)
+    return ok, failures
+
+
+def test_optional_targets():
+    """pytest entry point: the shield mixin's remap=false target must stay a warning."""
+    ok, failures = _run_checks()
+    assert ok, "\n".join(failures)
+
+
+if __name__ == "__main__":
+    passed, problems = _run_checks()
+    for problem in problems:
+        print(problem)
+    print("RESULT:", "PASS" if passed else "FAIL")
+    sys.exit(0 if passed else 1)

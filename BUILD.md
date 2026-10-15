@@ -2,11 +2,11 @@
 
 本文件只适用于仓库默认分支 **`26.2(main)`：Fabric 26.2**，适配
 [TaCZ_Refabricated_Unofficial](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial)。
-NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
+26.3、NeoForge 线以及 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
 [分支对照](docs/BRANCHES.md)。
 
-本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix**：
-`2.14.2+fabric.26.2.Beta-1-hotfix`。
+本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix2**：
+`2.14.2+fabric.26.2.Beta-1-hotfix2`。
 
 ---
 
@@ -70,7 +70,9 @@ https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial/releases/tag/26.2
 ```
 https://cdn.modrinth.com/data/1eAoo2KR/versions/cnfPzuFU/yet_another_config_lib_v3-3.9.6%2B26.2-fabric.jar
 ```
-保存为：`yacl-fabric.jar`（约 1MB）
+保存为：`yacl-fabric.jar`（约 1MB）。这个固定的 3.9.6 JAR 仅用于可重复编译及 SHA-256 校验；
+模组的运行时依赖是 `>=3.9.6+26.2-fabric`，没有人为上界，玩家也可安装
+`3.9.7+26.2-fabric` 等更新的 **Fabric 26.2** 构件（游戏内兼容性仍须验证）。
 
 也可以直接让脚本按 manifest 下载并校验：
 
@@ -109,7 +111,7 @@ gradlew.bat build
 
 - **首次构建**会下载 Gradle 9.5.1、Minecraft 26.2、Fabric API 等，视网速可能要几分钟到十几分钟；
 - `build` 包含 `checkModIcon`、本地二进制依赖哈希和发布 jar 内容门禁；它会校验 `fabric.mod.json` 图标路径、512×512 PNG、批准的 SHA-256，以及 `THIRD_PARTY_NOTICES.md` 中的来源与 GPL-3.0 声明；
-- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`（Linux/macOS 使用 `python3`）；
+- 也可单独运行 `python scripts/check_mod_icon.py`、`python scripts/check_release_consistency.py`、`python scripts/check_dependency_availability.py`（Linux/macOS 使用 `python3`）；后者查询上游实际发布的依赖版本，网络不可用时显示 `SKIP`，不能当作已验证；
 - 成功后输出：
   ```
   BUILD SUCCESSFUL
@@ -118,8 +120,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1-hotfix.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix2.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.2.Beta-1-hotfix2.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁

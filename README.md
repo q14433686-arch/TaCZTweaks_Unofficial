@@ -7,7 +7,7 @@
 [`MUKSC/TaCZTweaks`](https://github.com/MUKSC/TaCZTweaks) v2.14.2.
 This default branch (`26.2(main)`) is the **Fabric 26.2** line for
 [`TaCZ_Refabricated_Unofficial`](https://github.com/q14433686-arch/TaCZ_Refabricated_Unofficial).
-The same repository also maintains Fabric/NeoForge lines for 26.2, 26.1.2 and 1.21.11 — see
+The same repository also maintains Fabric/NeoForge lines for 26.3, 26.2, 26.1.2 and 1.21.11 — see
 [branch map](docs/BRANCHES.md). Not affiliated with or endorsed by MUKSC, the TACZ Dev Team, or
 optional compatibility mod authors. Install the exact dependencies for **your** branch before
 filing issues.
@@ -20,7 +20,7 @@ filing issues.
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-本线当前测试版本：**Beta-1-hotfix**（`2.14.2+fabric.26.2.Beta-1-hotfix`）。
+本线当前测试版本：**Beta-1-hotfix2**（`2.14.2+fabric.26.2.Beta-1-hotfix2`）。
 
 [分支对照](docs/BRANCHES.md) · [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
@@ -87,11 +87,11 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 | 类型 | 依赖 | 版本 |
 |---|---|---|
 | 必需 | Minecraft | 26.2 |
-| 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
-| 必需 | Fabric API | >=0.155.2+26.2、<0.157.0 |
+| 必需 | Fabric Loader | >=0.19.3（无上界；更新版本仍须测试） |
+| 必需 | Fabric API | >=0.155.2+26.2（无上界；Minecraft 仍锁定 26.2） |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.2.R2 及之后的 R<n> 版本**（运行时按当前 26.2 发布系列校验） |
-| 必需 | Fabric Language Kotlin | >=1.13.13、<1.14.0 |
-| 必需 | YetAnotherConfigLib | 3.9.6+26.2-fabric |
+| 必需 | Fabric Language Kotlin | >=1.13.13（无上界；26.2 构件） |
+| 必需 | YetAnotherConfigLib | >=3.9.6+26.2-fabric（无上界；使用 Fabric 26.2 构件） |
 | 可选 | Sound Physics Remastered | 1.5.1+26.2 Fabric |
 | 可选 | First Aid New | >=1.3.0、<1.4.0 Fabric 26.2（shader 覆盖仅验证此范围） |
 | 可选 | Pillager’s Gun (Unofficial Port) | >=3.3.5、<3.4.0 Fabric 26.2 |
@@ -104,8 +104,9 @@ Pillager’s Gun 过去也被误写为不存在，现已根据 26.2 实际发行
 python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
+python3 scripts/check_dependency_availability.py  # 查询上游；离线会明确显示 SKIP
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.2.Beta-1-hotfix2.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、

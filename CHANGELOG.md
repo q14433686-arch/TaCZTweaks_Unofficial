@@ -4,7 +4,35 @@ All notable changes to the **`26.2(main)` Fabric 26.2** line are tracked here. O
 branches keep their own changelogs. Release entries should be user-facing and concise; keep
 detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
-## 2.14.2+fabric.26.2.Beta-1-hotfix - Unreleased
+## 2.14.2+fabric.26.2.Beta-1-hotfix2 - Unreleased
+
+### Fixed
+
+- Backported the Fabric 26.3 dependency-range fix to this **26.2** line: Fabric API now
+  requires `>=0.155.2+26.2` without an artificial upper cap that could reject newer
+  Fabric API releases; Minecraft remains exactly `26.2`.
+- Fabric Loader now requires `>=0.19.3` without an arbitrary `<0.20.0` cap. This prevents
+  the metadata from preemptively rejecting newer Loader releases; their runtime behavior
+  remains unverified until a matching client/server startup test is performed.
+- Addressed the other two loader rejections in Issue #33: FLK now requires `>=1.13.13`
+  and YACL `>=3.9.6+26.2-fabric`, both without an upper bound. The reported 26.2 versions
+  FLK `1.14.2+kotlin.2.4.21` and YACL `3.9.7+26.2-fabric` satisfy these ranges; actual
+  client/server behavior with those newer dependencies still needs in-game verification.
+- The release-consistency gate now checks that the built Fabric Loader / Fabric API / Fabric
+  Language Kotlin versions satisfy the published ranges, and that the TaCZ runtime gate's
+  **26.2 R2** family and minimum agree with `fabric.mod.json`. It rejects mismatches before
+  a build is published instead of waiting for a launch-time failure.
+- Added an upstream dependency-availability check, regression tests for both gates, and
+  CI workflows for audit, compilation, full build, and version consistency. The shield
+  optional-target audit self-test now runs under pytest without exiting during import.
+
+### Validation
+
+- Dependency availability requires access to Modrinth; offline `SKIP` does not count as a
+  successful upstream check. A baseline CI build does not verify runtime behavior with
+  newer Loader/FLK/YACL; client and server smoke tests with those versions are still required.
+
+## 2.14.2+fabric.26.2.Beta-1-hotfix - 2026-08-22
 
 ### Documentation
 
