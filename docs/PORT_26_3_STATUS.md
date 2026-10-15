@@ -370,7 +370,7 @@ TaCZ 的 26.3 移植量很大（130 文件 +2940/−1033），但绝大部分与
 
 | 文件 | 改动 |
 |---|---|
-| `gradle.properties` | MC/Loader/FabricAPI/ModMenu 版本；`mod_version` → `2.14.2+fabric.26.3.Beta-1` |
+| `gradle.properties` | MC/Loader/FabricAPI/ModMenu 版本；`mod_version` → `2.14.2+fabric.26.3.Beta-1-hotfix1` |
 | `build.gradle.kts` | TaCZ jar 文件名 → 26.3 R1 |
 | `src/main/resources/fabric.mod.json` | `depends` 全套 26.3 区间 |
 | `RESOURCE_IMPORT_MANIFEST.tsv` | 两条依赖换 26.3 来源/版本/校验和（YACL 待定） |

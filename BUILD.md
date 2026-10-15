@@ -5,8 +5,8 @@
 NeoForge 线以及 26.2 / 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
 [分支对照](docs/BRANCHES.md)。
 
-本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1**：
-`2.14.2+fabric.26.3.Beta-1`。
+本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix1**：
+`2.14.2+fabric.26.3.Beta-1-hotfix1`。
 
 ---
 
@@ -125,8 +125,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix1.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1-hotfix1.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁
@@ -164,30 +164,20 @@ python scripts/check_server_log.py run/logs/latest.log
 
 ---
 
-## 7. CI：在 GitHub Actions 上构建（网络受限时的唯一途径）
+## 7. CI：GitHub Actions 构建与发布
 
-仓库有四条流程。它们存在的直接原因是：**准备本移植的开发沙箱只能访问 `api.github.com`**，
-`maven.fabricmc.net` / `api.modrinth.com` / `piston-meta.mojang.com` 以及 GitHub release
-附件域全部不可达，本地 `./gradlew` 根本跑不起来。把编译放到 Actions 上，是让改动能被验证的唯一办法。
+验证流程运行在 GitHub Actions 上，因为本地开发沙箱无法访问 Minecraft/Fabric Maven、Modrinth CDN 等依赖源。
+仓库当前有四条验证流程和一条 **仅由发行 tag 触发**的 GitHub Release 流程：
 
-> **它们目前还在 `ci/workflows/`，需要安装一次。** 机器人账号（GitHub App）没有 `workflows`
-> 权限，无法直接 push `.github/workflows/` 下的文件。由你执行一次：
->
-> ```bash
-> bash ci/install-workflows.sh
-> git add -A .github/workflows ci && git commit -m "ci: install workflows" && git push
-> ```
->
-> 详见 [`ci/README.md`](ci/README.md)。
-
-| 流程 | 文件 | 跑什么 | 大概耗时 |
+| 流程 | 文件 | 跑什么 | 触发方式 |
 |---|---|---|---|
-| `Version consistency` | `consistency.yml` | `check_release_consistency.py`：版本号在 gradle.properties / README / BUILD / fabric.mod.json 之间是否一致 | 最快，不需要依赖 |
-| `audit` | `audit.yml` | `audit_port.py --strict`（mixin 登记与目标方法、配置项死开关、语言键、图标）+ 审计脚本自测 | 分钟级 |
-| `compile-check` | `compile-check.yml` | `compileJava compileKotlin`；**arena/** 分支上把日志回推到 `build-reports/compile-java.log` | 中等 |
-| `build` | `build.yml` | `./gradlew build`（含 JUnit 与三个 jar 门禁）+ 上传 jar 与示例包 artifact（留 14 天） | 最慢 |
+| `Version consistency` | `consistency.yml` | 版本号、依赖范围与发行文档一致性 | 相关文件 push / PR |
+| `audit` | `audit.yml` | `audit_port.py --strict` 与审计脚本自测 | 发行线或 `arena/**` push / PR |
+| `compile-check` | `compile-check.yml` | Java/Kotlin 编译；`arena/**` 上回推日志到 `build-reports/compile-java.log` | 发行线或 `arena/**` push / PR |
+| `build` | `build.yml` | 完整 `./gradlew build`，上传 JAR 和示例包 Actions artifacts（保留 14 天） | 发行线或 `arena/**` push / PR |
+| `GitHub Release` | `release.yml` | 复核 tag 与 `mod_version`、验证 tag 属于 26.3、静态审计、依赖范围测试、完整构建；创建 GitHub Release 并附上正式 JAR | 仅 `26.3_*` tag push |
 
-四条流程都先跑 `python3 scripts/download_dependencies.py`，按 manifest 重建 `libs/`。
+验证流程会按 `RESOURCE_IMPORT_MANIFEST.tsv` 重建 `libs/`。发布流程失败时不会创建 Release；它使用 Actions 自带的 `GITHUB_TOKEN`，无需个人访问令牌。
 
 ### 在受限沙箱里读编译错误
 
@@ -200,10 +190,16 @@ gh api repos/q14433686-arch/TaCZTweaks_Unofficial/contents/build-reports/compile
 
 只有 `arena/**` 分支会回推日志（发行线分支不接受 CI commit，状态直接看 Actions 页）。
 
-### 触发分支
+### 通过 tag 自动发布 GitHub Release（当前仅 26.3）
 
-四条流程都监听 `arena/**` 与发行线分支（`26.3` / `26.2(main)` / `26.1.2` / `1.21.11`）的 push，
-以及全部 PR，并都支持 `workflow_dispatch` 手动触发。
+PR 合并到 `26.3`、验证通过并准备好发布版本后，只需创建并推送一个与 `mod_version` 对应的 tag。例如当前版本
+`2.14.2+fabric.26.3.Beta-1-hotfix1` 对应 tag `26.3_BETA_1_HOTFIX1`：
 
-> **权限提示**：`.github/workflows/` 下的文件需要 `workflows` 权限才能推送。
-> 机器人账号（GitHub App）默认没有该权限 —— 这正是它们先落在 `ci/workflows/` 的原因。
+```bash
+git checkout 26.3
+git pull --ff-only origin 26.3
+git tag -a 26.3_BETA_1_HOTFIX1 -m "Release 2.14.2+fabric.26.3.Beta-1-hotfix1"
+git push origin 26.3_BETA_1_HOTFIX1
+```
+
+CI 会检查 tag 与 `gradle.properties` 的版本后缀一致，且 tag 指向 `26.3` 分支上的提交；通过静态审计、依赖范围测试、完整构建和 JAR metadata 校验后，自动创建 GitHub Release、生成发行说明并上传模组 JAR。**不必再手动创建 GitHub Release 或上传 JAR。** 仅推送 tag 才会发布，普通提交和 PR 不会触发。此流程只负责 GitHub Releases；Modrinth 与 CurseForge 仍需按平台文档单独发布。
