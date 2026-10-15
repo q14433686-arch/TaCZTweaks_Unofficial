@@ -68,6 +68,12 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 - **Fabric API 依赖去掉人为上界**：`>=0.141.6+1.21.11 <0.143.0` → `>=0.141.6+1.21.11`。
   26.3 上同形状的 `<0.162.0` 曾让用户已装的 `0.162.0+26.3` 被 Loader 直接拒绝。
   本线的最低版本保持不变，只删上界；
+- **Fabric Loader / FLK / YACL 三处同类上界与精确钉版本一并去掉**（同步 26.1.2 线的修复）：
+  `fabricloader: ">=0.19.3 <0.20.0"` → `>=0.19.3`（**0.20.0 于 2026-10-15 发布**，旧区间会让
+  所有升级到它的用户 `Incompatible mods found`）、`fabric-language-kotlin: ">=1.13.13 <1.14.0"`
+  → `>=1.13.13`（FLK 1.14.0 / 1.14.1 / 1.14.2 均已打 1.21.11 标签，旧区间**已经在拒绝已发布版本**）、
+  `yet_another_config_lib_v3: "=3.8.2+1.21.11-fabric"` → `>=3.8.2+1.21.11-fabric`。
+  **三处的最低版本都不变**，编译所用版本仍是 1.13.13 / 3.8.2；
 - **新增依赖可用性门禁** `scripts/check_dependency_availability.py`：去问 Modrinth
   「我们声明的区间在当前 Minecraft 版本上到底有没有构建能命中」，
   拦下 `gradle.properties` 与 `fabric.mod.json` **彼此自洽但双双脱离现实**的情况；
@@ -75,10 +81,10 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
   `SUPPORTED_TACZ_VERSION` / `SUPPORTED_TACZ_VERSION_PREFIX` / `MIN_SUPPORTED_TACZ_REVISION`，
   验证 `fabric.mod.json` 声明的 TaCZ 版本**能通过这道游戏内闸门**。本线闸门仍是
   **≥R2**（1.21.11 R1 早于本模组需要的 API），26.3 是 ≥R1 —— 两边都不可互相照抄；
-- **刻意没有同步 26.3 的 FLK 区间**：本线 `fabric-language-kotlin: ">=1.13.13 <1.14.0"` 是正确的
-  （已核实 FLK 1.13.12 / 1.13.13 / 1.13.14 / 1.14.0 / 1.14.1 均打了 1.21.11 标签）。
-  26.3 因为该线上只有 `1.14.1` 才被迫改成 `>=1.14.1+kotlin.2.4.20`；照抄过来会把本线实际
-  编译用的 `1.13.13` 排除掉。回归测试 `test_copying_263_flk_range_is_rejected` 固化了这一点；
+- **刻意没有同步 26.3 的 FLK 最低版本**：本线仍以 `>=1.13.13` 起步（这是本线实际编译用的版本）。
+  26.3 因为该线上只有 `1.14.1` 才被迫改成 `>=1.14.1+kotlin.2.4.20`；照抄过来会把本线编译用的
+  `1.13.13` 排除掉。回归测试 `test_copying_263_flk_range_is_rejected` 固化了这一点。
+  但是「**不加上界**」这条策略两条线一致 —— 本线自己的 `<1.14.0` 也在本轮删掉了；
 - **改写版本闸门测试**：`TaCZTweaksVersionTest` 现在对 `TaCZTweaks.SUPPORTED_TACZ_VERSION`
   常量求值，而不是手抄字面量 —— 26.3 那次事故正是因为测试断言了**上一条线**的期望，
   一路绿灯反而制造了「已验证」的错觉；
@@ -117,11 +123,11 @@ Minecraft **1.21.11** / Java **21** / **混淆 + Loom remap + refmap** 分支。
 | 类别 | 依赖 | 版本 / 说明 |
 |---|---|---|
 | 必需 | Minecraft | `=1.21.11` |
-| 必需 | Fabric Loader | `>=0.19.3 <0.20.0` |
+| 必需 | Fabric Loader | `>=0.19.3`（无上界，2026-10-15 的 `0.20.0` 可用） |
 | 必需 | Fabric API | `>=0.141.6+1.21.11` |
 | 必需 | [UNOFFICIAL] TaCZ Refabricated | **`1.1.8+fabric.1.21.11.R<n>`，其中 n >= 2**（Minecraft、TaCZ 核心版本和 Fabric release family 严格匹配；运行时按 friendly string 验证） |
-| 必需 | Fabric Language Kotlin | `>=1.13.13 <1.14.0` |
-| 必需 | YetAnotherConfigLib (YACL) | **`3.8.2+1.21.11-fabric`** |
+| 必需 | Fabric Language Kotlin | `>=1.13.13`（无上界；FLK 1.14.x 自身要求 Fabric Loader `>=0.19.5`） |
+| 必需 | YetAnotherConfigLib (YACL) | `>=3.8.2+1.21.11-fabric`（不再精确钉死版本） |
 | 必需 | Java | `>=21` |
 | 可选兼容 | Sound Physics Remastered | `>=1.5.1 <1.6.0`；1.21.11 Fabric 已核实对应 `fabric-1.21.11-1.5.1` |
 | 可选兼容 | First Aid New | `>=1.2.5 <1.3.0`；1.21.11 Fabric 已核实对应 `firstaid-1.2.5+fabric1.21.11-legacy.jar` |

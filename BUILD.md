@@ -186,8 +186,10 @@ python3 scripts/check_dependency_availability.py
 **装好之后必须确认它能失败**，否则等于没装：
 
 ```bash
-# a) 给 fabric-api 加回上界 → 必须报错
-#    src/main/resources/fabric.mod.json: ">=0.141.6+1.21.11 <0.143.0"
+# a) 给 fabric-api / fabricloader / FLK / YACL 任意一项加回上界（或把 YACL 改回精确钉版本）
+#    → 必须报 "should be the lower-bound-only range"
+#    src/main/resources/fabric.mod.json: ">=0.141.6+1.21.11 <0.143.0" / ">=0.19.3 <0.20.0"
+#    / ">=1.13.13 <1.14.0" / "=3.8.2+1.21.11-fabric"
 python3 scripts/check_release_consistency.py; echo "exit=$?"   # 期望 exit=1
 
 # b) 把 TaCZTweaks.java 的 SUPPORTED_TACZ_VERSION_PREFIX 改成别的发行系列 → 必须报
@@ -195,14 +197,20 @@ python3 scripts/check_release_consistency.py; echo "exit=$?"   # 期望 exit=1
 
 # c) 把 fabric-language-kotlin 抄成 26.3 的 ">=1.14.1+kotlin.2.4.20 <2.0.0" → 必须报
 #    "excludes the version this build actually uses"（本线编译用的是 1.13.13）
+
+# d) 改 RESOURCE_IMPORT_MANIFEST.tsv 里 libs/yacl-fabric.jar 的 upstream_version → 必须报
+#    "RESOURCE_IMPORT_MANIFEST.tsv records YACL ..."（最低版本与 vendored jar 绑定）
 ```
 
-这三条都已自动化在 `scripts/test_dependency_ranges.py` 里（13 个用例，双向验证）。
+这几条都已自动化在 `scripts/test_dependency_ranges.py` 里（20 个用例，双向验证；最后一个用例
+直接驱动 `check_metadata()`，确认新门禁确实被调用，而不只是写在文件里）。
 
-⚠️ **本线 `fabric-language-kotlin: ">=1.13.13 <1.14.0"` 是正确的，不要跟着 26.3 改。**
-已核实 FLK 1.13.12 / 1.13.13 / 1.13.14 / 1.14.0 / 1.14.1 均打了 1.21.11 标签；26.3 上只有
+⚠️ **本线 FLK 的*最低版本*仍是 `>=1.13.13`，不要跟着 26.3 改成 `>=1.14.1`。**
+已核实 FLK 1.13.12 / 1.13.13 / 1.13.14 / 1.14.0 / 1.14.1 / 1.14.2 均打了 1.21.11 标签；26.3 上只有
 `1.14.1`，所以那条线被迫改了。照抄过来会把本线实际编译用的 `1.13.13` 排除掉，用户直接
-`Incompatible mods found`。要同步的是**门禁**，不是版本号。
+`Incompatible mods found`。要同步的是**门禁**与**「依赖不加上界」这条策略**，不是版本号：
+本线自己的 `<1.14.0` 上界（以及 `fabricloader` 的 `<0.20.0`、YACL 的精确钉版本）也已在
+`Beta-1-hotfix2` 里一并删掉 —— Fabric Loader 0.20.0 于 2026-10-15 发布，FLK 1.14.x 也已发布。
 
 ### 可选兼容版本（1.21.11 线已核实）
 

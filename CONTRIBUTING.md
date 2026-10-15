@@ -42,9 +42,11 @@ user reports "all CI green, game won't launch". The `26.3` line hit that three t
 above exist because of it. See `docs/CROSS_BRANCH_SYNC.md` on the `26.3` branch for the full
 work order, including the two things you must **not** copy across lines:
 
-- **Do not** copy 26.3's `fabric-language-kotlin` range (`>=1.14.1+kotlin.2.4.20`) here. On
-  1.21.11 the correct range is `>=1.13.13 <1.14.0`; 26.3 only moved because 1.14.1 is the sole
-  FLK build tagged for that game version.
+- **Do not** copy 26.3's `fabric-language-kotlin` floor (`>=1.14.1+kotlin.2.4.20`) here. On
+  1.21.11 the minimum stays `>=1.13.13` (the build this branch compiles against); 26.3 only
+  moved because 1.14.1 is the sole FLK build tagged for that game version. The *policy* is
+  shared though: keep every dependency (Fabric API, Fabric Loader, FLK, YACL) lower-bound-only —
+  no upper caps and no exact pins, because those reject compatible newer releases.
 - **Do not** copy 26.3's TaCZ revision floor (R1). This line requires **R2**, because TaCZ
   Refabricated 1.21.11 R1 predates APIs this mod needs.
 
