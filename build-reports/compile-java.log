@@ -1,4 +1,4 @@
-commit: a51bb23c94cbcdf10369760ad47aeccae3e4c0c9
+commit: 5f78f1678397e8d2eb910745bf28fcce3e84a3fa
 ref: arena/97736467-tacztweaks-unofficial
 WARNING: A restricted method in java.lang.System has been called
 WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/home/runner/.gradle/wrapper/dists/gradle-9.5.1-bin/iq79hdu3mqx29lgffhp8bfmx/gradle-9.5.1/lib/native-platform-0.22-milestone-29.jar)
@@ -24,9 +24,9 @@ AUDIT(minecraft): OK
 > Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :compileKotlin
 > Task :compileJava
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792096324229.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792096524119.json
 
-BUILD SUCCESSFUL in 1m 1s
+BUILD SUCCESSFUL in 1m 30s
 4 actionable tasks: 4 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 
