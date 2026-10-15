@@ -46,8 +46,9 @@ python3 scripts/audit_port.py --strict --minecraft-jar /path/to/minecraft-merged
 修改 `gradle.properties` 的 `mod_version`、Minecraft/Fabric/Kotlin/MixinExtras 版本时，必须在同一
 工作分支同步 README、BUILD、CHANGELOG、`fabric.mod.json` 和依赖表。`scripts/audit_port.py` 与
 `scripts/check_release_consistency.py` 会检查版本、依赖区间和代码里的 TaCZ 启动闸门；
-26.2 保留自己的 TaCZ R2 最低修订、FLK 1.13.13 与 YACL 3.9.6+26.2-fabric 下限，
-不对 FLK/YACL 加人为上界；不得直接照抄 26.3 的最低版本。
+26.2 保留自己的 TaCZ R2 最低修订、Fabric Loader 0.19.3、FLK 1.13.13 与
+YACL 3.9.6+26.2-fabric 下限；Loader、Fabric API、FLK、YACL 不加人为上界，
+但不应将未经测试的新版本宣称为游戏内兼容。不得直接照抄 26.3 的最低版本。
 
 ## 4. 不得夸大
 

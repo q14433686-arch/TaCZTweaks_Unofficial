@@ -126,6 +126,17 @@ def check_declared_ranges_include_built_versions(props: dict[str, str], meta: di
             )
 
 
+def check_fabric_loader_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep the declared Loader minimum, without rejecting newer Loader releases."""
+    declared = meta.get("depends", {}).get("fabricloader", "")
+    expected = f">={props['loader_version']}"
+    if declared != expected:
+        fail(
+            f"fabric.mod.json depends.fabricloader should be the lower-bound-only range "
+            f"'{expected}' (no upper cap); got '{declared}'."
+        )
+
+
 def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
     """Don't reject newer Fabric API releases for the same pinned Minecraft line."""
     declared = meta.get("depends", {}).get("fabric-api", "")
@@ -229,6 +240,7 @@ def check_metadata() -> tuple[dict[str, str], dict]:
             fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
+    check_fabric_loader_range_is_lower_bound_only(props, meta)
     check_fabric_api_range_is_lower_bound_only(props, meta)
     check_flk_and_yacl_ranges_are_lower_bound_only(meta)
     check_declared_ranges_include_built_versions(props, meta)

@@ -97,6 +97,28 @@ def test_yacl_manifest_build_is_in_declared_range() -> None:
         )
 
 
+def test_loader_range_keeps_the_minimum_without_an_upper_cap() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = metadata()
+    declared = meta["depends"]["fabricloader"]
+    consistency.check_fabric_loader_range_is_lower_bound_only(props, meta)
+    assert declared == ">=0.19.3"
+    assert matches(props["loader_version"], declared)
+    assert not matches("0.19.2", declared)
+    # Synthetic boundary: tests the predicate, not a claim that Loader 0.20.0
+    # has been released or is game-tested with this mod.
+    assert matches("0.20.0", declared)
+    assert not matches("0.20.0", ">=0.19.3 <0.20.0")
+
+
+def test_loader_upper_cap_fails_consistency() -> None:
+    props = consistency.read_properties(ROOT / "gradle.properties")
+    meta = metadata()
+    meta["depends"]["fabricloader"] = ">=0.19.3 <0.20.0"
+    with pytest.raises(SystemExit, match="no upper cap"):
+        consistency.check_fabric_loader_range_is_lower_bound_only(props, meta)
+
+
 def test_fabric_api_allows_newer_26_2_versions_without_a_cap() -> None:
     props = consistency.read_properties(ROOT / "gradle.properties")
     meta = metadata()

@@ -6,13 +6,14 @@ lines have their own matrices on those branches ([branch map](BRANCHES.md)).
 This matrix separates implementation state from evidence. Do not promote an integration from
 static/build verification to game or server validation until the matching test has actually been
 run for the stated versions. Baseline build evidence below is for the pinned 26.2 dependencies;
-for `Beta-1-hotfix2`, accepting the newer FLK and YACL versions reported in Issue #33 has only
-been checked at the metadata/range level, not exercised in-game or on a server.
+for `Beta-1-hotfix2`, accepting newer Loader releases and the FLK/YACL versions reported
+in Issue #33 has only been checked at the metadata/range level, not exercised in-game or
+on a server.
 
 | Project | Type | Supported range | Auto enabled | Current evidence | Known boundary |
 |---|---|---|---:|---|---|
 | Minecraft | hard platform | `26.2` | yes | compile/test/build | No other Minecraft versions are declared. |
-| Fabric Loader | hard dependency | `>=0.19.3 <0.20.0` | yes | compile/test/build | Loader API drift outside this range is not claimed. |
+| Fabric Loader | hard dependency | `>=0.19.3` (no upper cap) | yes | baseline built against 0.19.3; uncapped range statically tested | Newer Loader releases still need startup/game validation; absence of an upper cap is not a compatibility guarantee. |
 | Fabric API | hard dependency | `>=0.155.2+26.2` (no upper cap) | yes | baseline compiled against 0.155.2; new range statically tested | Newer releases on 26.2 have not all been exercised; Minecraft is still pinned to 26.2. |
 | Fabric Language Kotlin | hard dependency | `>=1.13.13` (no upper cap) | yes | baseline built against 1.13.13; 1.14.2 range checked | Runtime Kotlin stdlib comes through FLK; newer versions need in-game testing. |
 | TaCZ Refabricated Unofficial | hard dependency | `1.1.8+fabric.26.2.R2` and later `R<n>` builds in the same release family | required | compile/test/static descriptor audit; startup accepts revisions >= R2 | Minecraft/core version and `fabric.26.2` family remain strict; pre-R2 and unrelated builds are rejected. |
