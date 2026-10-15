@@ -20,19 +20,17 @@ filing issues.
 （Forge 1.20.1 / TaCZ 1.1.8）。代码按 GPL-3.0 发布；本项目与 MUKSC、TACZ Dev Team
 无从属或背书关系。
 
-本线当前测试版本：**Beta-1-hotfix1**（`2.14.2+fabric.26.3.Beta-1-hotfix1`）。
+本线最新已发布版本为 [**Beta-1-hotfix1**](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/releases/tag/26.3_BETA_1_HOTFIX-1)
+（`2.14.2+fabric.26.3.Beta-1-hotfix1`）；当前开发版本为 **Beta-1-hotfix2**。
 
-> **本线状态（2026-09-22）**：依赖坐标已切到 26.3，五处 26.3 API 破坏已适配
-> （`EntityBulletRenderer#shouldRender` 新增 `float partialTicks`、`GunSoundInstance#resolve`
-> → `getOrResolve`、`InputConstants` 键位常量改名、`FriendlyByteBuf#write/readCollection`
-> 被移除、`EnderMan` → `Enderman`）。
+> **当前变更**：hotfix2 移植了 26.2 依赖范围修复：Loader、Fabric API、FLK 与 YACL
+> 均保留本线编译基线作为最低版本，但不再设置任意上界/精确 pin；Minecraft 与 TaCZ
+> 约束继续保持精确。代码和文档尚待合并、CI 验证后才会发布 hotfix2。
 >
-> **CI 已全绿**：Java/Kotlin 编译通过、`./gradlew build` 能出包、静态审计在**真实的 26.3
-> Minecraft jar** 上 0 error。
->
-> ⚠️ **但仍未经过任何游戏内验证**（客户端 / 集成服 / 独立服都没跑过），也没有正式发布构建。
-> 静态审计只能证明 mixin 的目标符号存在，**不能**证明注入行为正确。
-> 现阶段请勿按本文件安装使用。详见 [26.3 移植状态](docs/PORT_26_3_STATUS.md)。
+> hotfix1 已通过 26.3 GitHub Actions 的编译、完整构建和静态审计，并已发布 JAR。
+> 仓库当前未记录 hotfix2 对更高依赖版本的独立客户端、集成服或独立服验证；开放范围
+> 表示不由元数据拒绝更新版本，不代表所有未来版本均已实机验证。
+> 详见 [兼容矩阵](docs/COMPATIBILITY.md) 与 [26.3 移植状态](docs/PORT_26_3_STATUS.md)。
 
 [分支对照](docs/BRANCHES.md) · [文档索引](docs/README.md) · [安装与构建](BUILD.md) · [配置项](docs/CONFIGURATION.md) · [兼容矩阵](docs/COMPATIBILITY.md) · [问题排查与 Bug 提交](docs/SUPPORT.md) · [Issues](https://github.com/q14433686-arch/TaCZTweaks_Unofficial/issues) · [发布文案](docs/publish/README.md)· [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tacz-tweaks-refabricated)
 
@@ -99,11 +97,11 @@ Pillager’s Gun 过去也被误写为不存在，现已根据实际发行版更
 | 类型 | 依赖 | 版本 |
 |---|---|---|
 | 必需 | Minecraft | 26.3 |
-| 必需 | Fabric Loader | >=0.19.3、<0.20.0 |
-| 必需 | Fabric API | >=0.160.7+26.3、<0.162.0 |
-| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.3.R1**（运行时按当前 26.3 发布系列校验） |
-| 必需 | Fabric Language Kotlin | >=1.14.1+kotlin.2.4.20、<2.0.0 |
-| 必需 | YetAnotherConfigLib | 3.9.7+26.3-fabric |
+| 必需 | Fabric Loader | >=0.19.5 |
+| 必需 | Fabric API | >=0.160.7+26.3 |
+| 必需 | [UNOFFICIAL] TaCZ Refabricated | **1.1.8+fabric.26.3.R1**（声明精确；运行时按当前 26.3 发布系列校验） |
+| 必需 | Fabric Language Kotlin | >=1.14.1+kotlin.2.4.20 |
+| 必需 | YetAnotherConfigLib | >=3.9.7+26.3-fabric |
 | 可选 | Sound Physics Remastered | Fabric 版（26.3 构件请自查） |
 | 可选 | First Aid New | >=1.3.0、<1.4.0 Fabric（shader 覆盖仅验证此范围） |
 | 可选 | Pillager’s Gun (Unofficial Port) | >=3.3.5、<3.4.0 Fabric |
@@ -117,7 +115,7 @@ python3 scripts/download_dependencies.py --check-only
 python3 scripts/audit_port.py --strict
 python3 scripts/check_release_consistency.py
 ./gradlew build
-# build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix1.jar
+# build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix2.jar
 ```
 
 `scripts/audit_port.py` 会检查 mixin 注册/目标方法、无行为配置项、语言键一致性、

@@ -5,8 +5,8 @@
 NeoForge 线以及 26.2 / 26.1.2 / 1.21.11 线请切换到对应分支再读该分支的 `BUILD.md`，见
 [分支对照](docs/BRANCHES.md)。
 
-本线当前测试版本统一为 Fabric/SemVer 可解析的 **Beta-1-hotfix1**：
-`2.14.2+fabric.26.3.Beta-1-hotfix1`。
+本线当前开发版本为 **Beta-1-hotfix2**：`2.14.2+fabric.26.3.Beta-1-hotfix2`；
+最新已发布版本为 `Beta-1-hotfix1`，改动合并并完成验证后再发布下一个 tag。
 
 ---
 
@@ -96,9 +96,9 @@ libs/
 python scripts/download_dependencies.py --check-only
 ```
 
-> YACL 那一行的 `sha256` 目前仍是占位符 `UNVERIFIED_PENDING_CI`：Modrinth 只公布 sha1/sha512，
-> 准备本次移植的沙箱访问不到 CDN。第一次 CI 运行会用 `--print-sha256` 打印真实摘要，
-> 回填 manifest 后这条提示即可删除。
+> YACL 的 `RESOURCE_IMPORT_MANIFEST.tsv` 行已记录固定的 SHA-256 与上游 SHA-512；
+> `scripts/download_dependencies.py --check-only` 会校验下载文件。Modrinth 不提供 SHA-256，
+> 因此本仓 SHA-256 是在首次可获取文件的 CI 环境中计算并固定的。
 
 ---
 
@@ -125,8 +125,8 @@ gradlew.bat build
 ### 产物位置
 
 ```
-build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix1.jar   ← 模组，放入 .minecraft/mods/
-build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1-hotfix1.zip  ← 可重载示例包
+build/libs/tacztweaks-2.14.2+fabric.26.3.Beta-1-hotfix2.jar   ← 模组，放入 .minecraft/mods/
+build/distributions/tacz-tweaks-example-pack-2.14.2+fabric.26.3.Beta-1-hotfix2.zip  ← 可重载示例包
 ```
 
 ### 专用服务器 smoke test 门禁
@@ -171,11 +171,11 @@ python scripts/check_server_log.py run/logs/latest.log
 
 | 流程 | 文件 | 跑什么 | 触发方式 |
 |---|---|---|---|
-| `Version consistency` | `consistency.yml` | 版本号、依赖范围与发行文档一致性 | 相关文件 push / PR |
+| `Version consistency` | `consistency.yml` | 版本号/依赖范围一致性、Modrinth 上游可用性、依赖范围与 release-tag 回归测试 | 相关文件 push / PR |
 | `audit` | `audit.yml` | `audit_port.py --strict` 与审计脚本自测 | 发行线或 `arena/**` push / PR |
 | `compile-check` | `compile-check.yml` | Java/Kotlin 编译；`arena/**` 上回推日志到 `build-reports/compile-java.log` | 发行线或 `arena/**` push / PR |
 | `build` | `build.yml` | 完整 `./gradlew build`，上传 JAR 和示例包 Actions artifacts（保留 14 天） | 发行线或 `arena/**` push / PR |
-| `GitHub Release` | `release.yml` | 复核 tag 与 `mod_version`、验证 tag 属于 26.3、静态审计、依赖范围测试、完整构建；创建 GitHub Release 并附上正式 JAR | 仅 `26.3_*` tag push |
+| `GitHub Release` | `release.yml` | 复核 tag 与 `mod_version`、验证 tag 属于 26.3、静态审计、Modrinth 可用性与依赖/tag 回归测试、完整构建；创建 GitHub Release 并附上正式 JAR | 仅 `26.3_*` tag push |
 
 验证流程会按 `RESOURCE_IMPORT_MANIFEST.tsv` 重建 `libs/`。发布流程失败时不会创建 Release；它使用 Actions 自带的 `GITHUB_TOKEN`，无需个人访问令牌。
 
@@ -193,13 +193,13 @@ gh api repos/q14433686-arch/TaCZTweaks_Unofficial/contents/build-reports/compile
 ### 通过 tag 自动发布 GitHub Release（当前仅 26.3）
 
 PR 合并到 `26.3`、验证通过并准备好发布版本后，只需创建并推送一个与 `mod_version` 对应的 tag。例如当前版本
-`2.14.2+fabric.26.3.Beta-1-hotfix1` 对应 tag `26.3_BETA_1_HOTFIX1`：
+`2.14.2+fabric.26.3.Beta-1-hotfix2` 对应 tag `26.3_BETA_1_HOTFIX-2`：
 
 ```bash
 git checkout 26.3
 git pull --ff-only origin 26.3
-git tag -a 26.3_BETA_1_HOTFIX1 -m "Release 2.14.2+fabric.26.3.Beta-1-hotfix1"
-git push origin 26.3_BETA_1_HOTFIX1
+git tag -a 26.3_BETA_1_HOTFIX-2 -m "Release 2.14.2+fabric.26.3.Beta-1-hotfix2"
+git push origin 26.3_BETA_1_HOTFIX-2
 ```
 
 CI 会检查 tag 与 `gradle.properties` 的版本后缀一致，且 tag 指向 `26.3` 分支上的提交；通过静态审计、依赖范围测试、完整构建和 JAR metadata 校验后，自动创建 GitHub Release、生成发行说明并上传模组 JAR。**不必再手动创建 GitHub Release 或上传 JAR。** 仅推送 tag 才会发布，普通提交和 PR 不会触发。此流程只负责 GitHub Releases；Modrinth 与 CurseForge 仍需按平台文档单独发布。

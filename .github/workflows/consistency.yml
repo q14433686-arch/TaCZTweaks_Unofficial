@@ -3,8 +3,8 @@ name: Version consistency
 # 版本一致性守门：改了 gradle.properties 却忘了同步 README / BUILD.md / fabric.mod.json 时，PR 会红。
 # build.yml 虽然也跑同一脚本，但它 paths-ignore 掉了 *.md 与 docs/**，
 # 「只改 README」的提交测不到 —— 本流程必须独立存在。
-# 本流程不需要 libs/ 里的 jar（只校验存在的 manifest 行），因此跑得最快，
-# 是最先给出反馈的那一条。
+# 一致性脚本不需要 libs/ 里的 jar（只校验 manifest 行）；另跑上游可用性与小型回归测试，
+# 避免完整编译/打包前漏掉 metadata 和依赖区间问题。
 
 permissions:
   contents: read
@@ -26,7 +26,15 @@ on:
       - 'src/main/resources/fabric.mod.json'
       - 'docs/publish/**'
       - 'docs/BRANCHES.md'
+      - 'docs/COMPATIBILITY.md'
+      - 'docs/CROSS_BRANCH_SYNC.md'
+      - 'docs/PORT_26_3_STATUS.md'
       - 'scripts/check_release_consistency.py'
+      - 'scripts/check_dependency_availability.py'
+      - 'scripts/test_dependency_ranges.py'
+      - 'scripts/validate_release_tag.py'
+      - 'scripts/test_validate_release_tag.py'
+      - '.github/workflows/consistency.yml'
   pull_request:
     paths:
       - 'gradle.properties'
@@ -37,7 +45,15 @@ on:
       - 'src/main/resources/fabric.mod.json'
       - 'docs/publish/**'
       - 'docs/BRANCHES.md'
+      - 'docs/COMPATIBILITY.md'
+      - 'docs/CROSS_BRANCH_SYNC.md'
+      - 'docs/PORT_26_3_STATUS.md'
       - 'scripts/check_release_consistency.py'
+      - 'scripts/check_dependency_availability.py'
+      - 'scripts/test_dependency_ranges.py'
+      - 'scripts/validate_release_tag.py'
+      - 'scripts/test_validate_release_tag.py'
+      - '.github/workflows/consistency.yml'
   workflow_dispatch:
 
 concurrency:
@@ -46,7 +62,7 @@ concurrency:
 
 jobs:
   check:
-    name: README 与 gradle.properties 版本一致性
+    name: 版本、依赖与上游可用性
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -59,9 +75,17 @@ jobs:
       - name: 检查当前分支
         run: python3 scripts/check_release_consistency.py
 
+      - name: 检查 Modrinth 上游依赖是否可用
+        run: python3 scripts/check_dependency_availability.py
+
+      - name: 依赖范围与 Release tag 回归测试
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/test_dependency_ranges.py scripts/test_validate_release_tag.py -q
+
       - name: 失败提示
         if: failure()
         run: |
-          echo "::error::README.md / BUILD.md / fabric.mod.json 与 gradle.properties 的版本号不一致。"
-          echo "::error::请同步以下位置：顶部版本句 / 支持环境表 / 构建产物路径示例 / fabric.mod.json depends"
-          echo "::error::以及 RESOURCE_IMPORT_MANIFEST.tsv 的依赖版本与校验和。"
+          echo "::error::版本/依赖一致性、Modrinth 上游可用性或依赖/tag 回归检查失败。"
+          echo "::error::请先查看前序步骤输出，再同步 README / BUILD / CHANGELOG / fabric.mod.json。"
+          echo "::error::同时检查 gradle.properties、RESOURCE_IMPORT_MANIFEST.tsv 和发布 tag 映射。"

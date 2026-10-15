@@ -115,43 +115,70 @@ def _satisfies(version: str, predicate: str) -> bool:
     return version == predicate
 
 
+def read_yacl_manifest_version() -> str:
+    """Read the exact YACL artifact version used by the Gradle build."""
+    manifest_path = ROOT / "RESOURCE_IMPORT_MANIFEST.tsv"
+    with manifest_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    matches = [row for row in rows if row.get("path") == "libs/yacl-fabric.jar"]
+    if len(matches) != 1 or not matches[0].get("upstream_version"):
+        fail(
+            "RESOURCE_IMPORT_MANIFEST.tsv must contain exactly one "
+            "libs/yacl-fabric.jar row with upstream_version"
+        )
+    return matches[0]["upstream_version"].strip()
+
+
 def check_declared_ranges_include_built_versions(props: dict[str, str], meta: dict) -> None:
     """Every version we compile against must satisfy the range we ship to users.
 
-    This exists because of a real incident: gradle.properties built against Fabric
-    Language Kotlin 1.13.13 and fabric.mod.json shipped ">=1.13.13 <1.14.0", but the only
-    FLK build tagged for Minecraft 26.3 is 1.14.1. The intersection was empty, so the mod
-    could not load for ANY user, and nothing in CI noticed: compiling, auditing and jar
-    packaging all pass regardless of what the range says. Only the loader enforces it.
+    The check covers Gradle properties for Loader, Fabric API and FLK, plus the exact
+    YACL version recorded for the local compile jar in RESOURCE_IMPORT_MANIFEST.tsv.
+    This guards against metadata that looks plausible but excludes the dependency the
+    build itself requires, which would make Fabric reject the mod at startup.
     """
     depends = meta.get("depends", {})
-    # gradle.properties key -> fabric.mod.json depends key
-    pairs = {
-        "flk_version": "fabric-language-kotlin",
-        "fabric_version": "fabric-api",
-        "loader_version": "fabricloader",
+    # Source of compile version -> fabric.mod.json depends key.
+    built_versions = {
+        "loader_version": (props.get("loader_version"), "fabricloader"),
+        "fabric_version": (props.get("fabric_version"), "fabric-api"),
+        "flk_version": (props.get("flk_version"), "fabric-language-kotlin"),
+        "RESOURCE_IMPORT_MANIFEST.tsv YACL upstream_version": (
+            read_yacl_manifest_version(),
+            "yet_another_config_lib_v3",
+        ),
     }
-    for prop_key, depend_key in pairs.items():
-        built = props.get(prop_key)
+    for source, (built, depend_key) in built_versions.items():
         declared = depends.get(depend_key)
         if not built or not declared:
-            continue
+            fail(f"missing compile or declared dependency version for {source} / {depend_key}")
         # A range is space-separated predicates that must ALL hold.
         if not all(_satisfies(built, part) for part in str(declared).split()):
             fail(
                 f"fabric.mod.json depends.{depend_key} = '{declared}' excludes the version "
-                f"this build actually uses ({prop_key} = {built}). Users would get "
+                f"this build actually uses ({source} = {built}). Users would get "
                 f"'Incompatible mods found'."
             )
 
 
-def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
-    """Keep the Fabric API dependency open-ended above its tested minimum.
+def check_fabric_loader_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep the Loader dependency open-ended above the minimum used to compile."""
+    declared = meta.get("depends", {}).get("fabricloader", "")
+    expected = f">={props['loader_version']}"
+    if declared != expected:
+        fail(
+            f"fabric.mod.json depends.fabricloader should be the lower-bound-only range "
+            f"'{expected}' (no upper cap); got '{declared}'."
+        )
 
-    Fabric API releases for one Minecraft line can advance from e.g. 0.160.x to
-    0.162.x without changing the supported game version. An arbitrary upper bound
-    rejects such compatible updates even though this mod's Minecraft dependency is
-    pinned separately. Keep the selected build version as the minimum, with no cap.
+
+def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep Fabric API open-ended above its tested minimum.
+
+    Fabric API releases for one Minecraft line can advance without changing the
+    supported game version. An arbitrary upper bound rejects such updates even though
+    this mod's Minecraft dependency is pinned separately. Keep the selected build
+    version as the minimum, with no cap.
     """
     declared = meta.get("depends", {}).get("fabric-api", "")
     expected = f">={props['fabric_version']}"
@@ -161,6 +188,22 @@ def check_fabric_api_range_is_lower_bound_only(props: dict[str, str], meta: dict
             f"'{expected}' (no upper cap); got '{declared}'. An upper cap can reject "
             f"newer Fabric API releases for the same Minecraft line."
         )
+
+
+def check_flk_and_yacl_ranges_are_lower_bound_only(props: dict[str, str], meta: dict) -> None:
+    """Keep FLK and YACL open-ended above the versions used to compile."""
+    minimums = {
+        "fabric-language-kotlin": props["flk_version"],
+        "yet_another_config_lib_v3": read_yacl_manifest_version(),
+    }
+    for depend_key, minimum in minimums.items():
+        declared = meta.get("depends", {}).get(depend_key, "")
+        expected = f">={minimum}"
+        if declared != expected:
+            fail(
+                f"fabric.mod.json depends.{depend_key} should be the lower-bound-only range "
+                f"'{expected}' (no upper cap or exact pin); got '{declared}'."
+            )
 
 
 def check_metadata() -> tuple[dict[str, str], dict]:
@@ -180,14 +223,15 @@ def check_metadata() -> tuple[dict[str, str], dict]:
         "minecraft": f"={props['minecraft_version']}",
         "java": ">=25",
         "tacz": "=1.1.8+fabric.26.3.R1",
-        "yet_another_config_lib_v3": "=3.9.7+26.3-fabric",
     }
     for key, value in expected_depends.items():
         if meta["depends"].get(key) != value:
             fail(f"fabric.mod.json depends.{key} expected {value}, got {meta['depends'].get(key)}")
     if meta.get("suggests", {}).get("modmenu") != "*":
         fail("fabric.mod.json should suggest modmenu: *")
+    check_fabric_loader_range_is_lower_bound_only(props, meta)
     check_fabric_api_range_is_lower_bound_only(props, meta)
+    check_flk_and_yacl_ranges_are_lower_bound_only(props, meta)
     check_declared_ranges_include_built_versions(props, meta)
     return props, meta
 
