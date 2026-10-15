@@ -26,10 +26,10 @@ detailed process notes in `docs/maintenance/` or the handoff/audit documents.
 
 ### Added
 
-- Four GitHub Actions workflows (`consistency`, `audit`, `compile-check`, `build`). The
-  development sandbox can only reach `api.github.com`, so Actions is the only place this
-  project can be compiled; `compile-check` writes its log back to `build-reports/` on
-  `arena/**` branches so a restricted sandbox can read compile errors.
+- GitHub Actions workflows for consistency, audit, compilation, full builds, and gated 26.3
+  GitHub Releases. The development sandbox can only reach `api.github.com`, so Actions is the
+  only place this project can be compiled; `compile-check` writes its log back to
+  `build-reports/` on `arena/**` branches so a restricted sandbox can read compile errors.
 - `download_dependencies.py --print-sha256` / `--require-pinned`, and
   `check_release_consistency.py --require-deps`, so the manifest can carry a not-yet-pinned
   checksum without either silently passing or blocking the port.

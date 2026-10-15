@@ -1,0 +1,102 @@
+name: GitHub Release
+
+# Only a deliberately pushed 26.3 release tag can publish a GitHub Release.
+# PRs and ordinary branch pushes never publish anything.
+
+on:
+  push:
+    tags:
+      - '26.3_*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish the 26.3 release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag and target branch
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          if [[ -z "$VERSION" || "$VERSION" != *+fabric.26.3.* ]]; then
+            echo "::error::mod_version must identify the Fabric 26.3 line (got '$VERSION')"
+            exit 1
+          fi
+
+          SUFFIX="${VERSION#*+fabric.26.3.}"
+          if [[ -z "$SUFFIX" || "$SUFFIX" == "$VERSION" ]]; then
+            echo "::error::Could not extract the 26.3 release suffix from '$VERSION'"
+            exit 1
+          fi
+          TAG_SUFFIX="$(printf '%s' "$SUFFIX" | tr '[:lower:]' '[:upper:]' | sed -E 's/[.-]/_/g')"
+          EXPECTED_TAG="26.3_${TAG_SUFFIX}"
+          if [[ "$RELEASE_TAG" != "$EXPECTED_TAG" ]]; then
+            echo "::error::Tag '$RELEASE_TAG' does not match mod_version '$VERSION'; expected '$EXPECTED_TAG'"
+            exit 1
+          fi
+
+          git fetch --no-tags origin +refs/heads/26.3:refs/remotes/origin/26.3
+          TAG_SHA="$(git rev-list -n 1 "$RELEASE_TAG")"
+          if ! git merge-base --is-ancestor "$TAG_SHA" refs/remotes/origin/26.3; then
+            echo "::error::Release tag '$RELEASE_TAG' is not on the 26.3 branch"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore vendored dependencies
+        run: python3 scripts/download_dependencies.py --print-sha256
+
+      - name: Static port audit
+        run: python3 scripts/audit_port.py --strict
+
+      - name: Dependency-range regression tests
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/test_dependency_ranges.py -q
+
+      - name: Full release build
+        run: ./gradlew clean build --console=plain --stacktrace --no-daemon
+
+      - name: Verify release jar metadata
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          JAR="build/libs/tacztweaks-${VERSION}.jar"
+          test -f "$JAR"
+          echo "checking $JAR"
+          python3 scripts/check_release_consistency.py --jar "$JAR"
+          echo "RELEASE_JAR=$JAR" >> "$GITHUB_ENV"
+          echo "MOD_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release and upload mod jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" "$RELEASE_JAR" \
+            --verify-tag \
+            --title "TaCZ Tweaks (Refabricated) $MOD_VERSION" \
+            --generate-notes
