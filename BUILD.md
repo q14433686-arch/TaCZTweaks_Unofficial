@@ -271,9 +271,19 @@ JDK 25，不要照抄）。发布流程失败时不会创建 Release；它使用
 `--strict` —— **照抄过来必然全红**。`docs/maintenance/ci-workflow.yml` 里那份早期提案
 当初就判断对了这一点，已安装的流程沿用了它的结论。
 
-CI 里非 strict 审计要求 **0 error**；warning 是本分支已记录的已知状态（`compat.lsoCompat` 等
-dormant 键、`SoundBufferLibraryMixin` 的 narrow synthetic-target 例外），不让流程变红。
-发布前仍须按上面的命令手动跑一次 strict 审计。
+CI 里非 strict 审计要求 **0 error**；warning 不让流程变红。
+
+⚠️ **不要把 CI 的「0 error」读成「所有 mixin 目标都已核对」。** 首次对真实 TaCZ R2 jar 跑审计
+的结果是 `0 error(s), 132 warning(s)`，其中 **96 条尚未定性**：12 处 `@At` 声明（及其 46+46 条
+回显）报「method reference absent」，另有 4 处报「target method absent」。那 12 处的 descriptor
+**全部**含具名 `net/minecraft/*` 类型，而本线的 TaCZ jar 是按 intermediary 编译的，
+`audit_port.py` 又没有 descriptor 翻译步骤 —— 所以很可能只是「审计 pre-remap 源码」的结构性
+产物，但**尚未验证**。这也意味着 `--strict` 在本分支目前**跑不到 0 error**，即使把 named /
+intermediary jar 与 refmap 都补齐也不行（strict 会把这 96 条升级成 error）。
+
+完整分类、逐条清单与优先排查顺序见 [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)
+「50 untriaged audit warnings against the real TaCZ R2 jar」。发布前仍须按上面的命令手动跑
+strict 审计，并先把那 4 条 name-only 的 `target method absent` 定性完。
 
 `audit.yml` 在 `arena/**` 的 push 上把审计输出回推到 `build-reports/audit.log`（理由与
 `compile-check.yml` 回推编译日志相同：受限沙箱读不到 Actions 的日志 blob 域）。它和

@@ -69,7 +69,11 @@ The work order lives in `docs/CROSS_BRANCH_SYNC.md` on the `26.3` branch.
   judgement call was right and is kept: CI runs the **non-strict** audit, because `--strict` on
   this branch additionally demands `--minecraft-named-jar`, `--minecraft-intermediary-jar` and a
   generated `tacztweaks.refmap.json` — all three of which only exist after a full Gradle build,
-  so they cannot live in the fastest-feedback workflow. Strict remains a manual pre-release gate.
+  so they cannot live in the fastest-feedback workflow. Strict remains a manual pre-release gate —
+  but note that its first run against the real TaCZ R2 jar reports `0 error(s), 132 warning(s)`,
+  96 of which are untriaged `@At`/target-method findings that `--strict` would promote to errors.
+  See the new `docs/KNOWN_ISSUES.md` entry; `--strict` is therefore not currently achievable on
+  this branch, and CI's "0 errors" must not be read as "every mixin target verified".
 - Docs updated to match: `CONTRIBUTING.md` gains the runtime-only-constraint rules and the
   "never cap `fabric-api`" / "workflow files need `workflows` permission" expectations;
   `docs/KNOWN_ISSUES.md` gains "green CI does not prove the game launches";
