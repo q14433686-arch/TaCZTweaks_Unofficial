@@ -40,7 +40,9 @@ dependencies {
     // putting it on the compile classpath keeps stdlib versions aligned.
     implementation("net.fabricmc:fabric-language-kotlin:${project.property("flk_version")}")
 
-    // YACL 3.9.6+26.1-fabric (Modrinth version svTkvBec) supports 26.1.2.
+    // YACL 3.9.6+26.1-fabric (Modrinth version svTkvBec) supports 26.1.2. It is also the runtime
+    // minimum in fabric.mod.json (">=3.9.6+26.1-fabric"); when changing this coordinate, update
+    // YACL_BUILT_VERSION in scripts/check_release_consistency.py and that minimum together.
     // Resolve it from Maven instead of requiring every source checkout to supply libs/yacl-fabric.jar.
     implementation("maven.modrinth:1eAoo2KR:svTkvBec")
 

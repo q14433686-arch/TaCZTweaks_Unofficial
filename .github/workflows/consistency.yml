@@ -1,7 +1,8 @@
 name: Version consistency
 
 # 版本 / 依赖范围一致性守门：改了 gradle.properties 却忘了同步 README / BUILD.md / CHANGELOG /
-# fabric.mod.json，或者给 Fabric API 依赖重新加了上界时，PR 会红。
+# fabric.mod.json，或者给 Fabric API / FLK / YACL 依赖重新加了上界、把 YACL 改回精确版本时，PR 会红。
+# check_release_consistency.py 会从 build.gradle.kts 读 YACL 的 Modrinth 坐标，所以它也在 paths 里。
 # build.yml 会 paths-ignore 掉 *.md 与 docs/**，「只改 README」的提交测不到 —— 本流程必须独立存在。
 #
 # 与 26.3 线的同名流程不同：26.1.2 的 check_release_consistency.py 会对 manifest 里的
@@ -25,6 +26,7 @@ on:
       - 'CHANGELOG.md'
       - 'RESOURCE_IMPORT_MANIFEST.tsv'
       - 'src/main/resources/fabric.mod.json'
+      - 'build.gradle.kts'
       - 'docs/publish/**'
       - 'scripts/check_release_consistency.py'
       - 'scripts/test_dependency_ranges.py'
@@ -38,6 +40,7 @@ on:
       - 'CHANGELOG.md'
       - 'RESOURCE_IMPORT_MANIFEST.tsv'
       - 'src/main/resources/fabric.mod.json'
+      - 'build.gradle.kts'
       - 'docs/publish/**'
       - 'scripts/check_release_consistency.py'
       - 'scripts/test_dependency_ranges.py'
@@ -75,4 +78,4 @@ jobs:
         run: |
           echo "::error::README.md / BUILD.md / CHANGELOG.md / fabric.mod.json 与 gradle.properties 不一致，或依赖范围违反门禁。"
           echo "::error::同步：README 顶部版本句与依赖表、BUILD.md 版本与产物路径、CHANGELOG 当前条目、fabric.mod.json depends。"
-          echo "::error::Fabric API 依赖必须是 '>=<fabric_version>'（不设上界）；RESOURCE_IMPORT_MANIFEST.tsv 的校验和必须匹配。"
+          echo "::error::Fabric API / FLK / YACL 只写下界：'>=<fabric_version>'、'>=<flk_version 的版本号部分>'、'>=3.9.6+26.1-fabric'（不设上界、不精确锁定）；RESOURCE_IMPORT_MANIFEST.tsv 的校验和必须匹配。"

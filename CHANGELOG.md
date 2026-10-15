@@ -14,6 +14,13 @@ handoff/audit documents.
   "incompatible". The minimum stays this line's own `0.155.2+26.1.2`, and Minecraft stays
   pinned to `=26.1.2`. On 26.1.2 this is preventive: the newest Fabric API published for
   26.1.2 when this was changed, `0.155.3+26.1.2`, was still accepted by the old range.
+- Removed the artificial upper bound from Fabric Language Kotlin (`>=1.13.13 <1.14.0` ->
+  `>=1.13.13`) and the exact YetAnotherConfigLib pin (`=3.9.6+26.1-fabric` ->
+  `>=3.9.6+26.1-fabric`). On the 26.2 line (Issue #33) these two shapes made Fabric Loader
+  reject FLK `1.14.2+kotlin.2.4.21` and YACL `3.9.7+26.2-fabric`. This line declared the same
+  shapes, so the already published FLK 1.14.0, 1.14.1 and 1.14.2 were rejected here too, as
+  would be YACL 3.9.7's 26.1 build. The minimums stay the versions this build compiles against.
+  FLK 1.14.x itself requires Fabric Loader 0.19.5 or newer.
 - Hardened the shield-durability mixin against `BlocksAttacks#hurtBlockingItem` call-site
   drift (port of the 26.2 line's `IncorrectArgumentCountException` fix): both the vanilla
   5-parameter shape and the 6-parameter shape with a trailing `int` are wrapped with
@@ -34,16 +41,20 @@ handoff/audit documents.
 - The artifact version is now `2.14.2+fabric.26.1.2.Beta-1-hotfix2`, because `Beta-1-hotfix`
   was already published as the GitHub release `26.1.2_BETA_1_HOTFIX`.
 - `scripts/check_release_consistency.py` now fails unless `depends.fabric-api` is exactly
-  `>=<fabric_version>` and the Fabric Loader / Fabric API / Fabric Language Kotlin versions used
-  for the build satisfy their declared ranges. The new `scripts/test_dependency_ranges.py`
-  covers both checks, including a regression case for the removed cap.
+  `>=<fabric_version>`, `depends.fabric-language-kotlin` is exactly `>=` plus the release part of
+  `flk_version`, `depends.yet_another_config_lib_v3` is exactly `>=3.9.6+26.1-fabric` (tied to the
+  YACL artifact resolved by `build.gradle.kts`), and the Fabric Loader / Fabric API / Fabric
+  Language Kotlin versions used for the build satisfy their declared ranges. The new
+  `scripts/test_dependency_ranges.py` covers these checks, including regression cases for the
+  removed Fabric API and FLK caps and the removed YACL pin.
 
 ### Compatibility
 
 - Fabric API: `>=0.155.2+26.1.2` (no upper bound).
+- Fabric Language Kotlin: `>=1.13.13` (no upper bound; FLK 1.14.x needs Fabric Loader `>=0.19.5`).
+- YetAnotherConfigLib: `>=3.9.6+26.1-fabric` (no longer an exact pin).
 - Unchanged from `Beta-1-hotfix`: Minecraft `26.1.2`; Fabric Loader `>=0.19.3 <0.20.0`;
-  Java `>=25`; TaCZ Refabricated Unofficial `1.1.8+fabric.26.1.2.R<n>` with `n >= 2`;
-  Fabric Language Kotlin `>=1.13.13 <1.14.0`; YetAnotherConfigLib exactly `3.9.6+26.1-fabric`.
+  Java `>=25`; TaCZ Refabricated Unofficial `1.1.8+fabric.26.1.2.R<n>` with `n >= 2`.
 
 ### Test matrix
 
@@ -51,7 +62,8 @@ handoff/audit documents.
   restored, `python3 scripts/check_release_consistency.py`,
   `python3 scripts/test_dependency_ranges.py`, `./gradlew clean build --stacktrace`, and
   client / integrated-server / dedicated-server launches with the newest available 26.1.2
-  Fabric API.
+  Fabric API, Fabric Language Kotlin (1.14.2 on Fabric Loader `>=0.19.5`) and YACL 3.9.7 for
+  26.1, plus one launch with the minimums (FLK `1.13.13`, YACL `3.9.6+26.1-fabric`).
 
 ## 2.14.2+fabric.26.1.2.Beta-1-hotfix - 2026-08-22
 

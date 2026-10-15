@@ -38,8 +38,8 @@
     "minecraft": "=26.1.2",
     "java": ">=25",
     "tacz": "=1.1.8+fabric.26.1.2.R2",
-    "fabric-language-kotlin": ">=1.13.13 <1.14.0",
-    "yet_another_config_lib_v3": "=3.9.6+26.1-fabric"
+    "fabric-language-kotlin": ">=1.13.13",
+    "yet_another_config_lib_v3": ">=3.9.6+26.1-fabric"
   },
   "suggests": {
     "modmenu": "*",

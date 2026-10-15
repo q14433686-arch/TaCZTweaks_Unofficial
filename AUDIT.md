@@ -36,8 +36,8 @@ python3 scripts/audit_port.py --strict \
   `>=0.155.2+26.1.2`：只删上界，最低版本保留本线自己的 `fabric_version`，不照搬 26.3 的数值；
 - 查证（FabricMC/fabric 的 GitHub tags/releases，2026-10-15）：26.1.2 已发布的最高版本是
   `0.155.3+26.1.2`（2026-09-07），旧范围也接受，所以本线此前没有已发布版本被实际拒绝，属预防性修复；
-- `minecraft` 仍精确为 `=26.1.2`；Fabric Language Kotlin `>=1.13.13 <1.14.0` 与 YACL
-  `=3.9.6+26.1-fabric` 未在本次改动（26.3 的跨线同步说明只要求删 Fabric API 上界）；
+- `minecraft` 仍精确为 `=26.1.2`；Fabric Language Kotlin 与 YACL 当时未改动（26.3 的跨线同步说明只要求删
+  Fabric API 上界），2026-10-16 另行处理，见下一节；
 - 门禁：`check_release_consistency.py` 新增 `check_fabric_api_range_is_lower_bound_only`
   （要求 `depends.fabric-api == ">=" + fabric_version`）与 `check_declared_ranges_include_built_versions`
   （构建所用 Loader / Fabric API / FLK 必须落在声明范围内），由 `scripts/test_dependency_ranges.py`
@@ -47,6 +47,32 @@ python3 scripts/audit_port.py --strict \
   的 `./gradlew build`（含 JUnit、`checkModIcon` / `checkVendoredDependencies` / `checkJarContents`）均通过，
   产物为 `tacztweaks-2.14.2+fabric.26.1.2.Beta-1-hotfix2.jar`。这也是 #26 盾牌 mixin 加固在本线的首次编译与测试。
   **尚未**用更新的 Fabric API 做客户端 / 集成服 / 独立服实机启动。
+
+## FLK / YACL 依赖范围（2026-10-16，Issue #33 同类问题）
+
+- 26.2 线 Issue #33 里，Fabric Loader 除了卡在 Fabric API 上界，还因 `fabric-language-kotlin: ">=1.13.13 <1.14.0"`
+  拒绝了 `1.14.2+kotlin.2.4.21`，因 `yet_another_config_lib_v3: "=3.9.6+26.2-fabric"` 拒绝了 `3.9.7+26.2-fabric`。
+  本线写法相同，现改为 `>=1.13.13` 与 `>=3.9.6+26.1-fabric`：只删上界和精确锁定，最低版本保持本线构建所用的版本；
+- 查证（2026-10-16）：
+  - FLK（FabricMC/fabric-language-kotlin 的 GitHub releases）：`1.13.14`、`1.14.0`、`1.14.1`（2026-09-07）与
+    `1.14.2+kotlin.2.4.21`（2026-10-09）均已发布。旧范围拒绝其中的 1.14.0 ~ 1.14.2，所以本线的 FLK 上界**已经在拒绝**
+    现行版本，不是预防性修复；
+  - FLK `1.13.13 → 1.14.2` 的上游 diff：内置 Kotlin stdlib / reflect 从 `2.4.10` 升到 `2.4.21`，kotlinx 库版本不变；
+    FLK 自身的依赖从 `fabricloader >=0.16.9` 提到 `>=0.19.5`（自 1.14.0 起）。本模组允许 Loader `>=0.19.3`，所以
+    Loader 0.19.3 / 0.19.4 的用户只能用 FLK 1.13.x —— 这是 FLK 自己的约束，与本模组的声明无关；
+  - YACL（isXander/YetAnotherConfigLib `main`）：3.9.7 的 changelog 列出 26.1 Fabric 目标，`versions/26.1-fabric`
+    为 `meta.mcDep=~26.1`，发布目标是 26.1 / 26.1.1 / 26.1.2；3.9.6 → 3.9.7 只改了 `gui/` 下的实现和资源，本模组用到的
+    `config.v3` / `dsl` / `api` / `platform` 包没有改动。沙箱访问不了 Modrinth API，`3.9.7+26.1-fabric` 的 Modrinth
+    条目未直接核对；
+  - Fabric Loader 0.19.3 的 `SemanticVersionImpl.compareTo` 只比较版本号与预发布标签，忽略 `+` 后的构建元数据，所以
+    `>=3.9.6+26.1-fabric` 等价于 `>=3.9.6`；其他游戏版本的 YACL 仍会被它自己的 `minecraft` 依赖拒绝；
+- 门禁：`check_release_consistency.py` 新增 `check_flk_and_yacl_ranges_are_lower_bound_only`（FLK 必须是 `>=` 加
+  `flk_version` 的版本号部分；YACL 必须是 `>=3.9.6+26.1-fabric`，且 `build.gradle.kts` 仍解析
+  `maven.modrinth:1eAoo2KR:svTkvBec`，只换 YACL 构建、不改下界会失败），`check_metadata()` 不再要求 YACL 精确等于
+  `3.9.6+26.1-fabric`。`scripts/test_dependency_ranges.py` 增至 15 个用例；在临时副本里把旧 FLK 上界、旧 YACL 精确锁定、
+  26.3 的 `<2.0.0` 写法、26.2 的 YACL 构建名、换掉的 YACL 坐标逐一放回去，测试与 `check_metadata()` 都会失败；
+- 验证级别：本地脚本测试与上述变异测试通过；CI 结果待补；**尚未**用 FLK 1.14.x / YACL 3.9.7 做客户端 / 集成服 /
+  独立服实机启动。
 
 ## 总结
 
